@@ -18,6 +18,7 @@ import { persistStripeCustomerIdForUser } from "@/lib/resolveStripeCustomerId";
 import { recordPartnerCommissionForSubscriber } from "@/lib/partner/recordPartnerCommissionForSubscriber";
 import { isLikelySupabaseAuthUserId } from "@/lib/auth/supabase-mobile-user-bridge";
 import { upsertUserProfilePlanFields } from "@/lib/users/userProfilesPg";
+import { mirrorStripeSubscriptionRow } from "@/lib/stripe/mirrorStripeSubscription";
 import {
   matchUsersCollectionByWebUserIds,
   supabaseAuthUserIdFieldsOnUserDoc,
@@ -1051,6 +1052,9 @@ export async function POST(req: Request) {
     if (event.type === "customer.subscription.created") {
       const subscription = event.data.object as Stripe.Subscription;
       const metadata = subscription.metadata;
+      void mirrorStripeSubscriptionRow(subscription).catch((err) => {
+        console.warn("Failed to mirror subscription.created", err);
+      });
       if (metadata?.user_id) {
         await updateUserPublicMetadata(metadata.user_id, {
           planCancelled: false,
@@ -1076,6 +1080,9 @@ export async function POST(req: Request) {
     if (event.type === "customer.subscription.updated") {
       const subscription = event.data.object as Stripe.Subscription;
       const metadata = subscription.metadata;
+      void mirrorStripeSubscriptionRow(subscription).catch((err) => {
+        console.warn("Failed to mirror subscription.updated", err);
+      });
       if (subscription.cancel_at_period_end) {
         if (metadata?.user_id) {
           if (await userHasAdminPlanOverride(metadata.user_id)) {
@@ -1492,6 +1499,14 @@ export async function POST(req: Request) {
 
     if (event.type === "customer.subscription.deleted") {
       const subscription = event.data.object as Stripe.Subscription;
+
+      // Always sync mirror first so CMS never keeps a stale "active" row.
+      try {
+        await mirrorStripeSubscriptionRow(subscription);
+      } catch (err) {
+        console.warn("Failed to mirror subscription.deleted", err);
+      }
+
       let { user_id, checkout_id } = subscription.metadata;
       if (!user_id || !checkout_id) {
         if (subscription.latest_invoice) {
@@ -1563,27 +1578,56 @@ export async function POST(req: Request) {
         }
       }
 
-      if (!user_id || !checkout_id || checkout_id === "{CHECKOUT_SESSION_ID}") {
-        console.warn("❌ Still missing metadata for", subscription.id);
-        return NextResponse.json({ received: true });
+      const usableCheckoutId =
+        checkout_id && checkout_id !== "{CHECKOUT_SESSION_ID}"
+          ? checkout_id
+          : null;
+
+      // Downgrade entitlements whenever we know the user — do not require checkout_id.
+      if (user_id) {
+        if (await userHasAdminPlanOverride(user_id)) {
+          logger.info(
+            "Skipping free downgrade — admin entitlement override active",
+            {
+              component: "stripe_webhook",
+              action: "skip_admin_plan_override",
+              userId: user_id,
+            }
+          );
+        } else {
+          try {
+            await updateUserPublicMetadata(user_id, {
+              plan: "free",
+              planType: "",
+              planCancelled: false,
+              planExpiresAt: null,
+              planRenewsAt: null,
+            });
+          } catch (err) {
+            logger.error("subscription.deleted: failed to downgrade plan", {
+              component: "stripe_webhook",
+              action: "subscription_deleted_downgrade_failed",
+              userId: user_id,
+              metadata: { error: err, subscriptionId: subscription.id },
+            });
+          }
+        }
+      } else {
+        console.warn(
+          "❌ subscription.deleted missing user_id for",
+          subscription.id
+        );
       }
 
-      // Cancel and downgrade
-      if (await userHasAdminPlanOverride(user_id)) {
-        logger.info(
-          "Skipping free downgrade — admin entitlement override active",
-          {
-            component: "stripe_webhook",
-            action: "skip_admin_plan_override",
-            userId: user_id,
-          }
-        );
-        await checkoutRepo.updateStatus(checkout_id, "cancelled");
-      } else {
-        await Promise.all([
-          checkoutRepo.updateStatus(checkout_id, "cancelled"),
-          updateUserPublicMetadata(user_id, { plan: "free" }),
-        ]);
+      if (usableCheckoutId) {
+        try {
+          await checkoutRepo.updateStatus(usableCheckoutId, "cancelled");
+        } catch (err) {
+          console.warn(
+            "Failed to mark checkout cancelled on subscription.deleted",
+            err
+          );
+        }
       }
 
       // Log subscription cancelled
@@ -1594,7 +1638,7 @@ export async function POST(req: Request) {
           {
             subscriptionId: subscription.id,
             customerId: subscription.customer,
-            checkoutId: checkout_id,
+            checkoutId: usableCheckoutId,
           }
         );
       } catch (logErr) {
@@ -1612,7 +1656,7 @@ export async function POST(req: Request) {
           customerId:
             typeof subscription.customer === "string" ? subscription.customer : null,
           userId: user_id || subscriptionMetadata.user_id || null,
-          sessionId: checkout_id,
+          sessionId: usableCheckoutId,
           subscriptionId: subscription.id,
         }),
         userId: user_id || subscriptionMetadata.user_id || undefined,
@@ -1622,7 +1666,7 @@ export async function POST(req: Request) {
             name: "subscription_cancelled",
             params: {
               subscription_id: subscription.id,
-              transaction_id: checkout_id,
+              transaction_id: usableCheckoutId || subscription.id,
               cancellation_reason: "stripe_subscription_deleted",
               ...buildStripeGaAttributionParams(subscriptionMetadata),
             },

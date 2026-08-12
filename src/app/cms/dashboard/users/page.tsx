@@ -11,7 +11,7 @@ import ChangeUserPlanModal from "@/components/cms/ChangeUserPlanModal";
 interface User {
   userId: string;
   email?: string;
-  lastActivity: string;
+  lastActivity: string | null;
   firstActivity: string;
   createdAt?: string;
   subscriptionStartDate?: string | null;
@@ -302,8 +302,11 @@ export default function UsersPage() {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString("en-US", {
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return "Never";
+    const d = new Date(dateString);
+    if (Number.isNaN(d.getTime())) return "Never";
+    return d.toLocaleString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -421,7 +424,9 @@ export default function UsersPage() {
               className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             >
               <option value="createdAt">Register Date</option>
-              <option value="lastActivity">Last Activity</option>
+              <option value="lastActivity">
+                Last Activity (practice/mock/login)
+              </option>
               <option value="totalTokens">Tokens</option>
             </select>
             <select
@@ -485,7 +490,10 @@ export default function UsersPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Tokens / Devices
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      title="Latest practice, mock, or login event"
+                    >
                       Last Active
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">

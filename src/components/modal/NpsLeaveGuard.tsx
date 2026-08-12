@@ -82,3 +82,28 @@ export function npsAwareNavigate(
   }
   push(href);
 }
+
+/**
+ * Prompt NPS after completing a mock skill section (e.g. ContinueExamModal
+ * "Back to Exams"), then navigate. Falls through to navigate if already
+ * submitted or the modal is already open.
+ */
+export function promptNpsThenNavigate(
+  href: string,
+  push: (href: string) => void,
+  contextLabel: string,
+): void {
+  const { isOpen, open } = useNpsStore.getState();
+  if (isOpen) return;
+
+  open({
+    trigger: "mock_leave",
+    contextLabel,
+    pendingHref: href,
+  });
+
+  // open() no-ops when the user already submitted — navigate immediately
+  if (!useNpsStore.getState().isOpen) {
+    push(href);
+  }
+}

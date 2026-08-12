@@ -115,15 +115,6 @@ const ResultExamView = ({
     }
   }, [user, exams]);
 
-  // Arm NPS leave-guard while viewing mock results
-  useEffect(() => {
-    const label = exams?.name ? `${exams.name} complete` : "Mock exam complete";
-    useNpsStore.getState().armMockLeave(label);
-    return () => {
-      useNpsStore.getState().disarmMockLeave();
-    };
-  }, [exams?.name]);
-
   // Detect incomplete sections
   const getIncompleteSections = () => {
     const sections = [];
@@ -156,6 +147,21 @@ const ResultExamView = ({
   };
 
   const incompleteSections = getIncompleteSections();
+
+  // Arm NPS leave-guard while viewing mock results (full or partial)
+  useEffect(() => {
+    const examName = exams?.name || "Mock exam";
+    const completedSkills = 4 - incompleteSections.length;
+    const label =
+      incompleteSections.length > 0
+        ? `${examName} · ${completedSkills}/4 skills done`
+        : `${examName} complete`;
+    useNpsStore.getState().armMockLeave(label);
+    return () => {
+      useNpsStore.getState().disarmMockLeave();
+    };
+  }, [exams?.name, incompleteSections.length]);
+
   const [showIncompleteModal, setShowIncompleteModal] = useState(
     incompleteSections.length > 0,
   );

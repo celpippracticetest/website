@@ -557,11 +557,9 @@ const ListeningExamView = ({
               }),
             );
           }}
-          onFinish={() => {
-            setShowContinueModal(false);
-            router.push(`/exam-overview`);
-          }}
+          onFinish={() => setShowContinueModal(false)}
           nextSectionName="Reading"
+          completedSectionName="Listening"
         />
       )}
     </>

@@ -2,30 +2,47 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { promptNpsThenNavigate } from "@/components/modal/NpsLeaveGuard";
 
 interface ContinueExamModalProps {
   onContinue: () => void;
   onFinish: () => void;
   nextSectionName: string;
+  /** Skill the user just finished — used for NPS context. */
+  completedSectionName: string;
+  finishHref?: string;
 }
 
 const ContinueExamModal = ({
   onContinue,
   onFinish,
   nextSectionName,
+  completedSectionName,
+  finishHref = "/exam-overview",
 }: ContinueExamModalProps) => {
   const ref = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const [timeLeft, setTimeLeft] = useState(90); // 90 seconds = 1:30 minutes
+  const leftRef = useRef(false);
+  const onFinishRef = useRef(onFinish);
+  onFinishRef.current = onFinish;
+
+  const leaveToExams = () => {
+    if (leftRef.current) return;
+    leftRef.current = true;
+    onFinishRef.current();
+    promptNpsThenNavigate(
+      finishHref,
+      (href) => router.push(href),
+      `${completedSectionName} complete`,
+    );
+  };
 
   useEffect(() => {
-    // Countdown timer
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          // Auto-navigate to exams page when timer expires
-          router.push("/exam-overview");
           return 0;
         }
         return prev - 1;
@@ -33,7 +50,14 @@ const ContinueExamModal = ({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [router]);
+  }, []);
+
+  useEffect(() => {
+    if (timeLeft === 0) {
+      leaveToExams();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only fire when timer hits 0
+  }, [timeLeft]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -63,7 +87,9 @@ const ContinueExamModal = ({
                 d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <span className="font-semibold text-sm">{formatTime(timeLeft)}</span>
+            <span className="font-semibold text-sm">
+              {formatTime(timeLeft)}
+            </span>
           </div>
         </div>
 
@@ -91,8 +117,8 @@ const ContinueExamModal = ({
           </h3>
           <p className="text-[#76808F] text-base leading-relaxed">
             Great job! Do you want to continue to the{" "}
-            <strong className="text-[#4A7DFF]">{nextSectionName}</strong> section
-            or return to the exams page?
+            <strong className="text-[#4A7DFF]">{nextSectionName}</strong>{" "}
+            section or return to the exams page?
           </p>
         </div>
 
@@ -118,7 +144,7 @@ const ContinueExamModal = ({
             </svg>
           </button>
           <button
-            onClick={onFinish}
+            onClick={leaveToExams}
             className="w-full py-3.5 bg-[#F2F6FF] text-[#37465C] rounded-xl font-semibold hover:bg-[#E5ECFF] transition-all duration-200 hover:scale-[1.02]"
           >
             Back to Exams Page

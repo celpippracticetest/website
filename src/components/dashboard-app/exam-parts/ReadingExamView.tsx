@@ -683,11 +683,9 @@ const ReadingExamView = ({
               }),
             );
           }}
-          onFinish={() => {
-            setShowContinueModal(false);
-            router.push(`/exam-overview`);
-          }}
+          onFinish={() => setShowContinueModal(false)}
           nextSectionName="Writing"
+          completedSectionName="Reading"
         />
       )}
     </div>

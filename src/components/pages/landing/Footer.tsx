@@ -43,7 +43,13 @@ const Footer = () => {
                 Enterprises or the official CELPIP test
               </span>
             </div>
-            <div className="flex gap-[16px] mt-[12px]">
+            <div className="flex flex-wrap gap-[16px] mt-[12px]">
+              <Link
+                href="/contact-us"
+                className="text-text2 font-normal text-[14px]"
+              >
+                <span>Contact Us</span>
+              </Link>
               <Link
                 href="/terms-of-service"
                 className="text-text2 font-normal text-[14px]"

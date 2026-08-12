@@ -216,6 +216,15 @@ export function userActivityRowToDocument(row: UserActivityRow): Record<string, 
   };
 }
 
+/** CMS "Last Activity" / engagement: practice, mock, or login only. */
+export const USER_ENGAGEMENT_EVENT_TYPES = [
+  "practice_attempt_started",
+  "practice_attempt_completed",
+  "mock_attempt_started",
+  "mock_attempt_completed",
+  "login",
+] as const;
+
 export type ActivityMetricsRollup = {
   totalActivities: number;
   uniqueIpAddressesCount: number;
@@ -233,14 +242,67 @@ export type ActivityMetricsRollup = {
   firstActivity: Date | null;
 };
 
+function normalizeActivityUserIds(
+  userIds: Array<string | null | undefined>
+): string[] {
+  const ids: string[] = [];
+  const seen = new Set<string>();
+  for (const raw of userIds) {
+    // Callers often pass nullable profile fields (e.g. legacy_clerk_user_id).
+    // Never call .trim() on null/undefined — that used to throw and the CMS
+    // list catch path zeroed practice/exam/token/IP stats for the whole page.
+    if (typeof raw !== "string") continue;
+    const id = raw.trim();
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    ids.push(id);
+  }
+  return ids;
+}
+
+function rowToActivityMetricsRollup(r: {
+  total_activities: number;
+  unique_ips: number;
+  unique_uas: number;
+  total_tokens: string | number;
+  practice_attempts: number;
+  practice_completions: number;
+  mock_attempts: number;
+  mock_completions: number;
+  payment_events: number;
+  dispute_events: number;
+  ip_addresses: string[] | null;
+  user_agents: string[] | null;
+  last_activity: Date | null;
+  first_activity: Date | null;
+}): ActivityMetricsRollup {
+  return {
+    totalActivities: r.total_activities || 0,
+    uniqueIpAddressesCount: r.unique_ips || 0,
+    uniqueUserAgentsCount: r.unique_uas || 0,
+    totalTokens: Number(r.total_tokens || 0) || 0,
+    practiceAttempts: r.practice_attempts || 0,
+    practiceCompletions: r.practice_completions || 0,
+    mockAttempts: r.mock_attempts || 0,
+    mockCompletions: r.mock_completions || 0,
+    paymentEvents: r.payment_events || 0,
+    disputeEvents: r.dispute_events || 0,
+    ipAddresses: (r.ip_addresses || []).filter(Boolean),
+    userAgents: (r.user_agents || []).filter(Boolean),
+    lastActivity: r.last_activity,
+    firstActivity: r.first_activity,
+  };
+}
+
 export async function loadUserActivityMetricsByUserId(
-  userIds: string[],
+  userIds: Array<string | null | undefined>,
   sqlClient?: Sql
 ): Promise<Map<string, ActivityMetricsRollup>> {
   const sql = sqlClient ?? getSql();
   const byUserId = new Map<string, ActivityMetricsRollup>();
-  const ids = [...new Set(userIds.map((id) => id.trim()).filter(Boolean))];
+  const ids = normalizeActivityUserIds(userIds);
   if (ids.length === 0) return byUserId;
+  const engagementEventTypes: string[] = [...USER_ENGAGEMENT_EVENT_TYPES];
 
   const rows = await sql<{
     user_id: string;
@@ -277,15 +339,23 @@ export async function loadUserActivityMetricsByUserId(
       COUNT(*) FILTER (
         WHERE event_type IN ('dispute_created', 'dispute_resolved')
       )::int AS dispute_events,
-      (
-        ARRAY_AGG(DISTINCT NULLIF(TRIM(ip_address), ''))
-        FILTER (WHERE NULLIF(TRIM(ip_address), '') IS NOT NULL)
-      )[1:5] AS ip_addresses,
-      (
-        ARRAY_AGG(DISTINCT NULLIF(TRIM(user_agent), ''))
-        FILTER (WHERE NULLIF(TRIM(user_agent), '') IS NOT NULL)
-      )[1:3] AS user_agents,
-      MAX(timestamp_utc) AS last_activity,
+      COALESCE(
+        (
+          ARRAY_AGG(DISTINCT NULLIF(TRIM(ip_address), ''))
+          FILTER (WHERE NULLIF(TRIM(ip_address), '') IS NOT NULL)
+        )[1:5],
+        ARRAY[]::text[]
+      ) AS ip_addresses,
+      COALESCE(
+        (
+          ARRAY_AGG(DISTINCT NULLIF(TRIM(user_agent), ''))
+          FILTER (WHERE NULLIF(TRIM(user_agent), '') IS NOT NULL)
+        )[1:3],
+        ARRAY[]::text[]
+      ) AS user_agents,
+      MAX(timestamp_utc) FILTER (
+        WHERE event_type = ANY(${engagementEventTypes})
+      ) AS last_activity,
       MIN(timestamp_utc) AS first_activity
     FROM public.user_activities
     WHERE user_id = ANY(${ids})
@@ -294,22 +364,7 @@ export async function loadUserActivityMetricsByUserId(
 
   for (const r of rows) {
     if (!r.user_id) continue;
-    byUserId.set(r.user_id, {
-      totalActivities: r.total_activities || 0,
-      uniqueIpAddressesCount: r.unique_ips || 0,
-      uniqueUserAgentsCount: r.unique_uas || 0,
-      totalTokens: Number(r.total_tokens || 0) || 0,
-      practiceAttempts: r.practice_attempts || 0,
-      practiceCompletions: r.practice_completions || 0,
-      mockAttempts: r.mock_attempts || 0,
-      mockCompletions: r.mock_completions || 0,
-      paymentEvents: r.payment_events || 0,
-      disputeEvents: r.dispute_events || 0,
-      ipAddresses: (r.ip_addresses || []).filter(Boolean),
-      userAgents: (r.user_agents || []).filter(Boolean),
-      lastActivity: r.last_activity,
-      firstActivity: r.first_activity,
-    });
+    byUserId.set(String(r.user_id), rowToActivityMetricsRollup(r));
   }
 
   return byUserId;

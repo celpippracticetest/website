@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth, currentUser, sessionClaimsHasAdminRole } from "@/lib/auth/server-auth";
-import client from "@/lib/appDocumentsClient";
+import { getSql } from "@/lib/pg/pool";
+import {
+  userActivityRowToDocument,
+  type UserActivityRow,
+} from "@/lib/userActivity/userActivitiesPg";
+import { resolveActivityUserIds } from "@/lib/users/resolveActivityUserIds";
 import * as XLSX from "xlsx";
 
 export async function GET(
@@ -14,11 +19,8 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if user is admin
     const authenticate = await auth();
-
-    const isAdmin =
-      sessionClaimsHasAdminRole(authenticate.sessionClaims);
+    const isAdmin = sessionClaimsHasAdminRole(authenticate.sessionClaims);
     if (!isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -31,176 +33,109 @@ export async function GET(
     const skill = searchParams.get("skill");
     const status = searchParams.get("status");
     const hasScore = searchParams.get("hasScore");
-    const minTokens = searchParams.get("minTokens");
-    const maxTokens = searchParams.get("maxTokens");
-    const search = searchParams.get("search");
+    const search = (searchParams.get("search") || "").trim();
 
-    const db = client.db();
-    const userActivityCollection = db.collection("useractivities");
+    const activityUserIds = await resolveActivityUserIds(resolvedParams.userId);
+    const sql = getSql();
+    const eventTypes = eventType
+      ? eventType.split(",").map((s) => s.trim()).filter(Boolean)
+      : null;
+    const contexts = context
+      ? context.split(",").map((s) => s.trim()).filter(Boolean)
+      : null;
+    const skills = skill
+      ? skill.split(",").map((s) => s.trim()).filter(Boolean)
+      : null;
+    const statuses = status
+      ? status.split(",").map((s) => s.trim()).filter(Boolean)
+      : null;
+    const start = startDate ? new Date(startDate) : null;
+    const end = endDate ? new Date(endDate) : null;
+    const searchLike = search
+      ? `%${search.replace(/%/g, "\\%").replace(/_/g, "\\_")}%`
+      : null;
 
-    // Build filter (same as in the GET route)
-    const filter: any = {
-      $or: [{ userId: resolvedParams.userId }, { email: resolvedParams.userId }],
-    };
+    const rows = await sql<UserActivityRow[]>`
+      SELECT *
+      FROM public.user_activities
+      WHERE user_id = ANY(${activityUserIds})
+        AND (${start}::timestamptz IS NULL OR timestamp_utc >= ${start})
+        AND (${end}::timestamptz IS NULL OR timestamp_utc <= ${end})
+        AND (${eventTypes}::text[] IS NULL OR event_type = ANY(${eventTypes}))
+        AND (${contexts}::text[] IS NULL OR context = ANY(${contexts}))
+        AND (${skills}::text[] IS NULL OR skill = ANY(${skills}))
+        AND (${statuses}::text[] IS NULL OR status = ANY(${statuses}))
+        AND (
+          ${hasScore}::text IS NULL
+          OR ${hasScore}::text = ''
+          OR (${hasScore}::text = 'yes' AND score_overall IS NOT NULL)
+          OR (${hasScore}::text = 'no' AND score_overall IS NULL)
+        )
+        AND (
+          ${searchLike}::text IS NULL
+          OR attempt_id ILIKE ${searchLike}
+          OR content_id ILIKE ${searchLike}
+          OR notes ILIKE ${searchLike}
+          OR email ILIKE ${searchLike}
+          OR user_id ILIKE ${searchLike}
+        )
+      ORDER BY timestamp_utc DESC
+      LIMIT 50000
+    `;
 
-    if (startDate || endDate) {
-      filter.timestampUtc = {};
-      if (startDate) {
-        filter.timestampUtc.$gte = new Date(startDate);
-      }
-      if (endDate) {
-        filter.timestampUtc.$lte = new Date(endDate);
-      }
-    }
+    const activities = rows.map(userActivityRowToDocument);
 
-    if (eventType) {
-      filter.eventType = { $in: eventType.split(",") };
-    }
+    const [summaryRow] = await sql<{
+      practice_attempted: number;
+      practice_completed: number;
+      mock_attempted: number;
+      mock_completed: number;
+      practice_tokens: number;
+      mock_tokens: number;
+      learning_tokens: number;
+      last_active: Date | null;
+    }[]>`
+      SELECT
+        COUNT(*) FILTER (WHERE event_type = 'practice_attempt_started')::int AS practice_attempted,
+        COUNT(*) FILTER (WHERE event_type = 'practice_attempt_completed')::int AS practice_completed,
+        COUNT(*) FILTER (WHERE event_type = 'mock_attempt_started')::int AS mock_attempted,
+        COUNT(*) FILTER (WHERE event_type = 'mock_attempt_completed')::int AS mock_completed,
+        COALESCE(SUM(CASE WHEN context = 'practice' THEN COALESCE(llm_tokens_prompt,0)+COALESCE(llm_tokens_completion,0) ELSE 0 END),0)::int AS practice_tokens,
+        COALESCE(SUM(CASE WHEN context = 'mock' THEN COALESCE(llm_tokens_prompt,0)+COALESCE(llm_tokens_completion,0) ELSE 0 END),0)::int AS mock_tokens,
+        COALESCE(SUM(CASE WHEN context = 'learning' THEN COALESCE(llm_tokens_prompt,0)+COALESCE(llm_tokens_completion,0) ELSE 0 END),0)::int AS learning_tokens,
+        MAX(timestamp_utc) FILTER (
+          WHERE event_type IN (
+            'practice_attempt_started',
+            'practice_attempt_completed',
+            'mock_attempt_started',
+            'mock_attempt_completed',
+            'login'
+          )
+        ) AS last_active
+      FROM public.user_activities
+      WHERE user_id = ANY(${activityUserIds})
+        AND (${start}::timestamptz IS NULL OR timestamp_utc >= ${start})
+        AND (${end}::timestamptz IS NULL OR timestamp_utc <= ${end})
+    `;
 
-    if (context) {
-      filter.context = { $in: context.split(",") };
-    }
-
-    if (skill) {
-      filter.skill = { $in: skill.split(",") };
-    }
-
-    if (status) {
-      filter.status = { $in: status.split(",") };
-    }
-
-    if (hasScore === "yes") {
-      filter.scoreOverall = { $exists: true, $ne: null };
-    } else if (hasScore === "no") {
-      filter.scoreOverall = { $exists: false };
-    }
-
-    if (minTokens || maxTokens) {
-      filter.$expr = {};
-      const tokenSum = {
-        $add: [
-          { $ifNull: ["$llmTokensPrompt", 0] },
-          { $ifNull: ["$llmTokensCompletion", 0] },
-        ],
-      };
-
-      if (minTokens && maxTokens) {
-        filter.$expr.$and = [
-          { $gte: [tokenSum, parseInt(minTokens)] },
-          { $lte: [tokenSum, parseInt(maxTokens)] },
-        ];
-      } else if (minTokens) {
-        filter.$expr.$gte = [tokenSum, parseInt(minTokens)];
-      } else if (maxTokens) {
-        filter.$expr.$lte = [tokenSum, parseInt(maxTokens)];
-      }
-    }
-
-    if (search) {
-      filter.$or = [
-        { attemptId: { $regex: search, $options: "i" } },
-        { contentId: { $regex: search, $options: "i" } },
-        { notes: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } },
-        { userId: { $regex: search, $options: "i" } },
-      ];
-    }
-
-    // Get all activities (no pagination for export)
-    const activities = await userActivityCollection
-      .find(filter)
-      .sort({ timestampUtc: -1 })
-      .toArray();
-
-    // Calculate summary statistics
-    const summaryPipeline = [
-      { $match: filter },
-      {
-        $group: {
-          _id: null,
-          practiceAttempted: {
-            $sum: {
-              $cond: [
-                { $eq: ["$eventType", "practice_attempt_started"] },
-                1,
-                0,
-              ],
-            },
-          },
-          practiceCompleted: {
-            $sum: {
-              $cond: [
-                { $eq: ["$eventType", "practice_attempt_completed"] },
-                1,
-                0,
-              ],
-            },
-          },
-          mockAttempted: {
-            $sum: {
-              $cond: [{ $eq: ["$eventType", "mock_attempt_started"] }, 1, 0],
-            },
-          },
-          mockCompleted: {
-            $sum: {
-              $cond: [{ $eq: ["$eventType", "mock_attempt_completed"] }, 1, 0],
-            },
-          },
-          practiceTokens: {
-            $sum: {
-              $cond: [
-                { $eq: ["$context", "practice"] },
-                { $add: ["$llmTokensPrompt", "$llmTokensCompletion"] },
-                0,
-              ],
-            },
-          },
-          mockTokens: {
-            $sum: {
-              $cond: [
-                { $eq: ["$context", "mock"] },
-                { $add: ["$llmTokensPrompt", "$llmTokensCompletion"] },
-                0,
-              ],
-            },
-          },
-          learningTokens: {
-            $sum: {
-              $cond: [
-                { $eq: ["$context", "learning"] },
-                { $add: ["$llmTokensPrompt", "$llmTokensCompletion"] },
-                0,
-              ],
-            },
-          },
-          lastActive: { $max: "$timestampUtc" },
-        },
-      },
-    ];
-
-    const summaryResult = await userActivityCollection
-      .aggregate(summaryPipeline)
-      .toArray();
-    const raw = summaryResult[0] as Record<string, unknown> | undefined;
     const summary = {
-      practiceAttempted: Number(raw?.practiceAttempted ?? 0),
-      practiceCompleted: Number(raw?.practiceCompleted ?? 0),
-      mockAttempted: Number(raw?.mockAttempted ?? 0),
-      mockCompleted: Number(raw?.mockCompleted ?? 0),
-      practiceTokens: Number(raw?.practiceTokens ?? 0),
-      mockTokens: Number(raw?.mockTokens ?? 0),
-      learningTokens: Number(raw?.learningTokens ?? 0),
-      lastActive: raw?.lastActive ?? null,
+      practiceAttempted: summaryRow?.practice_attempted || 0,
+      practiceCompleted: summaryRow?.practice_completed || 0,
+      mockAttempted: summaryRow?.mock_attempted || 0,
+      mockCompleted: summaryRow?.mock_completed || 0,
+      practiceTokens: summaryRow?.practice_tokens || 0,
+      mockTokens: summaryRow?.mock_tokens || 0,
+      learningTokens: summaryRow?.learning_tokens || 0,
+      lastActive: summaryRow?.last_active || null,
     };
 
-    // Create Excel workbook
     const workbook = XLSX.utils.book_new();
 
-    // Summary sheet
     const summaryData = [
       ["User Activity Summary"],
       ["Generated at (UTC)", new Date().toISOString()],
       ["User ID", resolvedParams.userId],
+      ["Resolved activity user IDs", activityUserIds.join(", ")],
       ["Date Range", `${startDate || "All time"} - ${endDate || "Present"}`],
       [""],
       ["Practice Attempted", summary.practiceAttempted],
@@ -222,7 +157,6 @@ export async function GET(
     const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
     XLSX.utils.book_append_sheet(workbook, summarySheet, "Summary");
 
-    // Activities sheet
     const activitiesData = activities.map((activity) => [
       activity.timestampUtc
         ? new Date(String(activity.timestampUtc)).toISOString()
@@ -267,13 +201,11 @@ export async function GET(
     ]);
     XLSX.utils.book_append_sheet(workbook, activitiesSheet, "Activity Log");
 
-    // Generate Excel buffer
     const excelBuffer = XLSX.write(workbook, {
       type: "buffer",
       bookType: "xlsx",
     });
 
-    // Generate filename
     const startDateStr = startDate
       ? new Date(startDate).toISOString().split("T")[0]
       : "all";
@@ -282,7 +214,6 @@ export async function GET(
       : "present";
     const filename = `user-${resolvedParams?.userId}-activity-${startDateStr}-${endDateStr}-UTC.xlsx`;
 
-    // Return Excel file
     return new NextResponse(excelBuffer, {
       status: 200,
       headers: {

@@ -193,7 +193,26 @@ export async function GET(request: NextRequest) {
         $group: {
           _id: "$userId",
           email: { $last: "$email" }, // Use latest email from activity
-          lastActivity: { $max: "$timestampUtc" },
+          lastActivity: {
+            $max: {
+              $cond: [
+                {
+                  $in: [
+                    "$eventType",
+                    [
+                      "practice_attempt_started",
+                      "practice_attempt_completed",
+                      "mock_attempt_started",
+                      "mock_attempt_completed",
+                      "login",
+                    ],
+                  ],
+                },
+                "$timestampUtc",
+                null,
+              ],
+            },
+          },
           firstActivity: { $min: "$timestampUtc" },
           totalActivities: { $sum: 1 },
           ipAddresses: { $addToSet: "$ipAddress" },

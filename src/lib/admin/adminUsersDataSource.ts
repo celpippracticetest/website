@@ -6,7 +6,10 @@ import {
   hasPaidPracticeAccess,
   normalizePlan,
 } from "@/lib/subscriptionAccess";
-import { loadUserActivityMetricsByUserId } from "@/lib/userActivity/userActivitiesPg";
+import {
+  loadUserActivityMetricsByUserId,
+  USER_ENGAGEMENT_EVENT_TYPES,
+} from "@/lib/userActivity/userActivitiesPg";
 import { getLiveStripeActiveSubscriberKeys } from "@/lib/admin/liveStripeActiveSubscribers";
 
 /** Keep paid plan tokens as stored; everything else → free for admin list. */
@@ -55,6 +58,7 @@ type ProfileListRow = {
   stable_id: string;
   supabase_auth_user_id: string | null;
   legacy_clerk_user_id: string | null;
+  profile_id: string | null;
   email: string | null;
   first_name: string | null;
   last_name: string | null;
@@ -121,7 +125,7 @@ function uniqueNonEmpty(ids: Array<string | null | undefined>): string[] {
  */
 async function loadActivityMetricsByUserId(
   sql: Sql,
-  userIds: string[]
+  userIds: Array<string | null | undefined>
 ): Promise<Map<string, ActivityMetrics>> {
   return loadUserActivityMetricsByUserId(userIds, sql);
 }
@@ -223,9 +227,9 @@ function orderByCombinedSql(
 }
 
 function needsActivitySortMetrics(sortBy: string): boolean {
-  // Only token sort needs a full-table activity rollup before LIMIT.
-  // lastActivity uses profile updated_at for ORDER BY, then page-scoped metrics.
-  return sortBy === "totalTokens";
+  // lastActivity + totalTokens need an activity rollup before LIMIT so ORDER BY
+  // matches the displayed engagement timestamp / token totals.
+  return sortBy === "totalTokens" || sortBy === "lastActivity";
 }
 
 /** Profiles + auth.users that never got a user_profiles row. */
@@ -238,9 +242,44 @@ const COMBINED_ADMIN_USERS_SQL = `
     ) AS stable_id,
     p.supabase_auth_user_id::text AS supabase_auth_user_id,
     p.legacy_clerk_user_id,
+    p.id::text AS profile_id,
     COALESCE(NULLIF(TRIM(p.email), ''), au.email) AS email,
-    p.first_name,
-    p.last_name,
+    COALESCE(
+      NULLIF(TRIM(p.first_name), ''),
+      NULLIF(
+        TRIM(
+          COALESCE(
+            au.raw_user_meta_data->>'given_name',
+            au.raw_user_meta_data->>'first_name',
+            split_part(COALESCE(au.raw_user_meta_data->>'full_name', au.raw_user_meta_data->>'name', ''), ' ', 1)
+          )
+        ),
+        ''
+      )
+    ) AS first_name,
+    COALESCE(
+      NULLIF(TRIM(p.last_name), ''),
+      NULLIF(
+        TRIM(
+          COALESCE(
+            au.raw_user_meta_data->>'family_name',
+            au.raw_user_meta_data->>'last_name',
+            NULLIF(
+              CASE
+                WHEN position(' ' IN COALESCE(au.raw_user_meta_data->>'full_name', au.raw_user_meta_data->>'name', '')) > 0
+                THEN substr(
+                  COALESCE(au.raw_user_meta_data->>'full_name', au.raw_user_meta_data->>'name', ''),
+                  position(' ' IN COALESCE(au.raw_user_meta_data->>'full_name', au.raw_user_meta_data->>'name', '')) + 1
+                )
+                ELSE NULL
+              END,
+              ''
+            )
+          )
+        ),
+        ''
+      )
+    ) AS last_name,
     p.plan,
     p.plan_type,
     COALESCE(p.public_metadata, '{}'::jsonb) AS public_metadata,
@@ -256,6 +295,7 @@ const COMBINED_ADMIN_USERS_SQL = `
     au.id::text AS stable_id,
     au.id::text AS supabase_auth_user_id,
     NULL::text AS legacy_clerk_user_id,
+    NULL::text AS profile_id,
     au.email,
     NULLIF(
       TRIM(
@@ -271,7 +311,18 @@ const COMBINED_ADMIN_USERS_SQL = `
       TRIM(
         COALESCE(
           au.raw_user_meta_data->>'family_name',
-          au.raw_user_meta_data->>'last_name'
+          au.raw_user_meta_data->>'last_name',
+          NULLIF(
+            CASE
+              WHEN position(' ' IN COALESCE(au.raw_user_meta_data->>'full_name', au.raw_user_meta_data->>'name', '')) > 0
+              THEN substr(
+                COALESCE(au.raw_user_meta_data->>'full_name', au.raw_user_meta_data->>'name', ''),
+                position(' ' IN COALESCE(au.raw_user_meta_data->>'full_name', au.raw_user_meta_data->>'name', '')) + 1
+              )
+              ELSE NULL
+            END,
+            ''
+          )
         )
       ),
       ''
@@ -408,6 +459,7 @@ export async function listAdminUsersFromUserProfiles(
             c.stable_id,
             c.supabase_auth_user_id,
             c.legacy_clerk_user_id,
+            c.profile_id,
             c.email,
             c.first_name,
             c.last_name,
@@ -427,6 +479,7 @@ export async function listAdminUsersFromUserProfiles(
             stable_id,
             supabase_auth_user_id,
             legacy_clerk_user_id,
+            profile_id,
             email,
             first_name,
             last_name,
@@ -451,7 +504,9 @@ export async function listAdminUsersFromUserProfiles(
               ),
               0
             )::bigint AS total_tokens,
-            MAX(ua.timestamp_utc) AS last_activity
+            MAX(ua.timestamp_utc) FILTER (
+              WHERE ua.event_type = ANY(${[...USER_ENGAGEMENT_EVENT_TYPES]})
+            ) AS last_activity
           FROM public.user_activities ua
           WHERE ua.user_id IN (
             SELECT f.stable_id FROM deduped f
@@ -461,6 +516,9 @@ export async function listAdminUsersFromUserProfiles(
             UNION
             SELECT f.legacy_clerk_user_id FROM deduped f
             WHERE NULLIF(TRIM(f.legacy_clerk_user_id), '') IS NOT NULL
+            UNION
+            SELECT f.profile_id FROM deduped f
+            WHERE f.profile_id IS NOT NULL
           )
           GROUP BY ua.user_id
         )
@@ -468,6 +526,7 @@ export async function listAdminUsersFromUserProfiles(
           f.stable_id,
           f.supabase_auth_user_id,
           f.legacy_clerk_user_id,
+          f.profile_id,
           f.email,
           f.first_name,
           f.last_name,
@@ -490,24 +549,29 @@ export async function listAdminUsersFromUserProfiles(
                    NULLIF(TRIM(f.legacy_clerk_user_id), '') IS NOT NULL
                    AND a.user_id = f.legacy_clerk_user_id
                  )
+                 OR (
+                   f.profile_id IS NOT NULL
+                   AND a.user_id = f.profile_id
+                 )
             ),
             0
           ) AS sort_total_tokens,
-          COALESCE(
-            (
-              SELECT MAX(a.last_activity)
-              FROM activity_by_id a
-              WHERE a.user_id = f.stable_id
-                 OR (
-                   f.supabase_auth_user_id IS NOT NULL
-                   AND a.user_id = f.supabase_auth_user_id
-                 )
-                 OR (
-                   NULLIF(TRIM(f.legacy_clerk_user_id), '') IS NOT NULL
-                   AND a.user_id = f.legacy_clerk_user_id
-                 )
-            ),
-            f.updated_at
+          (
+            SELECT MAX(a.last_activity)
+            FROM activity_by_id a
+            WHERE a.user_id = f.stable_id
+               OR (
+                 f.supabase_auth_user_id IS NOT NULL
+                 AND a.user_id = f.supabase_auth_user_id
+               )
+               OR (
+                 NULLIF(TRIM(f.legacy_clerk_user_id), '') IS NOT NULL
+                 AND a.user_id = f.legacy_clerk_user_id
+               )
+               OR (
+                 f.profile_id IS NOT NULL
+                 AND a.user_id = f.profile_id
+               )
           ) AS sort_last_activity
         FROM deduped f
         ORDER BY ${sql.unsafe(order)}
@@ -523,6 +587,7 @@ export async function listAdminUsersFromUserProfiles(
             c.stable_id,
             c.supabase_auth_user_id,
             c.legacy_clerk_user_id,
+            c.profile_id,
             c.email,
             c.first_name,
             c.last_name,
@@ -542,6 +607,7 @@ export async function listAdminUsersFromUserProfiles(
             stable_id,
             supabase_auth_user_id,
             legacy_clerk_user_id,
+            profile_id,
             email,
             first_name,
             last_name,
@@ -561,6 +627,7 @@ export async function listAdminUsersFromUserProfiles(
           f.stable_id,
           f.supabase_auth_user_id,
           f.legacy_clerk_user_id,
+          f.profile_id,
           f.email,
           f.first_name,
           f.last_name,
@@ -579,6 +646,7 @@ export async function listAdminUsersFromUserProfiles(
     r.stable_id,
     r.supabase_auth_user_id,
     r.legacy_clerk_user_id,
+    r.profile_id,
   ]);
   let activityByUserId = new Map<string, ActivityMetrics>();
   try {
@@ -597,7 +665,7 @@ export async function listAdminUsersFromUserProfiles(
     const meta = asRecord(r.public_metadata);
     const plan = normalizeAdminListPlan(r.plan ?? meta.plan ?? "free");
     const activity = mergeActivityMetrics(
-      [r.stable_id, r.supabase_auth_user_id, r.legacy_clerk_user_id],
+      [r.stable_id, r.supabase_auth_user_id, r.legacy_clerk_user_id, r.profile_id],
       activityByUserId
     );
     const stripeActiveFilter =
@@ -609,7 +677,7 @@ export async function listAdminUsersFromUserProfiles(
       email: r.email ?? null,
       firstName: r.first_name,
       lastName: r.last_name,
-      lastActivity: activity.lastActivity ?? r.updated_at,
+      lastActivity: activity.lastActivity,
       firstActivity: activity.firstActivity ?? r.created_at,
       createdAt: r.created_at,
       totalActivities: activity.totalActivities,
@@ -858,7 +926,7 @@ export async function listAdminUsersFromUsersDocuments(
     const activity = mergeActivityMetrics(activityIds, activityByUserId);
     return {
       ...r,
-      lastActivity: activity.lastActivity ?? r.lastActivity,
+      lastActivity: activity.lastActivity,
       firstActivity: activity.firstActivity ?? r.firstActivity,
       totalActivities: activity.totalActivities,
       uniqueIpAddressesCount: activity.uniqueIpAddressesCount,

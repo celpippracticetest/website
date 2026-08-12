@@ -7,6 +7,7 @@ import {
 } from "@/lib/userActivity/userActivitiesPg";
 import documentsClient from "@/lib/appDocumentsClient";
 import { matchUsersCollectionByWebUserIds } from "@/lib/users/userDocumentIdentity";
+import { resolveActivityUserIds } from "@/lib/users/resolveActivityUserIds";
 
 export async function GET(
   request: NextRequest,
@@ -21,7 +22,11 @@ export async function GET(
 
     const authenticate = await auth();
     const isAdmin = sessionClaimsHasAdminRole(authenticate.sessionClaims);
-    if (!isAdmin && currentUserData.id !== resolvedParams.userId) {
+    const activityUserIds = await resolveActivityUserIds(resolvedParams.userId);
+    const canAccessOwn =
+      activityUserIds.includes(currentUserData.id) ||
+      currentUserData.id === resolvedParams.userId;
+    if (!isAdmin && !canAccessOwn) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -32,41 +37,81 @@ export async function GET(
     const context = searchParams.get("context");
     const skill = searchParams.get("skill");
     const status = searchParams.get("status");
+    const hasScore = searchParams.get("hasScore");
+    const search = (searchParams.get("search") || "").trim();
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "50", 10) || 50));
     const offset = (page - 1) * limit;
-    const userId = resolvedParams.userId;
 
     const sql = getSql();
-    const eventTypes = eventType ? eventType.split(",").map((s) => s.trim()).filter(Boolean) : null;
-    const contexts = context ? context.split(",").map((s) => s.trim()).filter(Boolean) : null;
-    const skills = skill ? skill.split(",").map((s) => s.trim()).filter(Boolean) : null;
-    const statuses = status ? status.split(",").map((s) => s.trim()).filter(Boolean) : null;
+    const eventTypes = eventType
+      ? eventType.split(",").map((s) => s.trim()).filter(Boolean)
+      : null;
+    const contexts = context
+      ? context.split(",").map((s) => s.trim()).filter(Boolean)
+      : null;
+    const skills = skill
+      ? skill.split(",").map((s) => s.trim()).filter(Boolean)
+      : null;
+    const statuses = status
+      ? status.split(",").map((s) => s.trim()).filter(Boolean)
+      : null;
     const start = startDate ? new Date(startDate) : null;
     const end = endDate ? new Date(endDate) : null;
+    const searchLike = search
+      ? `%${search.replace(/%/g, "\\%").replace(/_/g, "\\_")}%`
+      : null;
 
     const [{ c: totalCount }] = await sql<{ c: number }[]>`
       SELECT COUNT(*)::int AS c
       FROM public.user_activities
-      WHERE user_id = ${userId}
+      WHERE user_id = ANY(${activityUserIds})
         AND (${start}::timestamptz IS NULL OR timestamp_utc >= ${start})
         AND (${end}::timestamptz IS NULL OR timestamp_utc <= ${end})
         AND (${eventTypes}::text[] IS NULL OR event_type = ANY(${eventTypes}))
         AND (${contexts}::text[] IS NULL OR context = ANY(${contexts}))
         AND (${skills}::text[] IS NULL OR skill = ANY(${skills}))
         AND (${statuses}::text[] IS NULL OR status = ANY(${statuses}))
+        AND (
+          ${hasScore}::text IS NULL
+          OR ${hasScore}::text = ''
+          OR (${hasScore}::text = 'yes' AND score_overall IS NOT NULL)
+          OR (${hasScore}::text = 'no' AND score_overall IS NULL)
+        )
+        AND (
+          ${searchLike}::text IS NULL
+          OR attempt_id ILIKE ${searchLike}
+          OR content_id ILIKE ${searchLike}
+          OR notes ILIKE ${searchLike}
+          OR email ILIKE ${searchLike}
+          OR user_id ILIKE ${searchLike}
+        )
     `;
 
     const rows = await sql<UserActivityRow[]>`
       SELECT *
       FROM public.user_activities
-      WHERE user_id = ${userId}
+      WHERE user_id = ANY(${activityUserIds})
         AND (${start}::timestamptz IS NULL OR timestamp_utc >= ${start})
         AND (${end}::timestamptz IS NULL OR timestamp_utc <= ${end})
         AND (${eventTypes}::text[] IS NULL OR event_type = ANY(${eventTypes}))
         AND (${contexts}::text[] IS NULL OR context = ANY(${contexts}))
         AND (${skills}::text[] IS NULL OR skill = ANY(${skills}))
         AND (${statuses}::text[] IS NULL OR status = ANY(${statuses}))
+        AND (
+          ${hasScore}::text IS NULL
+          OR ${hasScore}::text = ''
+          OR (${hasScore}::text = 'yes' AND score_overall IS NOT NULL)
+          OR (${hasScore}::text = 'no' AND score_overall IS NULL)
+        )
+        AND (
+          ${searchLike}::text IS NULL
+          OR attempt_id ILIKE ${searchLike}
+          OR content_id ILIKE ${searchLike}
+          OR notes ILIKE ${searchLike}
+          OR email ILIKE ${searchLike}
+          OR user_id ILIKE ${searchLike}
+        )
       ORDER BY timestamp_utc DESC
       LIMIT ${limit} OFFSET ${offset}
     `;
@@ -89,9 +134,17 @@ export async function GET(
         COALESCE(SUM(CASE WHEN context = 'practice' THEN COALESCE(llm_tokens_prompt,0)+COALESCE(llm_tokens_completion,0) ELSE 0 END),0)::int AS practice_tokens,
         COALESCE(SUM(CASE WHEN context = 'mock' THEN COALESCE(llm_tokens_prompt,0)+COALESCE(llm_tokens_completion,0) ELSE 0 END),0)::int AS mock_tokens,
         COALESCE(SUM(CASE WHEN context = 'learning' THEN COALESCE(llm_tokens_prompt,0)+COALESCE(llm_tokens_completion,0) ELSE 0 END),0)::int AS learning_tokens,
-        MAX(timestamp_utc) AS last_active
+        MAX(timestamp_utc) FILTER (
+          WHERE event_type IN (
+            'practice_attempt_started',
+            'practice_attempt_completed',
+            'mock_attempt_started',
+            'mock_attempt_completed',
+            'login'
+          )
+        ) AS last_active
       FROM public.user_activities
-      WHERE user_id = ${userId}
+      WHERE user_id = ANY(${activityUserIds})
         AND (${start}::timestamptz IS NULL OR timestamp_utc >= ${start})
         AND (${end}::timestamptz IS NULL OR timestamp_utc <= ${end})
     `;
@@ -101,7 +154,9 @@ export async function GET(
       const db = documentsClient.db();
       userDoc = (await db
         .collection("users")
-        .findOne(matchUsersCollectionByWebUserIds(userId))) as Record<string, unknown> | null;
+        .findOne(
+          matchUsersCollectionByWebUserIds(...activityUserIds)
+        )) as Record<string, unknown> | null;
     } catch {
       userDoc = null;
     }
@@ -125,6 +180,7 @@ export async function GET(
         lastActive: summary?.last_active || null,
       },
       user: userDoc,
+      activityUserIds,
     });
   } catch (error) {
     console.error("Error fetching user activity:", error);

@@ -44,6 +44,7 @@ const IncompletePartsModal: React.FC<IncompletePartsModalProps> = ({
   };
 
   const handleBackToExams = () => {
+    onClose();
     npsAwareNavigate("/exam-overview", (href) => router.push(href));
   };
 

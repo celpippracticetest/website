@@ -111,8 +111,8 @@ export default function UserDetailPage() {
     totalPages: 0,
   });
 
-  // Filters
-  const [timeRange, setTimeRange] = useState("7days");
+  // Filters — default all-time so CMS detail matches list rollups (many users are idle >7d)
+  const [timeRange, setTimeRange] = useState("all");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [eventType, setEventType] = useState("");
