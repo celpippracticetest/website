@@ -3,7 +3,7 @@ import PremiumPlanModal from "@/components/premium-plan/PremiumPlanModal";
 import "./globals.css";
 import "../../sentry.client.config"; // Initialize Sentry on client
 import NextTopLoader from "nextjs-toploader";
-import { Analytics } from "@vercel/analytics/react";
+import VercelAnalytics from "@/components/analytics/VercelAnalytics";
 import { SupabaseAuthHashRecoveryRedirect } from "@/components/auth/SupabaseAuthHashRecoveryRedirect";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
@@ -260,7 +260,7 @@ export default async function RootLayout({
         <LazyIntercom />
         <PerformanceMonitor />
         <CriticalCSS />
-        <Analytics />
+        <VercelAnalytics />
 
         {/* Direct GA4 so KPI events reach Analytics even before / without GTM. */}
         <Script

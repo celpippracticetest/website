@@ -3,6 +3,9 @@
 import { useEffect } from "react";
 import { trackKpi } from "@/lib/analytics";
 
+/** Only surface console noise for tasks that can affect INP; milder ones stay silent. */
+const LONG_TASK_WARN_MS = 200;
+
 export default function PerformanceMonitor() {
   useEffect(() => {
     if (process.env.NODE_ENV !== "production") return;
@@ -15,7 +18,9 @@ export default function PerformanceMonitor() {
           if (
             metric.name === "LCP" ||
             metric.name === "INP" ||
-            metric.name === "CLS"
+            metric.name === "CLS" ||
+            metric.name === "FCP" ||
+            metric.name === "TTFB"
           ) {
             trackKpi.webVitals({
               metricName: metric.name,
@@ -25,38 +30,14 @@ export default function PerformanceMonitor() {
         };
         onCLS(send);
         onINP(send);
-        onFCP(console.log);
+        onFCP(send);
         onLCP(send);
-        onTTFB(console.log);
+        onTTFB(send);
       } catch (e) {
         console.error("web-vitals load failed:", e);
       }
     })();
 
-    let measureObserver: PerformanceObserver | null = null;
-    if (
-      typeof PerformanceObserver !== "undefined" &&
-      (!("supportedEntryTypes" in PerformanceObserver) ||
-        PerformanceObserver.supportedEntryTypes?.includes("measure"))
-    ) {
-      measureObserver = new PerformanceObserver((list) => {
-        for (const entry of list.getEntries()) {
-          if (entry.entryType === "measure") {
-            const duration = entry.duration;
-            if (duration > 100) {
-              console.warn(
-                `Slow JS execution: ${entry.name} took ${duration.toFixed(1)}ms`,
-              );
-            }
-          }
-        }
-      });
-      try {
-        measureObserver.observe({ entryTypes: ["measure"] });
-      } catch {}
-    }
-
-    // Long tasks (Long Tasks API)
     let longTaskObserver: PerformanceObserver | null = null;
     if (
       typeof PerformanceObserver !== "undefined" &&
@@ -64,19 +45,20 @@ export default function PerformanceMonitor() {
     ) {
       longTaskObserver = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
-          const d = entry.duration as number;
-          if (d > 50) {
-            console.warn(`Long task detected: ${d.toFixed(1)}ms`, entry);
+          const duration = entry.duration;
+          if (duration > LONG_TASK_WARN_MS) {
+            console.warn(`Long task detected: ${duration.toFixed(1)}ms`, entry);
           }
         }
       });
       try {
         longTaskObserver.observe({ entryTypes: ["longtask"] });
-      } catch {}
+      } catch {
+        // Long Tasks API not available in this browser.
+      }
     }
 
     return () => {
-      measureObserver?.disconnect();
       longTaskObserver?.disconnect();
     };
   }, []);
