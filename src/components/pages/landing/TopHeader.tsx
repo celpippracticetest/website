@@ -166,6 +166,7 @@ const TopHeader = () => {
               width={84}
               height={40}
               className="w-[63px] screen744:!w-[84px] h-auto"
+              style={{ height: "auto" }}
               priority={true}
               sizes="(max-width: 743px) 63px, 84px"
               quality={90}

@@ -2,7 +2,6 @@
 import AuthButtons from "../pages/landing/AuthButtons";
 import { Button } from "./Button";
 import SvgCrown from "./icons/crown";
-import SvgCup from "./icons/cup";
 import useStore from "@/store";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
@@ -18,14 +17,6 @@ const TopHeaderRightSide = () => {
   return (
     <div className="flex gap-[16px] screen744:gap-[32px] screen1280:!gap-[28px]">
       <div className="flex gap-[12px] items-center">
-        <Button
-          className="hidden screen744:!flex"
-          round="md"
-          href="/league"
-          aria-label="Open League"
-        >
-          <SvgCup />
-        </Button>
         {!isLoaded ? (
           <>
             <Skeleton className="screen744:!hidden flex w-[40px] h-[40px] rounded-sm" />

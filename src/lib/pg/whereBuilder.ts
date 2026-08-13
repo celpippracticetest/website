@@ -137,9 +137,9 @@ export function documentFilterToSql(
   const entries = Object.entries(filter);
 
   /**
-   * Compound AND on multiple primitive fields (e.g. `{ userId, seasonId }` for
-   * `user_league_points`). Without this, `documentFilterToSql` returned null → full
-   * collection scan + mingo, which breaks league updates at scale (maxScan / timeouts).
+   * Compound AND on multiple primitive fields (e.g. `{ userId, seasonId }`).
+   * Without this, `documentFilterToSql` returned null → full collection scan +
+   * mingo, which breaks updates at scale (maxScan / timeouts).
    */
   if (entries.length > 1) {
     const parts: string[] = ["collection = $1"];

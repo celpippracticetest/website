@@ -10,9 +10,9 @@ const rows = await sql`
   WHERE collection IN (
     'exams','exam-parts','users','blogs','plans','onboarding','onboarding_new_results','onboarding_results',
     'leadCaptureLeads','withdrawalRequests','cancellation_flow_events','cancellation_surveys',
-    'home_ab_events','internalLinks','leadCaptureConfig','league_group_counters','marketing_assets',
+    'home_ab_events','internalLinks','leadCaptureConfig','marketing_assets',
     'messageCounts','partnerCommissions','paypal_subscription_grants','paypal_subscription_pending',
-    'pricing_ab_events','profession_pages','reminderEmailConfigs','user_league_points',
+    'pricing_ab_events','profession_pages','reminderEmailConfigs',
     'useractivityreminders','worddetails'
   )
   GROUP BY collection

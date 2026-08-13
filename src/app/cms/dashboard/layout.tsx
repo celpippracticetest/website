@@ -63,7 +63,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
     return pathname === `/cms/${key}`;
   };
   return (
-    <div className="min-h-screen w-full md:flex md:flex-row">
+    <div className="min-h-screen w-full md:flex md:h-[100dvh] md:flex-row md:overflow-hidden">
       <div className="flex items-center justify-between p-3 border-b md:hidden bg-white sticky top-0 z-40">
         <button
           type="button"
@@ -278,30 +278,6 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
                 </Link>
               </li>
 
-              {/* League Management */}
-              <li className="mt-3">
-                <Link
-                  href="/cms/dashboard/league"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center ${
-                    collapsed ? "justify-center" : "justify-start"
-                  } gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                    pathname.startsWith("/cms/dashboard/league")
-                      ? "bg-gray-100 text-gray-900"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                  }`}
-                  aria-current={
-                    pathname.startsWith("/cms/dashboard/league")
-                      ? "page"
-                      : undefined
-                  }
-                  title="League Management"
-                >
-                  <span aria-hidden>🏆</span>
-                  {!collapsed && <span>League</span>}
-                </Link>
-              </li>
-
               {/* Exams group header */}
               <li className="mt-1 md:mt-3">
                 {!collapsed && (
@@ -477,7 +453,9 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Content */}
-      <main className="flex-1 p-3 md:p-6">{children}</main>
+      <main className="flex min-h-0 flex-1 flex-col overflow-y-auto p-3 md:p-6">
+        {children}
+      </main>
     </div>
   );
 }

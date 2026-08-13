@@ -1,4 +1,3 @@
-import { ActivityLogger } from "@/lib/userActivity";
 import { runPracticeSubmitSideEffects } from "@/lib/practiceSubmitSideEffects";
 
 type SubmitAnswersParams = {
@@ -6,18 +5,6 @@ type SubmitAnswersParams = {
   answers: Record<string, string>;
   skill: "Reading" | "Listening";
   timeRemaining: number;
-  pointsAwarded: boolean;
-  setPointsAwarded: (value: boolean) => void;
-  addPoints: (
-    points: number,
-    pointsType: "practiceSessions",
-    timeSpent?: string,
-  ) => Promise<unknown>;
-  checkTrophyAchievements: (
-    points: number,
-    pointsType: "practiceSessions",
-    timeSpent?: string,
-  ) => Promise<unknown>;
 };
 
 export async function submitObjectivePracticeAnswers({
@@ -25,10 +12,6 @@ export async function submitObjectivePracticeAnswers({
   answers,
   skill,
   timeRemaining,
-  pointsAwarded,
-  setPointsAwarded,
-  addPoints,
-  checkTrophyAchievements,
 }: SubmitAnswersParams): Promise<{ overall?: number } | null> {
   if (Object.keys(answers).length === 0) {
     return null;
@@ -57,10 +40,6 @@ export async function submitObjectivePracticeAnswers({
       overallScore: overall,
       result,
       durationSeconds: timeRemaining,
-      pointsAwarded,
-      onPointsAwarded: () => setPointsAwarded(true),
-      addPoints,
-      checkTrophyAchievements,
     });
 
     return { overall };

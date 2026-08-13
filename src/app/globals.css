@@ -35,11 +35,17 @@
 #sign-up-button button{
   cursor: pointer;
 }
-/* Prevent layout shifts */
+/* Prevent layout shifts. next/image (data-nimg) owns its sizing via
+   width/height props — applying height:auto here triggers aspect-ratio warnings. */
 img,
 video,
 svg {
   max-width: 100%;
+}
+
+img:not([data-nimg]),
+video,
+svg {
   height: auto;
 }
 

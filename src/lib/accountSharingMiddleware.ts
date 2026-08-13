@@ -48,7 +48,6 @@ export function shouldEnforceAccountSharingSignals(
     "/plans",
     "/referral",
     "/learning",
-    "/league",
     "/words",
     "/flow",
   ];

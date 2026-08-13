@@ -225,7 +225,8 @@ const Hero = () => {
                   alt="People icon showing 20,000+ CELPIP graduates trusting CELPIPPRACTICETEST.com"
                   width={65}
                   height={28}
-                  className="max-h-[25px]"
+                  className="max-h-[25px] w-auto"
+                  style={{ width: "auto" }}
                   priority
                 />
                 <h2 className="text-text1 font-medium leading-[28px] screen1280:!text-[14px] text-[10px]">

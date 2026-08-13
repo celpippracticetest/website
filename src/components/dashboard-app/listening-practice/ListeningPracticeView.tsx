@@ -21,9 +21,6 @@ import SvgChevronRight from "@/components/icons/ChevronRight";
 import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
 import { trackKpi } from "@/lib/analytics";
 import { ActivityLogger } from "@/lib/userActivity";
-import { useLeaguePoints } from "@/hooks/useLeaguePoints";
-import { useTrophySystem } from "@/hooks/useTrophySystem";
-import TrophyModal from "@/components/modal/TrophyModal";
 import StatBadge from "@/components/shared/StatBadge";
 import { usePracticeCount } from "@/hooks/usePracticeCount";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
@@ -72,17 +69,7 @@ const ListeningPracticeView = ({
   const useDropdownForQuestions = taskNum > 3;
 
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [pointsAwarded, setPointsAwarded] = useState(false);
   const { user, isSignedIn, isLoaded } = useHybridWebUser();
-  const { addPoints } = useLeaguePoints();
-  const {
-    isModalOpen,
-    currentTrophy,
-    userPoints,
-    timeSpent,
-    closeTrophy,
-    checkTrophyAchievements,
-  } = useTrophySystem();
   const freeUser = user?.publicMetadata.plan == "free";
   const noUser = isLoaded ? !isSignedIn : false;
   const [showModal, setShowModal] = useState(false);
@@ -228,28 +215,6 @@ const ListeningPracticeView = ({
               result,
               time,
             );
-
-            // Add league points (only once) and confirm success
-            if (!pointsAwarded) {
-              const res = await addPoints(
-                10,
-                "practiceSessions",
-                `${Math.floor(time / 60)} minutes`,
-              );
-              if (res && (res as any).success) {
-                setPointsAwarded(true);
-                // Check for trophy achievements only after success
-                await checkTrophyAchievements(
-                  10,
-                  "practiceSessions",
-                  `${Math.floor(time / 60)}:${time % 60}`,
-                );
-              } else {
-                console.warn(
-                  "addPoints failed; skipping trophy check and award flag",
-                );
-              }
-            }
           }
         } catch (error) {
           // Optionally handle error
@@ -297,10 +262,6 @@ const ListeningPracticeView = ({
       answers: selectedAnswers,
       skill: "Listening",
       timeRemaining: time,
-      pointsAwarded,
-      setPointsAwarded,
-      addPoints,
-      checkTrophyAchievements,
     });
 
     if (practiceIndex < allPractices.length - 1) {
@@ -774,15 +735,6 @@ const ListeningPracticeView = ({
           )} */}
         </Card>
       </div>
-
-      {/* Trophy Modal */}
-      <TrophyModal
-        isOpen={isModalOpen}
-        onClose={closeTrophy}
-        trophy={currentTrophy}
-        userPoints={userPoints}
-        timeSpent={timeSpent}
-      />
     </div>
   );
 };

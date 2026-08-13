@@ -105,7 +105,7 @@ export function rowToDocument(mongoId: string, bodyJson: unknown): AppDoc {
   if (taskId !== undefined) doc.taskId = taskId;
 
   // Do NOT touch `type` here. Each collection stores its own case (`tasks.type='practice'`,
-  // `practices.type='LISTENING'`, `leagues.type='gold'`, …); blanket-uppercasing breaks both
+  // `practices.type='LISTENING'`, …); blanket-uppercasing breaks both
   // mingo `$match` filters and Zod enum parsing. Repos that need case-insensitive matching
   // (e.g. `practice.repo.ts`) normalize the filter side instead.
   coerceNumericDocFields(doc as Record<string, unknown>, [

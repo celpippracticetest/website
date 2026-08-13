@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
       updatedAt: new Date(),
     });
 
-    // Calculate overall score for league points system
+    // Calculate overall score for the response payload
     const questions = flattenPracticeQuestions(practice);
     const totalQuestions = questions.length || 1;
     const correctAnswers = questions.reduce((count, question, index) => {

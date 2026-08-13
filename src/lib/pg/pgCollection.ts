@@ -63,7 +63,23 @@ function mapRowsToAppDocs<T extends AppDoc = AppDoc>(rows: unknown[]): T[] {
     if (r == null || typeof r !== "object") continue;
     const row = r as { mongo_id?: unknown; body?: unknown };
     if (typeof row.mongo_id !== "string") continue;
-    out.push(rowToDocument(row.mongo_id, row.body) as T);
+    if (row.body == null || typeof row.body !== "object" || Array.isArray(row.body)) {
+      console.warn(
+        `[pgCollection] Skipping non-object document body mongo_id=${row.mongo_id} typeof=${
+          row.body === null ? "null" : Array.isArray(row.body) ? "array" : typeof row.body
+        }`
+      );
+      continue;
+    }
+    try {
+      out.push(rowToDocument(row.mongo_id, row.body) as T);
+    } catch (err) {
+      // One corrupt body must not fail the whole collection read.
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(
+        `[pgCollection] Skipping corrupt document mongo_id=${row.mongo_id}: ${msg}`
+      );
+    }
   }
   return out;
 }
@@ -155,6 +171,15 @@ function mapSqlRowsToPartitionBodies(rows: unknown[]): PartitionBodyRow[] {
     if (r == null || typeof r !== "object") continue;
     const row = r as { mongo_id?: unknown; body?: unknown };
     if (typeof row.mongo_id !== "string") continue;
+    // Skip scalar/corrupt jsonb bodies (e.g. a stray string "SPEAKING").
+    if (row.body == null || typeof row.body !== "object" || Array.isArray(row.body)) {
+      console.warn(
+        `[pgCollection] Skipping non-object document body mongo_id=${row.mongo_id} typeof=${
+          row.body === null ? "null" : Array.isArray(row.body) ? "array" : typeof row.body
+        }`
+      );
+      continue;
+    }
     out.push({ mongo_id: row.mongo_id, body: row.body });
   }
   return out;
@@ -178,7 +203,7 @@ async function loadPartitionBodies(
   if (dedicated && (await dedicatedTableIsLive(sql, dedicated))) {
     const table = assertSafeDedicatedTable(dedicated);
     rows = await sql.unsafe(
-      `SELECT mongo_id, body FROM public.${table} ORDER BY mongo_id`
+      `SELECT mongo_id, body FROM public.${table} WHERE jsonb_typeof(body) = 'object' ORDER BY mongo_id`
     );
   } else {
     // ORDER BY mongo_id steers the planner to app_documents_pkey; bare
@@ -187,6 +212,7 @@ async function loadPartitionBodies(
       SELECT mongo_id, body
       FROM app_documents
       WHERE collection = ${collectionKey}
+        AND jsonb_typeof(body) = 'object'
       ORDER BY mongo_id
     `;
   }

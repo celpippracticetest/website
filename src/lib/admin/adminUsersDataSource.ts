@@ -8,7 +8,6 @@ import {
 } from "@/lib/subscriptionAccess";
 import {
   loadUserActivityMetricsByUserId,
-  USER_ENGAGEMENT_EVENT_TYPES,
 } from "@/lib/userActivity/userActivitiesPg";
 import { getLiveStripeActiveSubscriberKeys } from "@/lib/admin/liveStripeActiveSubscribers";
 
@@ -180,31 +179,27 @@ function mergeActivityMetrics(
   return merged;
 }
 
+type AdminUsersSortMetricMode = "none" | "lastActivity";
+
+/**
+ * Default CMS sort is lastActivity. Joining/aggregating `user_activities`
+ * (~1M rows) for every profile before LIMIT was taking ~100s+ via the pooler.
+ * `user_activity_reminders.last_engaged_at` is maintained on engagement events
+ * and is the cheap source of truth for list ordering; page rows still get full
+ * activity metrics after LIMIT.
+ */
+function adminUsersSortMetricMode(sortBy: string): AdminUsersSortMetricMode {
+  return sortBy === "lastActivity" ? "lastActivity" : "none";
+}
+
 function orderByCombinedSql(
   sortBy: string,
   sortOrder: "asc" | "desc",
-  withActivityMetrics: boolean
+  sortMetricMode: AdminUsersSortMetricMode
 ): string {
   const dir = sortOrder === "asc" ? "ASC" : "DESC";
-  if (withActivityMetrics) {
-    switch (sortBy) {
-      case "createdAt":
-        return `created_at ${dir} NULLS LAST, stable_id`;
-      case "totalTokens":
-        return `sort_total_tokens ${dir} NULLS LAST, stable_id`;
-      case "plan":
-        return `lower(trim(coalesce(plan, ''))) ${dir} NULLS LAST, stable_id`;
-      case "totalSpend": {
-        const spendExpr =
-          "NULLIF(TRIM(COALESCE(public_metadata->>'totalSpend', '')), '')::numeric";
-        return `${spendExpr} ${dir} NULLS LAST, stable_id`;
-      }
-      case "totalActivities":
-      case "riskScore":
-      case "lastActivity":
-      default:
-        return `sort_last_activity ${dir} NULLS LAST, stable_id`;
-    }
+  if (sortMetricMode === "lastActivity") {
+    return `sort_last_activity ${dir} NULLS LAST, stable_id`;
   }
 
   switch (sortBy) {
@@ -222,14 +217,10 @@ function orderByCombinedSql(
     case "riskScore":
     case "lastActivity":
     default:
+      // totalTokens / activity sorts approximate via profile updated_at to avoid
+      // a full user_activities rollup (see adminUsersSortMetricMode).
       return `updated_at ${dir} NULLS LAST, stable_id`;
   }
-}
-
-function needsActivitySortMetrics(sortBy: string): boolean {
-  // lastActivity + totalTokens need an activity rollup before LIMIT so ORDER BY
-  // matches the displayed engagement timestamp / token totals.
-  return sortBy === "totalTokens" || sortBy === "lastActivity";
 }
 
 /** Profiles + auth.users that never got a user_profiles row. */
@@ -356,8 +347,8 @@ export async function listAdminUsersFromUserProfiles(
   const { search, page, limit, sortBy, sortOrder, subscriptionStatus } = params;
   const offset = (page - 1) * limit;
   const q = search.trim();
-  const withActivityMetrics = needsActivitySortMetrics(sortBy);
-  const order = orderByCombinedSql(sortBy, sortOrder, withActivityMetrics);
+  const sortMetricMode = adminUsersSortMetricMode(sortBy);
+  const order = orderByCombinedSql(sortBy, sortOrder, sortMetricMode);
 
   let subFilter = sql``;
   if (
@@ -449,199 +440,153 @@ export async function listAdminUsersFromUserProfiles(
   `;
   const totalCount = countRows[0]?.c ?? 0;
 
-  const dataRows = withActivityMetrics
-    ? await sql<ProfileListRow[]>`
-        WITH combined AS (
-          ${sql.unsafe(COMBINED_ADMIN_USERS_SQL)}
-        ),
-        filtered AS (
-          SELECT
-            c.stable_id,
-            c.supabase_auth_user_id,
-            c.legacy_clerk_user_id,
-            c.profile_id,
-            c.email,
-            c.first_name,
-            c.last_name,
-            c.plan,
-            c.plan_type,
-            c.public_metadata,
-            c.stripe_customer_id,
-            c.created_at,
-            c.updated_at
-          FROM combined c
-          WHERE 1 = 1
-          ${subFilter}
-          ${searchFilter}
-        ),
-        deduped AS (
-          SELECT DISTINCT ON (stable_id)
-            stable_id,
-            supabase_auth_user_id,
-            legacy_clerk_user_id,
-            profile_id,
-            email,
-            first_name,
-            last_name,
-            plan,
-            plan_type,
-            public_metadata,
-            stripe_customer_id,
-            created_at,
-            updated_at
-          FROM filtered
-          ORDER BY
-            stable_id,
-            (supabase_auth_user_id IS NOT NULL) DESC,
-            updated_at DESC NULLS LAST
-        ),
-        activity_by_id AS (
-          SELECT
-            ua.user_id,
-            COALESCE(
-              SUM(
-                COALESCE(ua.llm_tokens_prompt, 0) + COALESCE(ua.llm_tokens_completion, 0)
-              ),
-              0
-            )::bigint AS total_tokens,
-            MAX(ua.timestamp_utc) FILTER (
-              WHERE ua.event_type = ANY(${[...USER_ENGAGEMENT_EVENT_TYPES]})
-            ) AS last_activity
-          FROM public.user_activities ua
-          WHERE ua.user_id IN (
-            SELECT f.stable_id FROM deduped f
-            UNION
-            SELECT f.supabase_auth_user_id FROM deduped f
-            WHERE f.supabase_auth_user_id IS NOT NULL
-            UNION
-            SELECT f.legacy_clerk_user_id FROM deduped f
-            WHERE NULLIF(TRIM(f.legacy_clerk_user_id), '') IS NOT NULL
-            UNION
-            SELECT f.profile_id FROM deduped f
-            WHERE f.profile_id IS NOT NULL
+  const dataRows =
+    sortMetricMode === "lastActivity"
+      ? await sql<ProfileListRow[]>`
+          WITH combined AS (
+            ${sql.unsafe(COMBINED_ADMIN_USERS_SQL)}
+          ),
+          filtered AS (
+            SELECT
+              c.stable_id,
+              c.supabase_auth_user_id,
+              c.legacy_clerk_user_id,
+              c.profile_id,
+              c.email,
+              c.first_name,
+              c.last_name,
+              c.plan,
+              c.plan_type,
+              c.public_metadata,
+              c.stripe_customer_id,
+              c.created_at,
+              c.updated_at
+            FROM combined c
+            WHERE 1 = 1
+            ${subFilter}
+            ${searchFilter}
+          ),
+          deduped AS (
+            SELECT DISTINCT ON (stable_id)
+              stable_id,
+              supabase_auth_user_id,
+              legacy_clerk_user_id,
+              profile_id,
+              email,
+              first_name,
+              last_name,
+              plan,
+              plan_type,
+              public_metadata,
+              stripe_customer_id,
+              created_at,
+              updated_at
+            FROM filtered
+            ORDER BY
+              stable_id,
+              (supabase_auth_user_id IS NOT NULL) DESC,
+              updated_at DESC NULLS LAST
           )
-          GROUP BY ua.user_id
-        )
-        SELECT
-          f.stable_id,
-          f.supabase_auth_user_id,
-          f.legacy_clerk_user_id,
-          f.profile_id,
-          f.email,
-          f.first_name,
-          f.last_name,
-          f.plan,
-          f.plan_type,
-          f.public_metadata,
-          f.stripe_customer_id,
-          f.created_at,
-          f.updated_at,
-          COALESCE(
+          SELECT
+            f.stable_id,
+            f.supabase_auth_user_id,
+            f.legacy_clerk_user_id,
+            f.profile_id,
+            f.email,
+            f.first_name,
+            f.last_name,
+            f.plan,
+            f.plan_type,
+            f.public_metadata,
+            f.stripe_customer_id,
+            f.created_at,
+            f.updated_at,
             (
-              SELECT SUM(a.total_tokens)
-              FROM activity_by_id a
-              WHERE a.user_id = f.stable_id
+              SELECT MAX(r.last_engaged_at)
+              FROM public.user_activity_reminders r
+              WHERE r.user_id = f.stable_id
                  OR (
                    f.supabase_auth_user_id IS NOT NULL
-                   AND a.user_id = f.supabase_auth_user_id
+                   AND r.user_id = f.supabase_auth_user_id
                  )
                  OR (
                    NULLIF(TRIM(f.legacy_clerk_user_id), '') IS NOT NULL
-                   AND a.user_id = f.legacy_clerk_user_id
+                   AND r.user_id = f.legacy_clerk_user_id
                  )
                  OR (
                    f.profile_id IS NOT NULL
-                   AND a.user_id = f.profile_id
+                   AND r.user_id = f.profile_id
                  )
-            ),
-            0
-          ) AS sort_total_tokens,
-          (
-            SELECT MAX(a.last_activity)
-            FROM activity_by_id a
-            WHERE a.user_id = f.stable_id
-               OR (
-                 f.supabase_auth_user_id IS NOT NULL
-                 AND a.user_id = f.supabase_auth_user_id
-               )
-               OR (
-                 NULLIF(TRIM(f.legacy_clerk_user_id), '') IS NOT NULL
-                 AND a.user_id = f.legacy_clerk_user_id
-               )
-               OR (
-                 f.profile_id IS NOT NULL
-                 AND a.user_id = f.profile_id
-               )
-          ) AS sort_last_activity
-        FROM deduped f
-        ORDER BY ${sql.unsafe(order)}
-        LIMIT ${limit}
-        OFFSET ${offset}
-      `
-    : await sql<ProfileListRow[]>`
-        WITH combined AS (
-          ${sql.unsafe(COMBINED_ADMIN_USERS_SQL)}
-        ),
-        filtered AS (
+            ) AS sort_last_activity
+          FROM deduped f
+          ORDER BY ${sql.unsafe(order)}
+          LIMIT ${limit}
+          OFFSET ${offset}
+        `
+      : await sql<ProfileListRow[]>`
+          WITH combined AS (
+            ${sql.unsafe(COMBINED_ADMIN_USERS_SQL)}
+          ),
+          filtered AS (
+            SELECT
+              c.stable_id,
+              c.supabase_auth_user_id,
+              c.legacy_clerk_user_id,
+              c.profile_id,
+              c.email,
+              c.first_name,
+              c.last_name,
+              c.plan,
+              c.plan_type,
+              c.public_metadata,
+              c.stripe_customer_id,
+              c.created_at,
+              c.updated_at
+            FROM combined c
+            WHERE 1 = 1
+            ${subFilter}
+            ${searchFilter}
+          ),
+          deduped AS (
+            SELECT DISTINCT ON (stable_id)
+              stable_id,
+              supabase_auth_user_id,
+              legacy_clerk_user_id,
+              profile_id,
+              email,
+              first_name,
+              last_name,
+              plan,
+              plan_type,
+              public_metadata,
+              stripe_customer_id,
+              created_at,
+              updated_at
+            FROM filtered
+            ORDER BY
+              stable_id,
+              (supabase_auth_user_id IS NOT NULL) DESC,
+              updated_at DESC NULLS LAST
+          )
           SELECT
-            c.stable_id,
-            c.supabase_auth_user_id,
-            c.legacy_clerk_user_id,
-            c.profile_id,
-            c.email,
-            c.first_name,
-            c.last_name,
-            c.plan,
-            c.plan_type,
-            c.public_metadata,
-            c.stripe_customer_id,
-            c.created_at,
-            c.updated_at
-          FROM combined c
-          WHERE 1 = 1
-          ${subFilter}
-          ${searchFilter}
-        ),
-        deduped AS (
-          SELECT DISTINCT ON (stable_id)
-            stable_id,
-            supabase_auth_user_id,
-            legacy_clerk_user_id,
-            profile_id,
-            email,
-            first_name,
-            last_name,
-            plan,
-            plan_type,
-            public_metadata,
-            stripe_customer_id,
-            created_at,
-            updated_at
-          FROM filtered
-          ORDER BY
-            stable_id,
-            (supabase_auth_user_id IS NOT NULL) DESC,
-            updated_at DESC NULLS LAST
-        )
-        SELECT
-          f.stable_id,
-          f.supabase_auth_user_id,
-          f.legacy_clerk_user_id,
-          f.profile_id,
-          f.email,
-          f.first_name,
-          f.last_name,
-          f.plan,
-          f.plan_type,
-          f.public_metadata,
-          f.stripe_customer_id,
-          f.created_at,
-          f.updated_at
-        FROM deduped f
-        ORDER BY ${sql.unsafe(order)}
-        LIMIT ${limit}
-        OFFSET ${offset}
-      `;
+            f.stable_id,
+            f.supabase_auth_user_id,
+            f.legacy_clerk_user_id,
+            f.profile_id,
+            f.email,
+            f.first_name,
+            f.last_name,
+            f.plan,
+            f.plan_type,
+            f.public_metadata,
+            f.stripe_customer_id,
+            f.created_at,
+            f.updated_at
+          FROM deduped f
+          ORDER BY ${sql.unsafe(order)}
+          LIMIT ${limit}
+          OFFSET ${offset}
+        `;
   const activityIdCandidates = dataRows.flatMap((r) => [
     r.stable_id,
     r.supabase_auth_user_id,

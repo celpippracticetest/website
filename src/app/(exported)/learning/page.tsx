@@ -23,7 +23,6 @@ import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import UpgradeModal from "@/components/modal/UpgradeModal";
 import LoginModal from "@/components/modal/LoginModal";
 import { ActivityLogger } from "@/lib/userActivity";
-import { useLeaguePoints } from "@/hooks/useLeaguePoints";
 import Link from "next/link";
 import ChatbotMessageContent from "@/components/chatbot/ChatbotMessageContent";
 
@@ -53,7 +52,6 @@ const Page = () => {
   const [serverMessageCount, setServerMessageCount] = useState(0);
   const userContext = useUserContext();
   const { user, isLoaded, isSignedIn } = useHybridWebUser();
-  const { addPoints } = useLeaguePoints();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Check if user is free or premium
@@ -405,9 +403,6 @@ const Page = () => {
         data.usage?.completion_tokens || 0,
         attemptId,
       );
-
-      // Add league points for AI feedback
-      await addPoints(5, "aiFeedback");
 
       // Lock chat for free users/guests after first response and refresh server count
       if ((isFreeUser || noUser) && !isPremiumUser) {

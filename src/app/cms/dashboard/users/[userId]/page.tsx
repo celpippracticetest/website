@@ -4,9 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import {
   Download,
-  Calendar,
   Clock,
-  TrendingUp,
   AlertTriangle,
   CheckCircle,
   XCircle,
@@ -15,8 +13,6 @@ import {
   BookOpen,
   FileText,
   Users,
-  Globe,
-  Smartphone,
 } from "lucide-react";
 import {
   formatPlanLabel,
@@ -347,48 +343,61 @@ export default function UserDetailPage() {
     profile?.email ||
     `${userId.slice(0, 8)}...`;
 
+  const practicePct =
+    summary.practiceAttempted > 0
+      ? Math.round(
+          (summary.practiceCompleted / summary.practiceAttempted) * 100,
+        )
+      : 0;
+  const mockPct =
+    summary.mockAttempted > 0
+      ? Math.round((summary.mockCompleted / summary.mockAttempted) * 100)
+      : 0;
+  const totalTokens =
+    summary.practiceTokens + summary.mockTokens + summary.learningTokens;
+
+  const filterSelectClass =
+    "w-full min-w-0 px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none";
+
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              User Activity: {displayName}
-            </h1>
-            <p className="text-gray-600">Detailed activity log and analytics</p>
-          </div>
-          <button
-            onClick={exportToExcel}
-            className="flex cursor-pointer items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Download className="w-4 h-4" />
-            Export Excel
-          </button>
+    <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
+      <div className="flex shrink-0 items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="truncate text-lg font-bold text-gray-900">
+            User Activity: {displayName}
+          </h1>
+          <p className="truncate font-mono text-xs text-gray-500">
+            {profile?.userId || userId}
+          </p>
         </div>
+        <button
+          onClick={exportToExcel}
+          className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-md bg-blue-600 px-3 py-1.5 text-sm text-white transition-colors hover:bg-blue-700"
+        >
+          <Download className="h-4 w-4" />
+          Export
+        </button>
       </div>
 
-      {/* Profile from user_profiles (DB source of truth) */}
-      <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
+      <div className="shrink-0 rounded-md border bg-white px-3 py-2 shadow-sm">
         {profileError ? (
           <p className="text-sm text-red-600">{profileError}</p>
         ) : !profile ? (
           <p className="text-sm text-gray-500">Loading profile...</p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm">
             <div>
-              <p className="text-xs font-medium text-gray-500 uppercase">
-                Email
-              </p>
-              <p className="text-sm text-gray-900 mt-1">
-                {profile.email || "-"}
-              </p>
+              <span className="text-xs font-medium uppercase text-gray-500">
+                Email{" "}
+              </span>
+              <span className="text-gray-900">{profile.email || "-"}</span>
             </div>
-            <div>
-              <p className="text-xs font-medium text-gray-500 uppercase">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium uppercase text-gray-500">
                 Plan
-              </p>
+              </span>
               <span
-                className={`inline-flex items-center mt-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
                   hasPaidPracticeAccess(profile.plan)
                     ? "bg-purple-100 text-purple-800"
                     : "bg-gray-100 text-gray-800"
@@ -397,56 +406,48 @@ export default function UserDetailPage() {
                 {formatPlanLabel(profile.plan, profile.planType)}
               </span>
               {profile.planCancelled ? (
-                <p className="text-xs text-amber-600 mt-1">Cancelled</p>
+                <span className="text-xs text-amber-600">Cancelled</span>
               ) : null}
               <button
                 type="button"
                 onClick={() => setPlanModalOpen(true)}
-                className="mt-2 text-xs font-medium text-blue-600 hover:text-blue-800"
+                className="text-xs font-medium text-blue-600 hover:text-blue-800"
               >
                 Change plan…
               </button>
             </div>
             <div>
-              <p className="text-xs font-medium text-gray-500 uppercase">
-                Subscription
-              </p>
-              <p className="text-sm text-gray-900 mt-1 capitalize">
+              <span className="text-xs font-medium uppercase text-gray-500">
+                Subscription{" "}
+              </span>
+              <span className="capitalize text-gray-900">
                 {profile.subscriptionStatus}
-              </p>
+              </span>
               {profile.planRenewsAt ? (
-                <p className="text-xs text-gray-500 mt-1">
+                <span className="ml-1 text-xs text-gray-500">
                   Renews {formatDate(profile.planRenewsAt)}
-                </p>
+                </span>
               ) : null}
               {profile.planExpiresAt ? (
-                <p className="text-xs text-gray-500 mt-1">
+                <span className="ml-1 text-xs text-gray-500">
                   Expires {formatDate(profile.planExpiresAt)}
-                </p>
+                </span>
               ) : null}
             </div>
             <div>
-              <p className="text-xs font-medium text-gray-500 uppercase">
-                Spend
-              </p>
-              <p className="text-sm text-gray-900 mt-1">
+              <span className="text-xs font-medium uppercase text-gray-500">
+                Spend{" "}
+              </span>
+              <span className="text-gray-900">
                 {profile.totalSpend > 0
                   ? `${profile.totalSpend.toFixed(2)} ${profile.purchaseCurrency}`
                   : "-"}
-              </p>
+              </span>
               {profile.purchaseDate ? (
-                <p className="text-xs text-gray-500 mt-1">
+                <span className="ml-1 text-xs text-gray-500">
                   Purchased {formatDate(profile.purchaseDate)}
-                </p>
+                </span>
               ) : null}
-            </div>
-            <div className="md:col-span-2 lg:col-span-4">
-              <p className="text-xs font-medium text-gray-500 uppercase">
-                User ID
-              </p>
-              <p className="text-sm text-gray-700 mt-1 font-mono break-all">
-                {profile.userId}
-              </p>
             </div>
           </div>
         )}
@@ -474,101 +475,73 @@ export default function UserDetailPage() {
         }}
       />
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <div className="flex items-center">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <BookOpen className="w-6 h-6 text-blue-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Practice</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {summary.practiceAttempted} / {summary.practiceCompleted}
-              </p>
-              <p className="text-xs text-gray-500">
-                {summary.practiceAttempted > 0
-                  ? Math.round(
-                      (summary.practiceCompleted / summary.practiceAttempted) *
-                        100,
-                    )
-                  : 0}
-                % completion
-              </p>
-            </div>
+      <div className="grid shrink-0 grid-cols-2 gap-2 lg:grid-cols-4">
+        <div className="flex items-center gap-2 rounded-md border bg-white px-3 py-2 shadow-sm">
+          <div className="rounded bg-blue-100 p-1.5">
+            <BookOpen className="h-4 w-4 text-blue-600" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs text-gray-500">Practice</p>
+            <p className="truncate text-sm font-semibold text-gray-900">
+              {summary.practiceAttempted}/{summary.practiceCompleted}
+              <span className="ml-1 font-normal text-gray-500">
+                ({practicePct}%)
+              </span>
+            </p>
           </div>
         </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <div className="flex items-center">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <FileText className="w-6 h-6 text-green-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Exams</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {summary.mockAttempted} / {summary.mockCompleted}
-              </p>
-              <p className="text-xs text-gray-500">
-                {summary.mockAttempted > 0
-                  ? Math.round(
-                      (summary.mockCompleted / summary.mockAttempted) * 100,
-                    )
-                  : 0}
-                % completion
-              </p>
-            </div>
+        <div className="flex items-center gap-2 rounded-md border bg-white px-3 py-2 shadow-sm">
+          <div className="rounded bg-green-100 p-1.5">
+            <FileText className="h-4 w-4 text-green-600" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs text-gray-500">Exams</p>
+            <p className="truncate text-sm font-semibold text-gray-900">
+              {summary.mockAttempted}/{summary.mockCompleted}
+              <span className="ml-1 font-normal text-gray-500">
+                ({mockPct}%)
+              </span>
+            </p>
           </div>
         </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <div className="flex items-center">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Brain className="w-6 h-6 text-purple-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">LLM Tokens</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {(
-                  summary.practiceTokens +
-                  summary.mockTokens +
-                  summary.learningTokens
-                ).toLocaleString()}
-              </p>
-              <p className="text-xs text-gray-500">
-                P: {summary.practiceTokens.toLocaleString()} | M:{" "}
+        <div className="flex items-center gap-2 rounded-md border bg-white px-3 py-2 shadow-sm">
+          <div className="rounded bg-purple-100 p-1.5">
+            <Brain className="h-4 w-4 text-purple-600" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs text-gray-500">LLM Tokens</p>
+            <p className="truncate text-sm font-semibold text-gray-900">
+              {totalTokens.toLocaleString()}
+              <span className="ml-1 font-normal text-gray-500">
+                P:{summary.practiceTokens.toLocaleString()} M:
                 {summary.mockTokens.toLocaleString()}
-              </p>
-            </div>
+              </span>
+            </p>
           </div>
         </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <div className="flex items-center">
-            <div className="p-2 bg-orange-100 rounded-lg">
-              <Clock className="w-6 h-6 text-orange-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Last Active</p>
-              <p className="text-lg font-bold text-gray-900">
-                {summary.lastActive ? formatDate(summary.lastActive) : "Never"}
-              </p>
-            </div>
+        <div className="flex items-center gap-2 rounded-md border bg-white px-3 py-2 shadow-sm">
+          <div className="rounded bg-orange-100 p-1.5">
+            <Clock className="h-4 w-4 text-orange-600" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs text-gray-500">Last Active</p>
+            <p className="truncate text-sm font-semibold text-gray-900">
+              {summary.lastActive ? formatDate(summary.lastActive) : "Never"}
+            </p>
           </div>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="shrink-0 rounded-md border bg-white px-3 py-2 shadow-sm">
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-8">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Time Range
+            <label className="mb-0.5 block text-[11px] font-medium text-gray-600">
+              Time
             </label>
             <select
               value={timeRange}
               onChange={(e) => setTimeRange(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className={filterSelectClass}
             >
               <option value="7days">Last 7 days</option>
               <option value="30days">Last 30 days</option>
@@ -582,38 +555,38 @@ export default function UserDetailPage() {
           {timeRange === "custom" && (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Start Date
+                <label className="mb-0.5 block text-[11px] font-medium text-gray-600">
+                  Start
                 </label>
                 <input
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className={filterSelectClass}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  End Date
+                <label className="mb-0.5 block text-[11px] font-medium text-gray-600">
+                  End
                 </label>
                 <input
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className={filterSelectClass}
                 />
               </div>
             </>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Event Type
+            <label className="mb-0.5 block text-[11px] font-medium text-gray-600">
+              Event
             </label>
             <select
               value={eventType}
               onChange={(e) => setEventType(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className={filterSelectClass}
             >
               <option value="">All Events</option>
               <option value="practice_attempt_started,practice_attempt_completed">
@@ -631,13 +604,13 @@ export default function UserDetailPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="mb-0.5 block text-[11px] font-medium text-gray-600">
               Context
             </label>
             <select
               value={context}
               onChange={(e) => setContext(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className={filterSelectClass}
             >
               <option value="">All Contexts</option>
               <option value="practice">Practice</option>
@@ -649,13 +622,13 @@ export default function UserDetailPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="mb-0.5 block text-[11px] font-medium text-gray-600">
               Skill
             </label>
             <select
               value={skill}
               onChange={(e) => setSkill(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className={filterSelectClass}
             >
               <option value="">All Skills</option>
               <option value="Listening">Listening</option>
@@ -666,13 +639,13 @@ export default function UserDetailPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="mb-0.5 block text-[11px] font-medium text-gray-600">
               Status
             </label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className={filterSelectClass}
             >
               <option value="">All Status</option>
               <option value="started">Started</option>
@@ -683,13 +656,13 @@ export default function UserDetailPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Has Score
+            <label className="mb-0.5 block text-[11px] font-medium text-gray-600">
+              Score
             </label>
             <select
               value={hasScore}
               onChange={(e) => setHasScore(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className={filterSelectClass}
             >
               <option value="">All</option>
               <option value="yes">Yes</option>
@@ -698,105 +671,99 @@ export default function UserDetailPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="mb-0.5 block text-[11px] font-medium text-gray-600">
               Search
             </label>
             <input
               type="text"
-              placeholder="Search by ID, content..."
+              placeholder="ID, content…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className={filterSelectClass}
             />
           </div>
         </div>
       </div>
 
-      {/* Activities Table */}
-      <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border bg-white shadow-sm">
         {loading ? (
-          <div className="p-8 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-2 text-gray-600">Loading activities...</p>
+          <div className="flex flex-1 items-center justify-center p-6">
+            <div className="text-center">
+              <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-blue-600" />
+              <p className="mt-2 text-sm text-gray-600">
+                Loading activities...
+              </p>
+            </div>
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto">
+            <div className="min-h-0 flex-1 overflow-auto">
               <table className="w-full">
-                <thead className="bg-gray-50 border-b">
+                <thead className="sticky top-0 z-10 border-b bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Timestamp
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Event
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Context
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Skill
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Score
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Tokens
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      IP Address
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Notes
-                    </th>
+                    {[
+                      "Timestamp",
+                      "Event",
+                      "Context",
+                      "Skill",
+                      "Status",
+                      "Score",
+                      "Tokens",
+                      "IP",
+                      "Notes",
+                    ].map((label) => (
+                      <th
+                        key={label}
+                        className="px-3 py-2 text-left text-[11px] font-medium uppercase tracking-wider text-gray-500"
+                      >
+                        {label}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="divide-y divide-gray-100 bg-white">
                   {activities.map((activity) => (
                     <tr key={activity._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="whitespace-nowrap px-3 py-1.5 text-xs text-gray-500">
                         {formatDate(activity.timestampUtc)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="whitespace-nowrap px-3 py-1.5">
                         <div className="flex items-center">
                           {getEventIcon(activity.eventType)}
-                          <span className="ml-2 text-sm font-medium text-gray-900">
+                          <span className="ml-1.5 text-xs font-medium text-gray-900">
                             {activity.eventType.replace(/_/g, " ")}
                           </span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="whitespace-nowrap px-3 py-1.5 text-xs text-gray-900">
                         {activity.context}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="whitespace-nowrap px-3 py-1.5 text-xs text-gray-900">
                         {activity.skill || "-"}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="whitespace-nowrap px-3 py-1.5">
                         <div className="flex items-center">
                           {getStatusIcon(activity.status)}
-                          <span className="ml-2 text-sm text-gray-900">
+                          <span className="ml-1.5 text-xs text-gray-900">
                             {activity.status || "-"}
                           </span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="whitespace-nowrap px-3 py-1.5 text-xs text-gray-900">
                         {activity.scoreOverall
                           ? activity.scoreOverall.toFixed(1)
                           : "-"}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="whitespace-nowrap px-3 py-1.5 text-xs text-gray-900">
                         {(
                           activity.llmTokensPrompt +
                           activity.llmTokensCompletion
                         ).toLocaleString()}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="whitespace-nowrap px-3 py-1.5 text-xs text-gray-500">
                         {activity.ipAddress || "-"}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
+                      <td className="max-w-[10rem] truncate px-3 py-1.5 text-xs text-gray-500">
                         {activity.notes || "-"}
                       </td>
                     </tr>
@@ -805,75 +772,40 @@ export default function UserDetailPage() {
               </table>
             </div>
 
-            {/* Pagination */}
-            <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-              <div className="flex-1 flex justify-between sm:hidden">
+            <div className="flex shrink-0 items-center justify-between border-t border-gray-200 bg-white px-3 py-2">
+              <p className="text-xs text-gray-700">
+                {(pagination.page - 1) * pagination.limit + 1}–
+                {Math.min(
+                  pagination.page * pagination.limit,
+                  pagination.totalCount,
+                )}{" "}
+                of {pagination.totalCount}
+              </p>
+              <div className="inline-flex rounded-md shadow-sm">
                 <button
                   onClick={() =>
-                    setPagination({ ...pagination, page: pagination.page - 1 })
+                    setPagination({
+                      ...pagination,
+                      page: pagination.page - 1,
+                    })
                   }
                   disabled={pagination.page === 1}
-                  className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="relative inline-flex items-center rounded-l-md border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium text-gray-500 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Previous
                 </button>
                 <button
                   onClick={() =>
-                    setPagination({ ...pagination, page: pagination.page + 1 })
+                    setPagination({
+                      ...pagination,
+                      page: pagination.page + 1,
+                    })
                   }
                   disabled={pagination.page >= pagination.totalPages}
-                  className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="relative inline-flex items-center rounded-r-md border border-l-0 border-gray-300 bg-white px-2.5 py-1 text-xs font-medium text-gray-500 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Next
                 </button>
-              </div>
-              <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm text-gray-700">
-                    Showing{" "}
-                    <span className="font-medium">
-                      {(pagination.page - 1) * pagination.limit + 1}
-                    </span>{" "}
-                    to{" "}
-                    <span className="font-medium">
-                      {Math.min(
-                        pagination.page * pagination.limit,
-                        pagination.totalCount,
-                      )}
-                    </span>{" "}
-                    of{" "}
-                    <span className="font-medium">{pagination.totalCount}</span>{" "}
-                    results
-                  </p>
-                </div>
-                <div>
-                  <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                    <button
-                      onClick={() =>
-                        setPagination({
-                          ...pagination,
-                          page: pagination.page - 1,
-                        })
-                      }
-                      disabled={pagination.page === 1}
-                      className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Previous
-                    </button>
-                    <button
-                      onClick={() =>
-                        setPagination({
-                          ...pagination,
-                          page: pagination.page + 1,
-                        })
-                      }
-                      disabled={pagination.page >= pagination.totalPages}
-                      className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Next
-                    </button>
-                  </nav>
-                </div>
               </div>
             </div>
           </>

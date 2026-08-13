@@ -44,7 +44,6 @@ import {
 } from "@/components/icons";
 import SvgDiamond from "@/components/icons/Diamond";
 import SvgLearningGift from "@/components/icons/LearningGift";
-import SvgLeagueLogo from "@/components/icons/LeagueLogo";
 import BottomNavigation from "@/components/dashboard-new/BottomNavigation";
 import DesktopNavigation from "@/components/dashboard-new/DesktopNavigation";
 import { TopHeaderRightSide } from "@/components/v2/TopHeaderRightSide";

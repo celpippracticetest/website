@@ -18,9 +18,6 @@ import SvgWritingPart from "@/components/icons/WritingPart";
 import SvgReadingPart from "@/components/icons/ReadingPart";
 import SvgListeningPart from "@/components/icons/ListeningPart";
 import { ActivityLogger } from "@/lib/userActivity";
-import { useLeaguePoints } from "@/hooks/useLeaguePoints";
-import { useTrophySystem } from "@/hooks/useTrophySystem";
-import TrophyModal from "@/components/modal/TrophyModal";
 import { PRACTICE_PARTS } from "@/constants";
 import ContinueExamModal from "@/components/modal/ContinueExamModal";
 import ExamHeader from "./components/ExamHeader";
@@ -52,15 +49,6 @@ const ListeningExamView = ({
   const searchParams = useSearchParams();
   const section = searchParams.get("section");
   const attemptId = useEnsureMockExamAttemptId(practice.taskId);
-  const { addPoints } = useLeaguePoints();
-  const {
-    isModalOpen,
-    currentTrophy,
-    userPoints,
-    timeSpent,
-    closeTrophy,
-    checkTrophyAchievements,
-  } = useTrophySystem();
 
   const [page, setPage] = useState("description");
   const [passageIndex, setPassageIndex] = useState(0);
@@ -129,22 +117,6 @@ const ListeningExamView = ({
               result,
               time,
             );
-
-            // Add league points for mock exam completion
-            await addPoints(
-              20,
-              "mockExams",
-              `${Math.floor(time / 60)} minutes`,
-            );
-
-            // Check for trophy achievements (only for complete exam mode)
-            if (!section) {
-              await checkTrophyAchievements(
-                20,
-                "mockExams",
-                `${Math.floor(time / 60)}:${time % 60}`,
-              );
-            }
           }
         } catch (error) {
           // Optionally handle error
@@ -538,15 +510,6 @@ const ListeningExamView = ({
           </div>
         </Card>
       </div>
-
-      {/* Trophy Modal */}
-      <TrophyModal
-        isOpen={isModalOpen}
-        onClose={closeTrophy}
-        trophy={currentTrophy}
-        userPoints={userPoints}
-        timeSpent={timeSpent}
-      />
       {showContinueModal && (
         <ContinueExamModal
           onContinue={() => {

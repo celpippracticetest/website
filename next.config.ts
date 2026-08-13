@@ -290,6 +290,7 @@ const nextConfig: NextConfig = {
   // Image optimizations
   images: {
     formats: ["image/avif", "image/webp"],
+    qualities: [75, 90, 100],
     minimumCacheTTL: 31536000,
     remotePatterns: [
       {

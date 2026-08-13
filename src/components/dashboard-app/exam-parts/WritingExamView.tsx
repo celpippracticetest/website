@@ -19,9 +19,6 @@ import SvgReadingPart from "@/components/icons/ReadingPart";
 import SvgListeningPart from "@/components/icons/ListeningPart";
 import SvgSpeakingPart from "@/components/icons/SpeakingPart";
 import { ActivityLogger } from "@/lib/userActivity";
-import { useLeaguePoints } from "@/hooks/useLeaguePoints";
-import { useTrophySystem } from "@/hooks/useTrophySystem";
-import TrophyModal from "@/components/modal/TrophyModal";
 import { PRACTICE_PARTS } from "@/constants";
 import ContinueExamModal from "@/components/modal/ContinueExamModal";
 import ExamHeader from "./components/ExamHeader";
@@ -61,15 +58,6 @@ const WritingExamView = ({
 
   const [showLoginModal, setShowLoginModal] = useState(false);
   const { user, isLoaded, isSignedIn } = useHybridWebUser();
-  const { addPoints } = useLeaguePoints();
-  const {
-    isModalOpen,
-    currentTrophy,
-    userPoints,
-    timeSpent,
-    closeTrophy,
-    checkTrophyAchievements,
-  } = useTrophySystem();
   const freeUser = user?.publicMetadata.plan == "free";
   const noUser = isLoaded ? !isSignedIn : false;
   const [showModal, setShowModal] = useState(false);
@@ -151,18 +139,6 @@ const WritingExamView = ({
         time,
       );
 
-      // Add league points for mock exam completion
-      await addPoints(20, "mockExams", `${Math.floor(time / 60)} minutes`);
-
-      // Check for trophy achievements (only for complete exam mode)
-      if (!section) {
-        await checkTrophyAchievements(
-          20,
-          "mockExams",
-          `${Math.floor(time / 60)}:${time % 60}`,
-        );
-      }
-
       // Log AI feedback generation
       if (result.usage) {
         await ActivityLogger.aiFeedbackGenerated(
@@ -172,9 +148,6 @@ const WritingExamView = ({
           result.usage.completion_tokens || 0,
           attemptId,
         );
-
-        // Add league points for AI feedback
-        await addPoints(5, "aiFeedback");
       }
     } catch (error) {
       console.error("Error submitting answer:", error);
@@ -554,15 +527,6 @@ const WritingExamView = ({
           </div>
         </div>
       </div>
-
-      {/* Trophy Modal */}
-      <TrophyModal
-        isOpen={isModalOpen}
-        onClose={closeTrophy}
-        trophy={currentTrophy}
-        userPoints={userPoints}
-        timeSpent={timeSpent}
-      />
       {showContinueModal && (
         <ContinueExamModal
           onContinue={() => {

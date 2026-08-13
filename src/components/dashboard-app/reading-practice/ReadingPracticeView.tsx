@@ -27,9 +27,6 @@ import SvgCircle from "@/components/icons/Circle";
 import SvgCheckCircle from "@/components/icons/CheckCircle";
 import { trackKpi } from "@/lib/analytics";
 import { ActivityLogger } from "@/lib/userActivity";
-import { useLeaguePoints } from "@/hooks/useLeaguePoints";
-import { useTrophySystem } from "@/hooks/useTrophySystem";
-import TrophyModal from "@/components/modal/TrophyModal";
 import StatBadge from "@/components/shared/StatBadge";
 import { usePracticeCount } from "@/hooks/usePracticeCount";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
@@ -69,30 +66,12 @@ const ReadingPracticeView = ({
   const practiceCount = usePracticeCount(task.id, practice.id, task.taskNumber);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const { user, isLoaded, isSignedIn } = useHybridWebUser();
-  const { addPoints } = useLeaguePoints();
-  const {
-    isModalOpen,
-    currentTrophy,
-    userPoints,
-    timeSpent,
-    closeTrophy,
-    checkTrophyAchievements,
-  } = useTrophySystem();
   const freeUser = user?.publicMetadata.plan == "free";
   const noUser = isLoaded ? !isSignedIn : false;
   const [showModal, setShowModal] = useState(false);
-  const [pointsAwarded, setPointsAwarded] = useState(false);
   const timerTime = practice.taskId === "67f168222f0ca7f9a751ed3d" ? 780 : 660;
   const router = useRouter();
 
-  // Reset pointsAwarded when practice changes
-  useEffect(() => {
-    console.log(
-      "Reading practice: Resetting pointsAwarded for practice:",
-      selectedPracticeId,
-    );
-    setPointsAwarded(false);
-  }, [selectedPracticeId]);
   const [isPlaying, setIsPlaying] = useState(false);
   const [page, setPage] = useState("question");
   const [passageIndex, setPassageIndex] = useState(0);
@@ -213,13 +192,6 @@ const ReadingPracticeView = ({
               result,
               time,
             );
-
-            // Check for trophy achievements
-            await checkTrophyAchievements(
-              10,
-              "practiceSessions",
-              `${Math.floor(time / 60)}:${time % 60}`,
-            );
           }
         } catch (error) {
           // Optionally handle error
@@ -264,10 +236,6 @@ const ReadingPracticeView = ({
       answers: selectedAnswers,
       skill: "Reading",
       timeRemaining: time,
-      pointsAwarded,
-      setPointsAwarded,
-      addPoints,
-      checkTrophyAchievements,
     });
 
     if (practiceIndex < allPractices.length - 1) {
@@ -713,15 +681,6 @@ const ReadingPracticeView = ({
           </div>
         </div>
       </div>
-
-      {/* Trophy Modal */}
-      <TrophyModal
-        isOpen={isModalOpen}
-        onClose={closeTrophy}
-        trophy={currentTrophy}
-        userPoints={userPoints}
-        timeSpent={timeSpent}
-      />
     </>
   );
 };

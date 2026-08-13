@@ -34,9 +34,6 @@ import { trackKpi } from "@/lib/analytics";
 import { ActivityLogger } from "@/lib/userActivity";
 import { usePracticeSessionAnalytics } from "@/hooks/usePracticeSessionAnalytics";
 import { useTimerExpiredAnalytics } from "@/hooks/useTimerExpiredAnalytics";
-import { useLeaguePoints } from "@/hooks/useLeaguePoints";
-import { useTrophySystem } from "@/hooks/useTrophySystem";
-import TrophyModal from "@/components/modal/TrophyModal";
 import StatBadge from "@/components/shared/StatBadge";
 import { usePracticeCount } from "@/hooks/usePracticeCount";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
@@ -90,17 +87,7 @@ const WritingPracticeView = ({
   const router = useRouter();
 
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [pointsAwarded, setPointsAwarded] = useState(false);
   const { user, isLoaded, isSignedIn } = useHybridWebUser();
-  const { addPoints } = useLeaguePoints();
-  const {
-    isModalOpen,
-    currentTrophy,
-    userPoints,
-    timeSpent,
-    closeTrophy,
-    checkTrophyAchievements,
-  } = useTrophySystem();
   const freeUser = user?.publicMetadata.plan == "free";
   const noUser = isLoaded ? !isSignedIn : false;
   const [showModal, setShowModal] = useState(false);
@@ -271,16 +258,6 @@ const WritingPracticeView = ({
         time,
       );
 
-      // Add league points for practice completion (only once)
-      if (!pointsAwarded) {
-        await addPoints(
-          10,
-          "practiceSessions",
-          `${Math.floor(time / 60)} minutes`,
-        );
-        setPointsAwarded(true);
-      }
-
       // Log AI feedback generation
       if (result.usage) {
         await ActivityLogger.aiFeedbackGenerated(
@@ -290,22 +267,9 @@ const WritingPracticeView = ({
           result.usage.completion_tokens || 0,
           logAttemptId,
         );
-
-        // Add league points for AI feedback
-        await addPoints(5, "aiFeedback");
       }
 
-      // Check for trophy achievements
-      await checkTrophyAchievements(
-        10,
-        "practiceSessions",
-        `${Math.floor(time / 60)}:${time % 60}`,
-      );
-
-      // Allow trophy modal to render before navigation to results
-      setTimeout(() => {
-        onAnswerButtonClick(practice, result);
-      }, 800);
+      onAnswerButtonClick(practice, result);
       setProgressBar(0);
       setTryToSubmit(false);
       setIsSubmit(false);
@@ -811,15 +775,6 @@ const WritingPracticeView = ({
           )}
         </div>
       </div>
-
-      {/* Trophy Modal */}
-      <TrophyModal
-        isOpen={isModalOpen}
-        onClose={closeTrophy}
-        trophy={currentTrophy}
-        userPoints={userPoints}
-        timeSpent={timeSpent}
-      />
     </div>
   );
 };

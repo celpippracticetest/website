@@ -19,7 +19,25 @@ function normalizeJsonText(s: string): string {
 function parseJsonOrEjson(text: string): unknown {
   const s = normalizeJsonText(text);
   if (s.length === 0) throw new Error("Empty document body string");
-  if (s[0] !== "{" && s[0] !== "[") throw new Error("Document body string is not JSON object or array");
+
+  // Double-encoded bodies arrive as a JSON string literal: "{\" _id\":…}".
+  // Parse the outer string so deserializeDocument's loop can unwrap the inner object.
+  if (s[0] === '"') {
+    try {
+      return JSON.parse(s) as unknown;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      throw new Error(
+        `Invalid JSON string in document body (${msg}). Prefix: ${s.slice(0, 120)}…`
+      );
+    }
+  }
+
+  if (s[0] !== "{" && s[0] !== "[") {
+    throw new Error(
+      `Document body string is not JSON object or array. Prefix: ${s.slice(0, 120)}…`
+    );
+  }
   try {
     return JSON.parse(s) as unknown;
   } catch (e1) {
@@ -28,7 +46,9 @@ function parseJsonOrEjson(text: string): unknown {
     } catch (e2) {
       const m1 = e1 instanceof Error ? e1.message : String(e1);
       const m2 = e2 instanceof Error ? e2.message : String(e2);
-      throw new Error(`Invalid JSON in document body (JSON.parse: ${m1}; EJSON.parse: ${m2}). Prefix: ${s.slice(0, 120)}…`);
+      throw new Error(
+        `Invalid JSON in document body (JSON.parse: ${m1}; EJSON.parse: ${m2}). Prefix: ${s.slice(0, 120)}…`
+      );
     }
   }
 }
