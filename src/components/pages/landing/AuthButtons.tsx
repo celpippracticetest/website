@@ -3,6 +3,7 @@ import { Button } from "@/components/v2/Button";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 
 import { signOutWebSession } from "@/lib/auth/client-sign-out";
+import { trackCTAClick } from "@/lib/analytics";
 import Link from "next/link";
 
 import { useState, useEffect, useRef } from "react";
@@ -11,10 +12,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 const AuthButtons = () => {
   const { isSignedIn, user, isLoaded } = useHybridWebUser();
   const [isUserDropDownOpen, setUserDropDownOpen] = useState(false);
-  const roles = (user?.publicMetadata as Record<string, unknown> | undefined)?.["roles"] as
-    | string[]
-    | undefined;
-  
+  const roles = (user?.publicMetadata as Record<string, unknown> | undefined)?.[
+    "roles"
+  ] as string[] | undefined;
+
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -124,10 +125,28 @@ const AuthButtons = () => {
       )}
       {!isSignedIn && (
         <>
-          <Button size="sm" className="max-[744px]:flex min-[744px]:hidden" href="/sign-up">
+          <Button
+            size="sm"
+            className="max-[744px]:flex min-[744px]:hidden"
+            href="/sign-up"
+            onClick={() =>
+              trackCTAClick("Sign Up", "header_mobile", {
+                itemId: "header_sign_up",
+              })
+            }
+          >
             <span id="sign-up-button">Sign Up</span>
           </Button>
-          <Button size="md" className="max-[744px]:hidden min-[744px]:flex" href="/sign-up">
+          <Button
+            size="md"
+            className="max-[744px]:hidden min-[744px]:flex"
+            href="/sign-up"
+            onClick={() =>
+              trackCTAClick("Sign Up / Login", "header_desktop", {
+                itemId: "header_sign_up",
+              })
+            }
+          >
             <span id="sign-up-button" className="flex">
               Sign Up
               <span className="mx-1">/</span>

@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useEffect } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
@@ -12,6 +14,7 @@ import SvgMedalMd from "@/components/v2/icons/medal-md";
 import { SvgLearning } from "@/components/icons";
 import SvgWord from "@/components/icons/Word";
 import { cn } from "@/lib/utils";
+import { trackCTAClick } from "@/lib/analytics";
 
 const SvgMockExamLight = dynamic(() => import("../../icons/MockExamsLight"), {
   ssr: false,
@@ -91,6 +94,11 @@ const Hero = () => {
           size="lg"
           href="/practice-overview"
           aria-label="Start your free CELPIP practice"
+          onClick={() =>
+            trackCTAClick("Start Your Free Practice", "hero_sticky", {
+              itemId: "hero_sticky_cta",
+            })
+          }
         >
           <SvgPlus />
           <span className="hidden sm:!flex">Start Your Free Practice</span>
@@ -201,6 +209,11 @@ const Hero = () => {
                   href="/practice-overview"
                   size="lg"
                   className="mt-[24px]"
+                  onClick={() =>
+                    trackCTAClick("Start Your Free Practice", "hero", {
+                      itemId: "hero_primary_cta",
+                    })
+                  }
                 >
                   <SvgPlus />
                   <span>Start Your Free Practice</span>

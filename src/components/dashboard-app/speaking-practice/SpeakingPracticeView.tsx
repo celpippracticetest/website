@@ -18,7 +18,10 @@ import UpgradeModal from "@/components/modal/UpgradeModal";
 import { TWritingAnswerDto } from "@/models/answer";
 import LoginModal from "@/components/modal/LoginModal";
 import SvgRecording from "@/components/icons/Recording";
+import { trackKpi } from "@/lib/analytics";
 import { ActivityLogger } from "@/lib/userActivity";
+import { usePracticeSessionAnalytics } from "@/hooks/usePracticeSessionAnalytics";
+import { useTimerExpiredAnalytics } from "@/hooks/useTimerExpiredAnalytics";
 import { useLeaguePoints } from "@/hooks/useLeaguePoints";
 import { useTrophySystem } from "@/hooks/useTrophySystem";
 import TrophyModal from "@/components/modal/TrophyModal";
@@ -135,6 +138,13 @@ const SpeakingPracticeView = ({
   const setPremiumPlanModalState = useStore(
     (state) => state.setPremiumPlanModalState,
   );
+  const completedRef = useRef(false);
+  useTimerExpiredAnalytics(time, "speaking");
+  usePracticeSessionAnalytics({
+    testId: practice.id,
+    module: "speaking",
+    completedRef,
+  });
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
     let recordingTimer: NodeJS.Timeout | null = null;
@@ -153,9 +163,6 @@ const SpeakingPracticeView = ({
       }, 1000);
     }
 
-    if (time === 0 && timer) {
-      clearInterval(timer);
-    }
     if (recordingTime === 0 && recordingTimer) {
       clearInterval(recordingTimer);
       stopRecording();
@@ -274,6 +281,10 @@ const SpeakingPracticeView = ({
         return;
       }
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      trackKpi.micPermissionResult({
+        result: "granted",
+        browser: navigator.userAgent,
+      });
 
       mediaRecorderRef.current = new MediaRecorder(stream);
       audioChunks.current = [];
@@ -297,6 +308,19 @@ const SpeakingPracticeView = ({
           setProgressBar((prev) => (prev < 100 ? prev + 1 : prev));
         }, 320); // Increment every 300ms to reach 100 in ~30s
 
+        const isFree =
+          !user?.publicMetadata?.plan || user.publicMetadata.plan === "free";
+        const scoringStartedAt = Date.now();
+        trackKpi.speakingTaskSubmit({
+          taskNumber: Number(practice.taskId) || 1,
+          durationSec: recordingTime,
+          isFree,
+        });
+        trackKpi.aiScoringRequested({
+          module: "speaking",
+          taskNumber: Number(practice.taskId) || 1,
+        });
+
         fetch("/api/answers/speaking", {
           method: "POST",
           body: formData,
@@ -305,11 +329,21 @@ const SpeakingPracticeView = ({
             clearInterval(progressInterval);
             setProgressBar(100);
             if (!response.ok) {
+              trackKpi.aiScoringFailed({
+                module: "speaking",
+                errorType: `http_${response.status}`,
+              });
               throw new Error("Failed to upload audio");
             }
             return response.json();
           })
           .then(async (data) => {
+            completedRef.current = true;
+            trackKpi.aiScoreReturned({
+              module: "speaking",
+              latencyMs: Date.now() - scoringStartedAt,
+              estimatedClb: data.overall,
+            });
             // Log practice completed
             const attemptId = `practice_${practice.id}_${Date.now()}`;
             await ActivityLogger.practiceCompleted(
@@ -374,6 +408,10 @@ const SpeakingPracticeView = ({
       mediaRecorderRef.current.start();
       setIsRecording(true);
     } catch (err) {
+      trackKpi.micPermissionResult({
+        result: "denied",
+        browser: navigator.userAgent,
+      });
       setErrorAccessingMicrophone(true);
     }
   };

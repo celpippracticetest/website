@@ -45,6 +45,7 @@ import NpsLeaveGuard, {
   npsAwareNavigate,
 } from "@/components/modal/NpsLeaveGuard";
 import { useNpsStore } from "@/store/useNps.store";
+import { trackKpi } from "@/lib/analytics";
 
 const NavItem = ({
   icon,
@@ -215,6 +216,15 @@ const LayoutClient = ({
   const { hasEverPurchased } = useHasEverPurchased();
 
   const noUser = isLoaded ? !isSignedIn : false;
+
+  useEffect(() => {
+    if (!user || !visibleHorizontalCoupon) return;
+    trackKpi.viewPromotion({
+      promotionId: String(couponId || "welcome_extra_10"),
+      promotionName: "welcome_extra_discount_banner",
+      creativeSlot: "horizontal_banner",
+    });
+  }, [user, visibleHorizontalCoupon, couponId]);
 
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const { showLoginModal, setShowLoginModal, loginMessage } =
@@ -781,12 +791,21 @@ const LayoutClient = ({
             <button
               type="button"
               onClick={() => {
-                navigator.clipboard
-                  .writeText(couponId?.toString() ?? "")
-                  .then(() => {
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 2000);
+                const code = couponId?.toString() ?? "";
+                navigator.clipboard.writeText(code).then(() => {
+                  setCopied(true);
+                  trackKpi.selectPromotion({
+                    promotionId: code || "welcome_extra_10",
+                    promotionName: "welcome_extra_discount_banner",
+                    creativeSlot: "horizontal_banner",
                   });
+                  trackKpi.promoCodeApply({
+                    coupon: code,
+                    discountPct: 10,
+                    result: "applied",
+                  });
+                  setTimeout(() => setCopied(false), 2000);
+                });
               }}
               className="flex-1 cursor-pointer flex px-[20px] py-[8px] h-[28px] rounded-[8px] bg-white items-center justify-center gap-[8px]"
             >

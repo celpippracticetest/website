@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
@@ -8,6 +8,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
+import { trackKpi } from "@/lib/analytics";
 
 const TEST_DATE_OPTIONS = [
   "Within 2 weeks",
@@ -45,8 +46,36 @@ export default function OnboardingSurvey({
   const { user } = useHybridWebUser();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const startedAtRef = useRef(Date.now());
+  const totalSteps = 3;
 
   const dismissSurvey = async (action: "skip" | "submit", answers?: object) => {
+    if (action === "submit") {
+      const avgTarget = Math.round(
+        (targetScores.listening +
+          targetScores.reading +
+          targetScores.writing +
+          targetScores.speaking) /
+          4,
+      );
+      trackKpi.targetScoreSet({
+        targetClb: avgTarget,
+        purpose:
+          focusSkill === "Other (please specify)"
+            ? customFocusSkill
+            : focusSkill,
+      });
+      trackKpi.onboardingComplete({
+        durationSec: Math.round((Date.now() - startedAtRef.current) / 1000),
+        stepsSkipped: 0,
+      });
+    } else {
+      trackKpi.onboardingComplete({
+        durationSec: Math.round((Date.now() - startedAtRef.current) / 1000),
+        stepsSkipped: totalSteps - step + 1,
+      });
+    }
+
     await fetch("/api/onboarding-new", {
       method: "POST",
       body: JSON.stringify(
@@ -71,8 +100,22 @@ export default function OnboardingSurvey({
 
   const handleNext = () => {
     if (step === 1 && testDate) {
+      trackKpi.testDateSet({
+        testDate,
+        isBooked: testDate !== "I don't have a date yet",
+      });
+      trackKpi.onboardingStepComplete({
+        stepName: "test_date",
+        stepNumber: 1,
+        totalSteps,
+      });
       setStep(2);
     } else if (step === 2 && focusSkill) {
+      trackKpi.onboardingStepComplete({
+        stepName: "focus_skill",
+        stepNumber: 2,
+        totalSteps,
+      });
       setStep(3);
     }
   };

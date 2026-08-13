@@ -30,7 +30,10 @@ import LoginModal from "@/components/modal/LoginModal";
 import UpgradeModal from "@/components/modal/UpgradeModal";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
+import { trackKpi } from "@/lib/analytics";
 import { ActivityLogger } from "@/lib/userActivity";
+import { usePracticeSessionAnalytics } from "@/hooks/usePracticeSessionAnalytics";
+import { useTimerExpiredAnalytics } from "@/hooks/useTimerExpiredAnalytics";
 import { useLeaguePoints } from "@/hooks/useLeaguePoints";
 import { useTrophySystem } from "@/hooks/useTrophySystem";
 import TrophyModal from "@/components/modal/TrophyModal";
@@ -130,6 +133,14 @@ const WritingPracticeView = ({
   const setPremiumPlanModalState = useStore(
     (state) => state.setPremiumPlanModalState,
   );
+  const completedRef = useRef(false);
+  useTimerExpiredAnalytics(time, "writing");
+  usePracticeSessionAnalytics({
+    testId: practice.id,
+    module: "writing",
+    completedRef,
+    getPercentComplete: () => (text.trim() ? 50 : 0),
+  });
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
 
@@ -139,11 +150,6 @@ const WritingPracticeView = ({
       }, 1000);
     }
 
-    if (time === 0 && timer) {
-      clearInterval(timer);
-      // Handle time's up logic here if needed
-    }
-
     return () => {
       if (timer) {
         clearInterval(timer);
@@ -151,6 +157,7 @@ const WritingPracticeView = ({
     };
   }, [page, time]);
   useEffect(() => {
+    completedRef.current = false;
     // Log mock exam started when component mounts
     if (user && practice.taskId) {
       const loggerAttemptId =
@@ -200,6 +207,10 @@ const WritingPracticeView = ({
   };
 
   const submitAnswer = async () => {
+    const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
+    const isFree =
+      !user?.publicMetadata?.plan || user.publicMetadata.plan === "free";
+    const scoringStartedAt = Date.now();
     try {
       setProgressBar(0); // Start loading
       const url = "/api/answers/writing";
@@ -208,6 +219,18 @@ const WritingPracticeView = ({
         text,
         attemptId,
       };
+
+      trackKpi.writingTaskSubmit({
+        taskNumber: Number(practice.taskId) || 1,
+        wordCount,
+        timeSpentSec: time,
+        isFree,
+      });
+      trackKpi.aiScoringRequested({
+        module: "writing",
+        taskNumber: Number(practice.taskId) || 1,
+        inputLength: text.length,
+      });
 
       // Simulate progress bar increment
       const progressInterval = setInterval(() => {
@@ -222,10 +245,20 @@ const WritingPracticeView = ({
       clearInterval(progressInterval); // Stop progress increment
 
       if (!response.ok) {
+        trackKpi.aiScoringFailed({
+          module: "writing",
+          errorType: `http_${response.status}`,
+        });
         throw new Error("Network response was not ok.");
       }
       setProgressBar(100);
       const result = await response.json();
+      completedRef.current = true;
+      trackKpi.aiScoreReturned({
+        module: "writing",
+        latencyMs: Date.now() - scoringStartedAt,
+        estimatedClb: result.overall,
+      });
 
       // Log practice completed
       const logAttemptId = `practice_${practice.id}_${Date.now()}`;
@@ -277,6 +310,10 @@ const WritingPracticeView = ({
       setTryToSubmit(false);
       setIsSubmit(false);
     } catch (error) {
+      trackKpi.aiScoringFailed({
+        module: "writing",
+        errorType: error instanceof Error ? error.name : "unknown",
+      });
       console.error("Error submitting answer:", error);
     } finally {
       setProgressBar(100); // Ensure progress bar reaches 100

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { trackKpi } from "@/lib/analytics";
 
 export default function PerformanceMonitor() {
   useEffect(() => {
@@ -10,10 +11,22 @@ export default function PerformanceMonitor() {
       try {
         const { onCLS, onINP, onFCP, onLCP, onTTFB } =
           await import("web-vitals");
-        onCLS(console.log);
-        onINP(console.log);
+        const send = (metric: { name: string; value: number }) => {
+          if (
+            metric.name === "LCP" ||
+            metric.name === "INP" ||
+            metric.name === "CLS"
+          ) {
+            trackKpi.webVitals({
+              metricName: metric.name,
+              value: metric.value,
+            });
+          }
+        };
+        onCLS(send);
+        onINP(send);
         onFCP(console.log);
-        onLCP(console.log);
+        onLCP(send);
         onTTFB(console.log);
       } catch (e) {
         console.error("web-vitals load failed:", e);

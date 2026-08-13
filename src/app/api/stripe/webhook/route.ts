@@ -27,6 +27,7 @@ import {
   sendGa4Events,
   type Ga4ItemParam,
 } from "@/lib/ga4MeasurementProtocol";
+import { buildSubscriptionRenewEvent } from "@/lib/ga4KpiServer";
 import {
   META_EVENT,
   metaEventIdPurchase,
@@ -1215,7 +1216,42 @@ export async function POST(req: Request) {
               last_payment_failed_at_unix: `${Math.floor(Date.now() / 1000)}`,
             },
           });
-          
+
+          const subscriptionMetadata =
+            (subscription.metadata as Record<string, string | undefined>) || {};
+          void sendGa4Events({
+            clientId: buildStripeGaClientId({
+              metadata: subscriptionMetadata,
+              customerId:
+                typeof subscription.customer === "string"
+                  ? subscription.customer
+                  : null,
+              userId: subscriptionMetadata.user_id || null,
+              sessionId: subscriptionId,
+              subscriptionId: subscription.id,
+            }),
+            userId: subscriptionMetadata.user_id || undefined,
+            gaSessionId: readGa4SessionIdForMp(subscriptionMetadata),
+            events: [
+              {
+                name: "payment_failed",
+                params: {
+                  error_code: invoice?.last_finalization_error?.code || "invoice_payment_failed",
+                  decline_reason:
+                    invoice?.last_finalization_error?.message ||
+                    invoice?.billing_reason ||
+                    "payment_failed",
+                  payment_type: "subscription",
+                  value:
+                    typeof invoice?.amount_due === "number"
+                      ? invoice.amount_due / 100
+                      : undefined,
+                  subscription_id: subscription.id,
+                  ...buildStripeGaAttributionParams(subscriptionMetadata),
+                },
+              },
+            ],
+          });
         } catch (err) {
           console.warn("Failed to persist dunning metadata to Stripe subscription", err);
         }
@@ -1353,6 +1389,13 @@ export async function POST(req: Request) {
                           ...buildStripeGaAttributionParams(subscriptionMetadata),
                         },
                       },
+                      buildSubscriptionRenewEvent({
+                        plan: renewalPlanName || undefined,
+                        value: (invoice?.amount_paid || 0) / 100,
+                        currency: (invoice?.currency || "usd").toUpperCase(),
+                        subscriptionId: subscriptionId || undefined,
+                        extra: buildStripeGaAttributionParams(subscriptionMetadata),
+                      }),
                     ],
                   });
                   sendMetaPurchaseEvent({
@@ -1407,6 +1450,13 @@ export async function POST(req: Request) {
                   ...buildStripeGaAttributionParams(subscriptionMetadata),
                 },
               },
+              buildSubscriptionRenewEvent({
+                plan: renewalPlanName || undefined,
+                value: (invoice?.amount_paid || 0) / 100,
+                currency: (invoice?.currency || "usd").toUpperCase(),
+                subscriptionId: subscriptionId || undefined,
+                extra: buildStripeGaAttributionParams(subscriptionMetadata),
+              }),
             ],
           });
           if (invoiceId) {
@@ -1474,6 +1524,13 @@ export async function POST(req: Request) {
                     ...buildStripeGaAttributionParams(metadata),
                   },
                 },
+                buildSubscriptionRenewEvent({
+                  plan: renewalPlanName || undefined,
+                  value: (invoice?.amount_paid || 0) / 100,
+                  currency: (invoice?.currency || "usd").toUpperCase(),
+                  subscriptionId: subscriptionId || undefined,
+                  extra: buildStripeGaAttributionParams(metadata),
+                }),
               ],
             });
             sendMetaPurchaseEvent({
@@ -1663,7 +1720,7 @@ export async function POST(req: Request) {
         gaSessionId: readGa4SessionIdForMp(subscriptionMetadata),
         events: [
           {
-            name: "subscription_cancelled",
+            name: "subscription_cancel",
             params: {
               subscription_id: subscription.id,
               transaction_id: usableCheckoutId || subscription.id,

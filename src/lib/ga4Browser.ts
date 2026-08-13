@@ -3,7 +3,12 @@ import { GA4_MEASUREMENT_ID } from "@/lib/ga4-constants";
 
 const DEBUG = process.env.NODE_ENV === "development";
 
-const GA4_EVENTS_BLOCKED = new Set(["consent_update", "default_consent"]);
+const GA4_EVENTS_BLOCKED = new Set([
+  "consent_update",
+  "default_consent",
+  // Ads/Meta only — must never mirror into GA4
+  "ads_enhanced_conversion",
+]);
 
 const GA4_STRIP_KEYS = new Set([
   "event",
@@ -18,6 +23,16 @@ const GA4_STRIP_KEYS = new Set([
 type Ga4Primitive = string | number | boolean;
 type Ga4ItemParam = Record<string, Ga4Primitive>;
 type Ga4ParamValue = Ga4Primitive | Ga4ItemParam[];
+
+type QueuedGa4Event = {
+  eventName: string;
+  params: Record<string, unknown>;
+};
+
+const eventQueue: QueuedGa4Event[] = [];
+let flushTimer: ReturnType<typeof setTimeout> | null = null;
+let flushAttempts = 0;
+const MAX_FLUSH_ATTEMPTS = 40;
 
 function getMeasurementId(): string | null {
   return GA4_MEASUREMENT_ID;
@@ -101,15 +116,66 @@ function sanitizeGa4Params(params: Record<string, unknown>): Record<string, unkn
   return out;
 }
 
+function dispatchGa4Event(eventName: string, params: Record<string, unknown>): boolean {
+  const gtag = getGtag();
+  const measurementId = getMeasurementId();
+  if (!gtag || !measurementId) return false;
+
+  if (DEBUG) {
+    console.log("[GA4]", eventName, params);
+  }
+
+  try {
+    gtag("event", eventName, params);
+    return true;
+  } catch (error) {
+    if (DEBUG) {
+      console.warn("[GA4] gtag event failed:", eventName, error);
+    }
+    return false;
+  }
+}
+
+function scheduleFlush(): void {
+  if (typeof window === "undefined") return;
+  if (flushTimer) return;
+  flushTimer = setTimeout(() => {
+    flushTimer = null;
+    flushQueuedEvents();
+  }, 250);
+}
+
+function flushQueuedEvents(): void {
+  if (eventQueue.length === 0) return;
+  const gtag = getGtag();
+  if (!gtag) {
+    flushAttempts += 1;
+    if (flushAttempts < MAX_FLUSH_ATTEMPTS) {
+      scheduleFlush();
+    }
+    return;
+  }
+
+  flushAttempts = 0;
+  while (eventQueue.length > 0) {
+    const next = eventQueue.shift();
+    if (!next) break;
+    if (!dispatchGa4Event(next.eventName, next.params)) {
+      eventQueue.unshift(next);
+      scheduleFlush();
+      break;
+    }
+  }
+}
+
 /** Send an app analytics event to GA4 via gtag. */
 export function sendGa4Event(event: Record<string, unknown>): void {
   const eventName = typeof event.event === "string" ? event.event : "";
   if (!eventName || GA4_EVENTS_BLOCKED.has(eventName)) return;
   if (eventName === "gtm.js" || eventName.startsWith("gtm.")) return;
 
-  const gtag = getGtag();
   const measurementId = getMeasurementId();
-  if (!gtag || !measurementId) return;
+  if (!measurementId) return;
 
   const params = sanitizeGa4Params(flattenEventForGa4(event));
 
@@ -122,16 +188,9 @@ export function sendGa4Event(event: Record<string, unknown>): void {
     }
   }
 
-  if (DEBUG) {
-    console.log("[GA4]", eventName, params);
-  }
-
-  try {
-    gtag("event", eventName, params);
-  } catch (error) {
-    if (DEBUG) {
-      console.warn("[GA4] gtag event failed:", eventName, error);
-    }
+  if (!dispatchGa4Event(eventName, params)) {
+    eventQueue.push({ eventName, params });
+    scheduleFlush();
   }
 }
 

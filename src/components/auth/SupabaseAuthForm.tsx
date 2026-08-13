@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DEFAULT_POST_AUTH_PATH } from "@/lib/auth/post-auth-redirect";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
-import { trackAuth } from "@/lib/analytics";
+import { trackAuth, trackKpi } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 
 const primaryCtaClass =
@@ -217,13 +217,36 @@ export function SupabaseAuthForm({
 
       setSubmitting(true);
       try {
-        const { error: signErr } = await supabase.auth.signInWithPassword({
-          email: email.trim(),
-          password,
-        });
+        const { data: signData, error: signErr } =
+          await supabase.auth.signInWithPassword({
+            email: email.trim(),
+            password,
+          });
         if (signErr) {
           setError(signErr.message);
           return;
+        }
+        const uid = signData.user?.id || signData.session?.user?.id;
+        if (uid) {
+          let daysSinceLastLogin: number | undefined;
+          try {
+            const raw = localStorage.getItem("celpip_last_active_at");
+            const last = raw ? Number(raw) : NaN;
+            if (Number.isFinite(last)) {
+              daysSinceLastLogin = Math.floor(
+                (Date.now() - last) / (1000 * 60 * 60 * 24),
+              );
+              if (daysSinceLastLogin >= 14) {
+                trackKpi.reactivationSession({
+                  daysDormant: daysSinceLastLogin,
+                  triggerChannel: "login",
+                });
+              }
+            }
+          } catch {
+            // ignore
+          }
+          trackAuth.loginCompleted(uid, "email", daysSinceLastLogin);
         }
         if (dest.startsWith("/api/")) window.location.assign(dest);
         else {

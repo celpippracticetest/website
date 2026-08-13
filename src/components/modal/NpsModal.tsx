@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useRouter } from "nextjs-toploader/app";
 import { useModalTracking } from "@/hooks/useTracking";
+import { trackKpi } from "@/lib/analytics";
 import type { NpsReadiness } from "@/lib/nps";
 import { useNpsStore } from "@/store/useNps.store";
 import SvgClose from "@/components/icons/Close";
@@ -77,6 +78,11 @@ export default function NpsModal() {
           trigger,
           contextLabel,
         }),
+      });
+      trackKpi.npsResponse({
+        score,
+        surveyTrigger: trigger ?? undefined,
+        comment: reason.trim() || undefined,
       });
     } catch (err) {
       console.error("[nps] submit failed", err);

@@ -5,8 +5,9 @@ import SvgFailed from "@/components/icons/Failed";
 import LoginModal from "@/components/modal/LoginModal";
 import UpgradeModal from "@/components/modal/UpgradeModal";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
+import { trackKpi } from "@/lib/analytics";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
 export default function Success() {
@@ -17,6 +18,18 @@ export default function Success() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    trackKpi.checkoutError({
+      errorType: "payment_failed_page",
+      step: "stripe_return",
+    });
+    trackKpi.paymentFailed({
+      errorCode: "stripe_checkout_return",
+      declineReason: "payment_failed_page",
+      paymentType: "checkout",
+    });
+  }, []);
 
   return (
     <main className="w-full flex flex-col  items-center   bg-[#F4F7FF] min-h-screen pt-[96px]">

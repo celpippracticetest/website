@@ -37,6 +37,7 @@ import {
   readMetaBrowserCookies,
   sendMetaCapiEvents,
 } from "@/lib/metaConversionsApi";
+import { sendGa4Events } from "@/lib/ga4MeasurementProtocol";
 
 function recordToStripeMetadata(record: Record<string, unknown>): Stripe.MetadataParam {
   const out: Stripe.MetadataParam = {};
@@ -173,6 +174,22 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
           console.log("❌ Error checking referral discount validity:", error);
           isExpired = true;
         }
+      }
+
+      if (isExpired) {
+        void sendGa4Events({
+          clientId: `uid.${String(user.id).replace(/[^A-Za-z0-9._-]/g, "").slice(0, 64)}`,
+          userId: user.id,
+          events: [
+            {
+              name: "promo_code_apply",
+              params: {
+                coupon: referralPromotionId,
+                result: "expired",
+              },
+            },
+          ],
+        });
       }
 
       if (!isExpired) {
@@ -728,9 +745,39 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
     let checkoutDiscounts: Array<{ promotion_code?: string; coupon?: string }> = [];
     if (promotionCode) {
       checkoutDiscounts = [{ promotion_code: promotionCode }];
+      void sendGa4Events({
+        clientId: `uid.${String(user.id).replace(/[^A-Za-z0-9._-]/g, "").slice(0, 64)}`,
+        userId: user.id,
+        events: [
+          {
+            name: "promo_code_apply",
+            params: {
+              coupon: promotionCode,
+              result: "applied",
+              referral_discount: referralDiscountApplied,
+              partner_discount: partnerDiscountApplied,
+              campaign_key: campaignPromoKey || undefined,
+            },
+          },
+        ],
+      });
     } else if (isOnboardingFinalOffer && mode === "subscription") {
       const couponId = await resolveFinalOfferCouponId();
       checkoutDiscounts = [{ coupon: couponId }];
+      void sendGa4Events({
+        clientId: `uid.${String(user.id).replace(/[^A-Za-z0-9._-]/g, "").slice(0, 64)}`,
+        userId: user.id,
+        events: [
+          {
+            name: "promo_code_apply",
+            params: {
+              coupon: couponId,
+              result: "applied",
+              source: "onboarding_final_offer",
+            },
+          },
+        ],
+      });
     }
 
     const session: any = await stripe.checkout.sessions.create({

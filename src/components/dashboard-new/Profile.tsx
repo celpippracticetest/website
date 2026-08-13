@@ -19,6 +19,7 @@ import Link from "next/link";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
+import { trackKpi } from "@/lib/analytics";
 
 export default function Profile({ prevCheckout, subscriptionData }: any) {
   const { user, isLoaded, isSignedIn, reloadUser } = useHybridWebUser();
@@ -100,6 +101,13 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
   const handleManageSubscription = async () => {
     try {
       setLoadingPortal(true);
+      trackKpi.cancelFlowStart({
+        plan:
+          planNameDisplay ||
+          (typeof user?.publicMetadata?.plan === "string"
+            ? user.publicMetadata.plan
+            : undefined),
+      });
       const response = await fetch("/api/stripe/create-portal-session", {
         method: "POST",
       });

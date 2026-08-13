@@ -5,12 +5,20 @@ import { usePlans } from "@/hooks/usePlans";
 import Image from "next/image";
 import PlanCard from "../pages/dashboard/PlanCard";
 import SvgClose from "../icons/Close";
+import { trackKpi } from "@/lib/analytics";
 
 const UpgradeModal = (params: any) => {
-  const { setShowModal } = params;
+  const { setShowModal, triggerSource } = params;
   const { plans } = usePlans();
 
   const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    trackKpi.paywallView({
+      triggerSource: triggerSource || "upgrade_modal",
+      plansShown: plans.length,
+    });
+  }, [plans.length, triggerSource]);
 
   useEffect(() => {
     function handleClickOutside(event: any) {

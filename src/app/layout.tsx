@@ -12,9 +12,12 @@ import ReactQueryProvider from "@/components/ReactQueryProvider";
 import { LazyIntercom } from "@/components/LazyComponents";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
 import CriticalCSS from "@/components/CriticalCSS";
+import AuthAnalyticsTracker from "@/components/analytics/AuthAnalyticsTracker";
 import MetaPageViewTracker from "@/components/analytics/MetaPageViewTracker";
-import type { Metadata } from "next";
+import ScrollDepthTracker from "@/components/analytics/ScrollDepthTracker";
+import type { Metadata, Viewport } from "next";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { GA4_MEASUREMENT_ID } from "@/lib/ga4-constants";
 
 const jakarta = Plus_Jakarta_Sans({
   display: "swap",
@@ -28,11 +31,17 @@ const jakarta = Plus_Jakarta_Sans({
 
 const GTM_ID = "GTM-M24FJ7JC";
 
+export const viewport: Viewport = {
+  themeColor: "#3B82F6",
+};
+
 export async function generateMetadata(): Promise<Metadata> {
   const appBaseUrl = process.env.APP_BASE_URL || "";
   const isPreview = appBaseUrl.includes("vercel.app");
+  const metadataBase = new URL(appBaseUrl || "https://celpippracticetest.com");
 
   return {
+    metadataBase,
     title: "CELPIP Practice Test Online | Instant Scoring, Expert Tips",
     description:
       "Celpip Practice Test platform designed to boost your score with real exam questions, instant results, and expert tips for Listening, Reading, Writing & Speaking.",
@@ -82,7 +91,6 @@ export async function generateMetadata(): Promise<Metadata> {
       ],
     },
     manifest: "/manifest.json",
-    themeColor: "#3B82F6",
     appleWebApp: {
       capable: true,
       statusBarStyle: "default",
@@ -241,6 +249,8 @@ export default async function RootLayout({
             <SupabaseAuthHashRecoveryRedirect />
             <Suspense fallback={null}>
               <MetaPageViewTracker />
+              <ScrollDepthTracker />
+              <AuthAnalyticsTracker />
             </Suspense>
             {children}
           </ErrorBoundary>
@@ -251,6 +261,34 @@ export default async function RootLayout({
         <PerformanceMonitor />
         <CriticalCSS />
         <Analytics />
+
+        {/* Direct GA4 so KPI events reach Analytics even before / without GTM. */}
+        <Script
+          id="ga4-gtag"
+          src={`https://www.googletagmanager.com/gtag/js?id=${GA4_MEASUREMENT_ID}`}
+          strategy="afterInteractive"
+        />
+        <Script
+          id="ga4-init"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              window.gtag = gtag;
+              gtag('js', new Date());
+              gtag('consent', 'default', {
+                analytics_storage: 'granted',
+                ad_storage: 'denied',
+                ad_user_data: 'denied',
+                ad_personalization: 'denied'
+              });
+              gtag('config', '${GA4_MEASUREMENT_ID}', {
+                send_page_view: false
+              });
+            `,
+          }}
+        />
 
         {enableGtm && (
           <Script

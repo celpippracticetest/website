@@ -11,6 +11,7 @@ import { PricingBrandPartnersSection } from "@/components/pages/pricing/brand/Pr
 import { PricingBrandReviewsSection } from "@/components/pages/pricing/brand/PricingBrandReviewsSection";
 import { PricingBrandFaqSection } from "@/components/pages/pricing/brand/PricingBrandFaqSection";
 import type { SerializedPlan } from "@/types/pricing";
+import { trackKpi } from "@/lib/analytics";
 
 function toSerializedPlans(plans: unknown[]): SerializedPlan[] {
   return plans.map((raw) => {
@@ -56,13 +57,17 @@ const PremiumPlanModal = () => {
   useEffect(() => {
     if (isPremiumPlanModalOpen) {
       document.body.style.overflow = "hidden";
+      trackKpi.paywallView({
+        triggerSource: "premium_plan_modal",
+        plansShown: serializedPlans.length,
+      });
     } else {
       document.body.style.overflow = "unset";
     }
     return () => {
       document.body.style.overflow = "unset";
     };
-  }, [isPremiumPlanModalOpen]);
+  }, [isPremiumPlanModalOpen, serializedPlans.length]);
 
   return (
     <AnimatePresence>

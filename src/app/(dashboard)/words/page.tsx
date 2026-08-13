@@ -12,6 +12,7 @@ import WordsLanding from "@/components/dashboard-app/words/WordsLanding";
 import { Button } from "@/components/v2/Button";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 import Link from "next/link";
+import { trackEngagement, trackKpi } from "@/lib/analytics";
 
 const WordsPage = () => {
   const { isSignedIn } = useHybridWebUser();
@@ -24,6 +25,7 @@ const WordsPage = () => {
   const [recommendations, setRecommendations] = useState<string[]>([]);
   const [recoLoading, setRecoLoading] = useState(false);
   const [showMobileDetails, setShowMobileDetails] = useState(false);
+  const [flashcardsReviewed, setFlashcardsReviewed] = useState(0);
   const limit = 5;
 
   useEffect(() => {
@@ -129,15 +131,52 @@ const WordsPage = () => {
         body: JSON.stringify({ word, isLearned: !currentStatus }),
       });
       if (response.ok) {
+        const nextLearned = !currentStatus;
         setWords((prev) =>
           prev.map((w) =>
-            w.word === word ? { ...w, isLearned: !currentStatus } : w,
+            w.word === word ? { ...w, isLearned: nextLearned } : w,
           ),
         );
+        if (nextLearned) {
+          trackEngagement.wordMastered(word, word);
+        }
       }
     } catch (error) {
       console.error("Error toggling learned status:", error);
     }
+  };
+
+  const selectWordIndex = (index: number) => {
+    setSelectedWordIndex(index);
+    const word = words[index];
+    if (word) {
+      trackEngagement.wordViewed(word.word, word.word);
+    }
+  };
+
+  const advanceFlashcard = (direction: 1 | -1) => {
+    setSelectedWordIndex((prev) => {
+      if (prev === null) return prev;
+      const next = prev + direction;
+      if (next < 0 || next >= words.length) {
+        if (flashcardsReviewed > 0 || prev > 0) {
+          const reviewed = flashcardsReviewed + 1;
+          const mastered = words.filter((w) => w.isLearned).length;
+          trackKpi.vocabPracticeComplete({
+            setId: "user_words",
+            cardsReviewed: reviewed,
+            accuracy: words.length
+              ? Math.round((mastered / words.length) * 100)
+              : undefined,
+          });
+        }
+        return prev;
+      }
+      setFlashcardsReviewed((n) => n + 1);
+      const word = words[next];
+      if (word) trackEngagement.wordViewed(word.word, word.word);
+      return next;
+    });
   };
 
   const handleViewFlashcards = () => {
@@ -147,8 +186,9 @@ const WordsPage = () => {
       if (words.length > 1 && randomIndex === selectedWordIndex) {
         randomIndex = (randomIndex + 1) % words.length;
       }
-      setSelectedWordIndex(randomIndex);
+      selectWordIndex(randomIndex);
       setShowMobileDetails(true);
+      setFlashcardsReviewed(0);
     }
   };
 
@@ -173,18 +213,8 @@ const WordsPage = () => {
               {selectedWord && selectedWordIndex !== null && (
                 <WordDetailsCard
                   word={selectedWord}
-                  onNext={() =>
-                    setSelectedWordIndex((prev) =>
-                      prev !== null && prev < words.length - 1
-                        ? prev + 1
-                        : prev,
-                    )
-                  }
-                  onPrevious={() =>
-                    setSelectedWordIndex((prev) =>
-                      prev !== null && prev > 0 ? prev - 1 : prev,
-                    )
-                  }
+                  onNext={() => advanceFlashcard(1)}
+                  onPrevious={() => advanceFlashcard(-1)}
                   onToggleMastered={handleToggleLearned}
                   hasPrevious={
                     selectedWordIndex !== null && selectedWordIndex > 0
@@ -227,7 +257,7 @@ const WordsPage = () => {
                               handleToggleLearned(item.word, !!item.isLearned)
                             }
                             onClick={() => {
-                              setSelectedWordIndex(index);
+                              selectWordIndex(index);
                               setShowMobileDetails(true);
                             }}
                           />
@@ -261,18 +291,8 @@ const WordsPage = () => {
                         <WordDetailsCard
                           key={selectedWord.word}
                           word={selectedWord}
-                          onNext={() =>
-                            setSelectedWordIndex((prev) =>
-                              prev !== null && prev < words.length - 1
-                                ? prev + 1
-                                : prev,
-                            )
-                          }
-                          onPrevious={() =>
-                            setSelectedWordIndex((prev) =>
-                              prev !== null && prev > 0 ? prev - 1 : prev,
-                            )
-                          }
+                          onNext={() => advanceFlashcard(1)}
+                          onPrevious={() => advanceFlashcard(-1)}
                           onToggleMastered={handleToggleLearned}
                           hasPrevious={
                             selectedWordIndex !== null && selectedWordIndex > 0
@@ -308,7 +328,7 @@ const WordsPage = () => {
                       onToggleLearned={() =>
                         handleToggleLearned(item.word, !!item.isLearned)
                       }
-                      onClick={() => setSelectedWordIndex(index)}
+                      onClick={() => selectWordIndex(index)}
                     />
                   ))}
                 </div>

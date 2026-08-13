@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
+  appUserAdmin,
   auth,
   currentUser,
   sessionClaimsHasAdminRole,
@@ -10,6 +11,7 @@ import {
   type AdminPlanChangeMode,
   type AdminPlanChangeTiming,
 } from "@/lib/admin/adminChangeUserPlan";
+import { sendGa4Events } from "@/lib/ga4MeasurementProtocol";
 
 export async function GET(
   _request: NextRequest,
@@ -83,6 +85,19 @@ export async function POST(
         ? ({ kind: "free" } as const)
         : ({ kind: "plan", planId: targetRaw } as const);
 
+    let fromPlan = "unknown";
+    try {
+      const authAdmin = await appUserAdmin();
+      const targetUser = await authAdmin.users.getUser(userId);
+      const meta = (targetUser.publicMetadata || {}) as Record<string, unknown>;
+      fromPlan =
+        (typeof meta.planType === "string" && meta.planType) ||
+        (typeof meta.plan === "string" && meta.plan) ||
+        "free";
+    } catch {
+      // ignore — still apply plan change
+    }
+
     const result = await adminChangeUserPlan({
       userId,
       target,
@@ -90,6 +105,30 @@ export async function POST(
       refundLatestPayment,
       mode,
       adminUserId: authenticate.userId || currentUserData.id,
+    });
+
+    const toPlan = result.targetPlanType || result.targetPlan || "unknown";
+    const direction =
+      fromPlan === "free" && toPlan !== "free"
+        ? "upgrade"
+        : toPlan === "free" && fromPlan !== "free"
+          ? "downgrade"
+          : fromPlan === toPlan
+            ? "lateral"
+            : "upgrade";
+    void sendGa4Events({
+      clientId: `uid.${userId.replace(/[^A-Za-z0-9._-]/g, "").slice(0, 64) || "unknown"}`,
+      userId,
+      events: [
+        {
+          name: "plan_change",
+          params: {
+            from_plan: fromPlan,
+            to_plan: toPlan,
+            direction,
+          },
+        },
+      ],
     });
 
     return NextResponse.json(result);

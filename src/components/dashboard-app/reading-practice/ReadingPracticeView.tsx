@@ -25,6 +25,7 @@ import LoginModal from "@/components/modal/LoginModal";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 import SvgCircle from "@/components/icons/Circle";
 import SvgCheckCircle from "@/components/icons/CheckCircle";
+import { trackKpi } from "@/lib/analytics";
 import { ActivityLogger } from "@/lib/userActivity";
 import { useLeaguePoints } from "@/hooks/useLeaguePoints";
 import { useTrophySystem } from "@/hooks/useTrophySystem";
@@ -35,6 +36,8 @@ import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import Link from "next/link";
 import ObjectivePracticeSubmitButtons from "../practice/ObjectivePracticeSubmitButtons";
 import TaskRetakeBanner from "../practice/TaskRetakeBanner";
+import { usePracticeSessionAnalytics } from "@/hooks/usePracticeSessionAnalytics";
+import { useTimerExpiredAnalytics } from "@/hooks/useTimerExpiredAnalytics";
 import {
   buildPracticeUrl,
   retakeTask,
@@ -102,6 +105,30 @@ const ReadingPracticeView = ({
   const setPremiumPlanModalState = useStore(
     (state) => state.setPremiumPlanModalState,
   );
+  const completedRef = useRef(false);
+  const totalQuestionsCount =
+    practice.totalQuestion !== undefined
+      ? practice.totalQuestion
+      : practice.passages.reduce((sum: number, p: TPassage) => {
+          return sum + (p.questions?.length ?? 0);
+        }, 0);
+  useTimerExpiredAnalytics(
+    time,
+    "reading",
+    Math.max(0, totalQuestionsCount - Object.keys(selectedAnswers).length),
+  );
+  usePracticeSessionAnalytics({
+    testId: selectedPracticeId || practice.id,
+    module: "reading",
+    completedRef,
+    getPercentComplete: () =>
+      totalQuestionsCount
+        ? Math.round(
+            (Object.keys(selectedAnswers).length / totalQuestionsCount) * 100,
+          )
+        : 0,
+    getLastQuestionIndex: () => questionIndexInPractice,
+  });
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
 
@@ -109,11 +136,6 @@ const ReadingPracticeView = ({
       timer = setInterval(() => {
         setTime((prevTime) => prevTime - 1);
       }, 1000);
-    }
-
-    if (time === 0 && timer) {
-      clearInterval(timer);
-      // Handle time's up logic here if needed
     }
 
     return () => {
@@ -127,6 +149,7 @@ const ReadingPracticeView = ({
     setQuestionIndexInPractice(0);
     setPassageIndex(0);
     setQuestionIndex(0);
+    completedRef.current = false;
 
     const fetchPreviousAnswers = async () => {
       if (!user || !selectedPracticeId) return;
@@ -139,6 +162,7 @@ const ReadingPracticeView = ({
           if (data.answers) {
             setSelectedAnswers(data.answers);
             setPage("answer");
+            trackKpi.practiceTestResume({ testId: selectedPracticeId });
             return;
           }
         }
@@ -177,6 +201,7 @@ const ReadingPracticeView = ({
           });
 
           if (response.ok) {
+            completedRef.current = true;
             const result = await response.json();
             // Log practice completed
             const attemptId = `practice_${practice.id}_${Date.now()}`;

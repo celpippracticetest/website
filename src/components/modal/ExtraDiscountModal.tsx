@@ -4,6 +4,7 @@ import { useExtraDiscountStore } from "@/store/useExtraDiscount.store";
 import SvgCopy from "../icons/Copy";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import Close from "../icons/Close";
+import { trackKpi } from "@/lib/analytics";
 
 const ExtraDiscountModal = () => {
   const ref = useRef<HTMLDivElement>(null);
@@ -28,8 +29,13 @@ const ExtraDiscountModal = () => {
 
     if (!hasClosedModal && freeUser && isNewUser) {
       setIsVisible(true);
+      trackKpi.viewPromotion({
+        promotionId: String(couponId || "welcome_extra_10"),
+        promotionName: "welcome_extra_discount",
+        creativeSlot: "modal",
+      });
     }
-  }, [user]);
+  }, [user, freeUser, isNewUser, couponId]);
 
   useEffect(() => {
     if (!userCreatedAt) return;
@@ -46,14 +52,14 @@ const ExtraDiscountModal = () => {
         clearInterval(interval);
       } else {
         const hours = String(
-          Math.floor((distance / (1000 * 60 * 60)) % 24)
+          Math.floor((distance / (1000 * 60 * 60)) % 24),
         ).padStart(2, "0");
         const minutes = String(
-          Math.floor((distance / (1000 * 60)) % 60)
+          Math.floor((distance / (1000 * 60)) % 60),
         ).padStart(2, "0");
         const seconds = String(Math.floor((distance / 1000) % 60)).padStart(
           2,
-          "0"
+          "0",
         );
 
         setTimeLeft(`${hours}:${minutes}:${seconds}`);
@@ -117,12 +123,21 @@ const ExtraDiscountModal = () => {
           <button
             type="button"
             onClick={() => {
-              navigator.clipboard
-                .writeText(couponId?.toString() ?? "")
-                .then(() => {
-                  setCopied(true);
-                  setTimeout(() => setCopied(false), 2000);
+              const code = couponId?.toString() ?? "";
+              navigator.clipboard.writeText(code).then(() => {
+                setCopied(true);
+                trackKpi.selectPromotion({
+                  promotionId: code || "welcome_extra_10",
+                  promotionName: "welcome_extra_discount",
+                  creativeSlot: "modal_copy",
                 });
+                trackKpi.promoCodeApply({
+                  coupon: code,
+                  discountPct: 10,
+                  result: "applied",
+                });
+                setTimeout(() => setCopied(false), 2000);
+              });
             }}
             className="flex-1 cursor-pointer flex px-[20px] py-[8px] h-[28px] rounded-[8px] bg-white items-center justify-center gap-[8px]"
           >

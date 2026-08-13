@@ -37,9 +37,10 @@ export interface LoginInitiatedEvent extends GTMEvent {
 }
 
 export interface LoginCompletedEvent extends GTMEvent {
-  event: "login_completed";
+  event: "login";
   method?: string;
   user_id: string;
+  days_since_last_login?: number;
 }
 
 export interface LogoutEvent extends GTMEvent {
@@ -141,25 +142,29 @@ export interface PracticeOverviewViewedEvent extends GTMEvent {
 }
 
 export interface PracticeStartedEvent extends GTMEvent {
-  event: "practice_started";
-  practice_id: string;
-  skill_type: "Listening" | "Reading" | "Writing" | "Speaking";
-  difficulty_level?: string;
+  event: "practice_test_start";
+  test_id: string;
+  test_type?: "full_mock" | "module" | "quiz";
+  module?: string;
+  difficulty?: string;
+  is_free?: boolean;
+  attempt_number?: number;
 }
 
 export interface PracticeCompletedEvent extends GTMEvent {
-  event: "practice_completed";
-  practice_id: string;
-  skill_type: string;
-  score?: number;
-  time_spent?: number;
+  event: "practice_test_complete";
+  test_id: string;
+  module?: string;
+  duration_sec?: number;
+  raw_score?: number;
+  estimated_clb?: number;
 }
 
 export interface PracticeResultsViewedEvent extends GTMEvent {
-  event: "practice_results_viewed";
-  practice_id: string;
-  skill_type: string;
-  score?: number;
+  event: "score_report_view";
+  test_id?: string;
+  module?: string;
+  overall_clb?: number;
 }
 
 export interface AIFeedbackViewedEvent extends GTMEvent {
@@ -265,9 +270,12 @@ export interface WordMasteredEvent extends GTMEvent {
 }
 
 export interface AudioPlayedEvent extends GTMEvent {
-  event: "audio_played";
+  event: "audio_play";
   audio_type: string;
   audio_source?: string;
+  clip_id?: string;
+  module?: string;
+  replay_count?: number;
 }
 
 // Referral Events

@@ -1,5 +1,6 @@
 "use client";
 
+import { trackAuth } from "@/lib/analytics";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -50,26 +51,31 @@ export default function EmailConfirmClient() {
       if (code) {
         if (exchangedCodes.has(code)) {
           setStatus("done");
-          setMessage("Your email is already confirmed. Open the app to continue.");
+          setMessage(
+            "Your email is already confirmed. Open the app to continue.",
+          );
           return;
         }
         exchangedCodes.add(code);
 
-        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+        const { data, error } =
+          await supabase.auth.exchangeCodeForSession(code);
         if (cancelled) return;
 
         if (error || !data.session) {
           exchangedCodes.delete(code);
           setStatus("error");
           setMessage(
-            error?.message?.includes("verifier") || error?.message?.includes("code verifier")
+            error?.message?.includes("verifier") ||
+              error?.message?.includes("code verifier")
               ? "This confirmation was started in the CELPIP app. On your phone, tap the link again so it opens the CELPIP app (not the website). If it keeps opening here, use “Resend confirmation” from the app."
               : (error?.message ??
-                "This confirmation link is invalid or has expired. Use “Resend confirmation” in the app, or sign up again."),
+                  "This confirmation link is invalid or has expired. Use “Resend confirmation” in the app, or sign up again."),
           );
           return;
         }
 
+        trackAuth.emailVerified();
         const deepLink = `celpipapp://auth#${buildAppReturnHash(data.session)}`;
         setStatus("done");
         setMessage("Opening the CELPIP app…");
@@ -101,6 +107,7 @@ export default function EmailConfirmClient() {
           return;
         }
 
+        trackAuth.emailVerified();
         const deepLink = `celpipapp://auth#${buildAppReturnHash(data.session)}`;
         setStatus("done");
         setMessage("Opening the CELPIP app…");
@@ -116,7 +123,9 @@ export default function EmailConfirmClient() {
       }
 
       setStatus("error");
-      setMessage("This page is missing a valid confirmation link. Open the link from your email again.");
+      setMessage(
+        "This page is missing a valid confirmation link. Open the link from your email again.",
+      );
     }
 
     void run();
@@ -127,7 +136,9 @@ export default function EmailConfirmClient() {
 
   return (
     <main className="mx-auto flex min-h-[60vh] max-w-md flex-col justify-center gap-4 px-6 py-16 text-center">
-      <h1 className="text-xl font-semibold text-neutral-900">Email confirmation</h1>
+      <h1 className="text-xl font-semibold text-neutral-900">
+        Email confirmation
+      </h1>
       <p className="text-neutral-600">{message}</p>
       {status === "done" && (
         <p>
@@ -141,7 +152,10 @@ export default function EmailConfirmClient() {
       )}
       {status === "error" && (
         <p>
-          <Link href="/" className="font-medium text-blue-600 underline underline-offset-2 hover:text-blue-700">
+          <Link
+            href="/"
+            className="font-medium text-blue-600 underline underline-offset-2 hover:text-blue-700"
+          >
             Back to home
           </Link>
         </p>

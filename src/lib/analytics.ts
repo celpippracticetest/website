@@ -1,9 +1,15 @@
-// Browser analytics — GA4 via gtag (no GTM).
+// Browser analytics — GA4 via gtag (KPI event names from docs/KPI - deploy GA4 Events.csv).
 import { track as vercelTrack } from "@vercel/analytics";
 import { getAnalyticsStyleContext } from "@/lib/analyticsStyleContext";
 import { getAnalyticsPricingModelContext } from "@/lib/analyticsPricingModelContext";
+import { contentGroupFromPath } from "@/lib/contentGroup";
 import { sendGa4Event, updateGa4Consent } from "@/lib/ga4Browser";
 import type { GaConsentState } from "@/lib/consent";
+import {
+  GOOGLE_ADS_CONVERSION_ID,
+  GOOGLE_ADS_SIGNUP_LABEL,
+  GOOGLE_ADS_SUBSCRIBE_LABEL,
+} from "@/lib/google-ads-constants";
 import {
   metaEventIdCompleteRegistration,
   metaEventIdPageView,
@@ -21,11 +27,29 @@ import type {
   VercelAnalyticsCustomProperties,
 } from "@/types/analytics";
 
+export type PracticeTestType = "full_mock" | "module" | "quiz";
+export type PracticeModule = "listening" | "reading" | "writing" | "speaking";
+
+function normalizeModule(
+  skill?: string | null
+): PracticeModule | undefined {
+  const s = (skill || "").toLowerCase();
+  if (s === "listening" || s === "reading" || s === "writing" || s === "speaking") {
+    return s;
+  }
+  return undefined;
+}
+
 // Check if we're in a browser environment
 const isBrowser = typeof window !== "undefined";
 
 // Debug mode - logs events to console in development
 const DEBUG = process.env.NODE_ENV === "development";
+const GOOGLE_ADS_PURCHASE_LABEL =
+  process.env.NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_LABEL ||
+  GOOGLE_ADS_SUBSCRIBE_LABEL;
+const GOOGLE_ADS_BEGIN_CHECKOUT_LABEL =
+  process.env.NEXT_PUBLIC_GOOGLE_ADS_BEGIN_CHECKOUT_LABEL || "";
 const conversionDedupSet = new Set<string>();
 const ATTRIBUTION_STORAGE_KEYS = {
   utmSource: "pending_utm_source",
@@ -309,6 +333,57 @@ function markDeduplicatedOnce(key: string): boolean {
   return false;
 }
 
+function getGoogleAdsSendTo(label?: string): string | undefined {
+  if (!GOOGLE_ADS_CONVERSION_ID || !label) return undefined;
+  return `${GOOGLE_ADS_CONVERSION_ID}/${label}`;
+}
+
+function normalizeUserData(userData?: UserData): UserData | undefined {
+  if (!userData || typeof userData !== "object") return undefined;
+  const normalized = { ...userData };
+  if (typeof normalized.email === "string") {
+    normalized.email = normalized.email.trim().toLowerCase();
+  }
+  if (typeof normalized.phone_number === "string") {
+    normalized.phone_number = normalized.phone_number.replace(/\s+/g, "");
+  }
+  return normalized;
+}
+
+/**
+ * GTM-only event for Ads/Meta Enhanced Conversions.
+ * Pushes to dataLayer — never sent to GA4 (blocked in ga4Browser).
+ */
+function pushAdsEnhancedConversion(params: {
+  conversionEvent: string;
+  conversionLabel?: string;
+  value?: number;
+  currency?: string;
+  transactionId?: string;
+  userData?: UserData;
+  purchaseType?: "first_purchase" | "subscription_renewal";
+}): void {
+  if (!isBrowser) return;
+  try {
+    const dataLayer = (window.dataLayer = window.dataLayer || []);
+    dataLayer.push({
+      event: "ads_enhanced_conversion",
+      conversion_event: params.conversionEvent,
+      conversion_label: params.conversionLabel || undefined,
+      google_ads_send_to: getGoogleAdsSendTo(params.conversionLabel || ""),
+      value: params.value,
+      currency: params.currency,
+      transaction_id: params.transactionId,
+      purchase_type: params.purchaseType,
+      user_data: normalizeUserData(params.userData),
+    });
+  } catch (error) {
+    if (DEBUG) {
+      console.warn("[Analytics] ads_enhanced_conversion push failed:", error);
+    }
+  }
+}
+
 /** Track an analytics event in GA4. */
 export function trackEvent(
   event: AnalyticsEvent,
@@ -433,10 +508,14 @@ export function trackPageView(
   userPlan?: string
 ): void {
   const eventId = metaEventIdPageView(newMetaClientEventId());
+  const pageLocation = isBrowser ? window.location.href : path;
   const payload: Record<string, unknown> = {
     event: "page_view",
     page_path: path,
+    page_location: pageLocation,
     page_title: title || (isBrowser ? document.title : undefined),
+    page_referrer: isBrowser ? document.referrer || undefined : undefined,
+    content_group: contentGroupFromPath(path),
     user_id: userId,
     user_plan: userPlan,
     event_id: eventId,
@@ -481,13 +560,30 @@ export function trackBlogArticleView(
 }
 
 /**
- * Track CTA click
+ * Track CTA click (KPI + GA4 select_content-compatible params).
  */
-export function trackCTAClick(ctaText: string, ctaLocation: string): void {
+export function trackCTAClick(
+  ctaText: string,
+  ctaLocation: string,
+  options?: {
+    contentType?: string;
+    itemId?: string;
+    sourcePage?: string;
+    contentGroup?: string;
+  }
+): void {
+  const sourcePage =
+    options?.sourcePage ||
+    (isBrowser ? `${window.location.pathname}${window.location.search}` : undefined);
   trackEvent({
     event: "cta_click",
     cta_text: ctaText,
     cta_location: ctaLocation,
+    content_type: options?.contentType || "cta",
+    item_id: options?.itemId || ctaLocation,
+    source_page: sourcePage,
+    content_group:
+      options?.contentGroup || contentGroupFromPath(sourcePage),
   });
 }
 
@@ -546,6 +642,15 @@ export const trackAuth = {
       userId,
       email: typeof userData?.email === "string" ? userData.email : undefined,
     });
+    if (userData) {
+      pushAdsEnhancedConversion({
+        conversionEvent: "sign_up",
+        conversionLabel: GOOGLE_ADS_SIGNUP_LABEL,
+        value: 1,
+        currency: "CAD",
+        userData,
+      });
+    }
   },
 
   loginInitiated: (method?: string) => {
@@ -555,11 +660,23 @@ export const trackAuth = {
     });
   },
 
-  loginCompleted: (userId: string, method?: string) => {
+  loginCompleted: (
+    userId: string,
+    method?: string,
+    daysSinceLastLogin?: number
+  ) => {
     trackEvent({
-      event: "login_completed",
+      event: "login",
       user_id: userId,
       method,
+      days_since_last_login: daysSinceLastLogin,
+    });
+  },
+
+  emailVerified: (hoursToVerify?: number) => {
+    trackEvent({
+      event: "email_verified",
+      hours_to_verify: hoursToVerify,
     });
   },
 
@@ -593,7 +710,7 @@ export const trackModal = {
 };
 
 /**
- * Track exam events
+ * Track exam / mock events (KPI: practice_test_* with test_type full_mock).
  */
 export const trackExam = {
   overviewViewed: (userPlan?: string) => {
@@ -609,12 +726,11 @@ export const trackExam = {
     sectionType?: string,
     userPlan?: string
   ) => {
-    trackEvent({
-      event: "exam_started",
-      exam_id: examId,
-      part_id: partId,
-      section_type: sectionType,
-      user_plan: userPlan,
+    trackKpi.practiceTestStart({
+      testId: examId,
+      testType: "full_mock",
+      module: normalizeModule(sectionType),
+      isFree: userPlan === "free" || userPlan == null,
     });
   },
 
@@ -660,38 +776,37 @@ export const trackExam = {
   },
 
   completed: (examId: string, totalScore?: number, timeSpent?: number) => {
-    trackEvent({
-      event: "exam_completed",
-      exam_id: examId,
-      total_score: totalScore,
-      time_spent: timeSpent,
+    trackKpi.practiceTestComplete({
+      testId: examId,
+      testType: "full_mock",
+      durationSec: timeSpent,
+      rawScore: totalScore,
     });
   },
 
   resultsViewed: (examId: string, score?: number) => {
-    trackEvent({
-      event: "exam_results_viewed",
-      exam_id: examId,
-      score,
+    trackKpi.scoreReportView({
+      testId: examId,
+      overallClb: score,
     });
   },
 
   abandoned: (
     examId: string,
     partId?: string,
-    completionPercentage?: number
+    completionPercentage?: number,
+    exitReason?: string
   ) => {
-    trackEvent({
-      event: "exam_abandoned",
-      exam_id: examId,
-      part_id: partId,
-      completion_percentage: completionPercentage,
+    trackKpi.practiceTestAbandon({
+      testId: examId,
+      percentComplete: completionPercentage,
+      exitReason: exitReason || "navigation_away",
     });
   },
 };
 
 /**
- * Track practice events
+ * Track practice events (KPI: practice_test_* with test_type module).
  */
 export const trackPractice = {
   overviewViewed: (skillType?: string) => {
@@ -704,13 +819,16 @@ export const trackPractice = {
   started: (
     practiceId: string,
     skillType: string,
-    difficultyLevel?: string
+    difficultyLevel?: string,
+    options?: { isFree?: boolean; attemptNumber?: number }
   ) => {
-    trackEvent({
-      event: "practice_started",
-      practice_id: practiceId,
-      skill_type: skillType,
-      difficulty_level: difficultyLevel,
+    trackKpi.practiceTestStart({
+      testId: practiceId,
+      testType: "module",
+      module: normalizeModule(skillType),
+      difficulty: difficultyLevel,
+      isFree: options?.isFree,
+      attemptNumber: options?.attemptNumber,
     });
   },
 
@@ -718,36 +836,47 @@ export const trackPractice = {
     practiceId: string,
     skillType: string,
     score?: number,
-    timeSpent?: number
+    timeSpent?: number,
+    options?: {
+      estimatedClb?: number;
+      questionsAttempted?: number;
+      completionRate?: number;
+    }
   ) => {
-    trackEvent({
-      event: "practice_completed",
-      practice_id: practiceId,
-      skill_type: skillType,
-      score,
-      time_spent: timeSpent,
+    trackKpi.practiceTestComplete({
+      testId: practiceId,
+      testType: "module",
+      module: normalizeModule(skillType),
+      durationSec: timeSpent,
+      rawScore: score,
+      estimatedClb: options?.estimatedClb,
+      questionsAttempted: options?.questionsAttempted,
+      completionRate: options?.completionRate,
     });
   },
 
   resultsViewed: (practiceId: string, skillType: string, score?: number) => {
-    trackEvent({
-      event: "practice_results_viewed",
-      practice_id: practiceId,
-      skill_type: skillType,
-      score,
+    trackKpi.scoreReportView({
+      testId: practiceId,
+      module: normalizeModule(skillType),
+      overallClb: score,
     });
   },
 
   aiFeedbackViewed: (
     context: "practice" | "exam",
     practiceId?: string,
-    examId?: string
+    examId?: string,
+    options?: { module?: string; timeOnFeedbackSec?: number; sectionsExpanded?: number }
   ) => {
     trackEvent({
       event: "ai_feedback_viewed",
       practice_id: practiceId,
       exam_id: examId,
       context,
+      module: normalizeModule(options?.module) || normalizeModule(context),
+      time_on_feedback_sec: options?.timeOnFeedbackSec,
+      sections_expanded: options?.sectionsExpanded,
     });
   },
 };
@@ -783,7 +912,7 @@ export const trackEcommerce = {
     currency: string,
     value: number,
     coupon?: string,
-    _userData?: UserData
+    userData?: UserData
   ) => {
     const attributionPayload = buildAttributionEventPayload();
     trackEvent({
@@ -798,6 +927,15 @@ export const trackEcommerce = {
       },
       ...attributionPayload,
     });
+    if (userData) {
+      pushAdsEnhancedConversion({
+        conversionEvent: "begin_checkout",
+        conversionLabel: GOOGLE_ADS_BEGIN_CHECKOUT_LABEL,
+        value,
+        currency,
+        userData,
+      });
+    }
   },
 
   purchase: (
@@ -806,7 +944,7 @@ export const trackEcommerce = {
     currency: string,
     value: number,
     coupon?: string,
-    _userData?: UserData,
+    userData?: UserData,
     attributionData?: Record<string, unknown>,
     purchaseType: "first_purchase" | "subscription_renewal" = "first_purchase"
   ) => {
@@ -842,6 +980,17 @@ export const trackEcommerce = {
       value,
       currency,
     });
+    if (userData) {
+      pushAdsEnhancedConversion({
+        conversionEvent: "purchase",
+        conversionLabel: GOOGLE_ADS_PURCHASE_LABEL,
+        value,
+        currency,
+        transactionId,
+        userData,
+        purchaseType: resolvedPurchaseType,
+      });
+    }
   },
 
   refund: (transactionId: string, currency: string, value: number) => {
@@ -859,15 +1008,25 @@ export const trackEcommerce = {
     reason?: "user_cancelled" | "payment_failed" | "admin_cancelled" | "refunded",
     planType?: string,
     subscriptionId?: string,
-    extra?: { survey_reason?: string; flow_id?: string | null }
+    extra?: {
+      survey_reason?: string;
+      flow_id?: string | null;
+      daysSubscribed?: number;
+      mrrLost?: number;
+      willExpireAt?: string;
+    }
   ) => {
     trackEvent({
-      event: "subscription_cancelled",
+      event: "subscription_cancel",
       cancellation_reason: reason,
+      plan: planType,
       plan_type: planType,
       subscription_id: subscriptionId,
       survey_reason: extra?.survey_reason,
       flow_id: extra?.flow_id ?? undefined,
+      days_subscribed: extra?.daysSubscribed,
+      mrr_lost: extra?.mrrLost,
+      will_expire_at: extra?.willExpireAt,
     });
   },
 };
@@ -923,11 +1082,18 @@ export const trackEngagement = {
     });
   },
 
-  audioPlayed: (audioType: string, audioSource?: string) => {
+  audioPlayed: (
+    audioType: string,
+    audioSource?: string,
+    options?: { clipId?: string; module?: string; replayCount?: number }
+  ) => {
     trackEvent({
-      event: "audio_played",
+      event: "audio_play",
       audio_type: audioType,
       audio_source: audioSource,
+      clip_id: options?.clipId || audioSource,
+      module: normalizeModule(options?.module),
+      replay_count: options?.replayCount,
     });
   },
 
@@ -946,12 +1112,16 @@ export const trackEngagement = {
 
   refundRequestSubmitted: (
     requestReason: string,
-    trackingCode?: string
+    trackingCode?: string,
+    options?: { daysSincePurchase?: number; value?: number }
   ) => {
     trackEvent({
-      event: "refund_request_submitted",
+      event: "refund_request",
+      reason: requestReason,
       refund_request_reason: requestReason,
       refund_tracking_code: trackingCode,
+      days_since_purchase: options?.daysSincePurchase,
+      value: options?.value,
     });
   },
 
@@ -1004,6 +1174,488 @@ export const trackReferral = {
       event: "withdrawal_requested",
       amount,
       currency,
+    });
+  },
+};
+
+/**
+ * KPI GA4 events from docs/KPI - deploy GA4 Events.csv
+ */
+export const trackKpi = {
+  practiceTestStart: (params: {
+    testId: string;
+    testType: PracticeTestType;
+    module?: PracticeModule;
+    difficulty?: string;
+    isFree?: boolean;
+    attemptNumber?: number;
+  }) => {
+    trackEvent({
+      event: "practice_test_start",
+      test_id: params.testId,
+      test_type: params.testType,
+      module: params.module,
+      difficulty: params.difficulty,
+      is_free: params.isFree,
+      attempt_number: params.attemptNumber,
+    });
+  },
+
+  practiceTestComplete: (params: {
+    testId: string;
+    testType?: PracticeTestType;
+    module?: PracticeModule;
+    durationSec?: number;
+    rawScore?: number;
+    estimatedClb?: number;
+    questionsAttempted?: number;
+    completionRate?: number;
+  }) => {
+    trackEvent({
+      event: "practice_test_complete",
+      test_id: params.testId,
+      test_type: params.testType,
+      module: params.module,
+      duration_sec: params.durationSec,
+      raw_score: params.rawScore,
+      estimated_clb: params.estimatedClb,
+      questions_attempted: params.questionsAttempted,
+      completion_rate: params.completionRate,
+    });
+  },
+
+  practiceTestAbandon: (params: {
+    testId?: string;
+    module?: PracticeModule;
+    percentComplete?: number;
+    lastQuestionIndex?: number;
+    exitReason?: string;
+  }) => {
+    trackEvent({
+      event: "practice_test_abandon",
+      test_id: params.testId,
+      module: params.module,
+      percent_complete: params.percentComplete,
+      last_question_index: params.lastQuestionIndex,
+      exit_reason: params.exitReason,
+    });
+  },
+
+  practiceTestResume: (params: {
+    testId: string;
+    hoursSincePause?: number;
+  }) => {
+    trackEvent({
+      event: "practice_test_resume",
+      test_id: params.testId,
+      hours_since_pause: params.hoursSincePause,
+    });
+  },
+
+  timerExpired: (params: {
+    module?: PracticeModule;
+    questionsUnanswered?: number;
+  }) => {
+    trackEvent({
+      event: "timer_expired",
+      module: params.module,
+      questions_unanswered: params.questionsUnanswered,
+    });
+  },
+
+  audioError: (params: {
+    clipId?: string;
+    errorType?: string;
+    browser?: string;
+    device?: string;
+  }) => {
+    trackEvent({
+      event: "audio_error",
+      clip_id: params.clipId,
+      error_type: params.errorType,
+      browser: params.browser,
+      device: params.device,
+    });
+  },
+
+  writingTaskSubmit: (params: {
+    taskNumber: 1 | 2 | number;
+    wordCount?: number;
+    timeSpentSec?: number;
+    isFree?: boolean;
+  }) => {
+    trackEvent({
+      event: "writing_task_submit",
+      task_number: params.taskNumber,
+      word_count: params.wordCount,
+      time_spent_sec: params.timeSpentSec,
+      is_free: params.isFree,
+    });
+  },
+
+  speakingTaskSubmit: (params: {
+    taskNumber: number;
+    durationSec?: number;
+    retakes?: number;
+    isFree?: boolean;
+  }) => {
+    trackEvent({
+      event: "speaking_task_submit",
+      task_number: params.taskNumber,
+      duration_sec: params.durationSec,
+      retakes: params.retakes,
+      is_free: params.isFree,
+    });
+  },
+
+  micPermissionResult: (params: {
+    result: "granted" | "denied" | "dismissed";
+    browser?: string;
+    device?: string;
+  }) => {
+    trackEvent({
+      event: "mic_permission_result",
+      result: params.result,
+      browser: params.browser,
+      device: params.device,
+    });
+  },
+
+  aiScoringRequested: (params: {
+    module?: PracticeModule | string;
+    taskNumber?: number;
+    inputLength?: number;
+    model?: string;
+  }) => {
+    trackEvent({
+      event: "ai_scoring_requested",
+      module: normalizeModule(params.module) || params.module,
+      task_number: params.taskNumber,
+      input_length: params.inputLength,
+      model: params.model,
+    });
+  },
+
+  aiScoreReturned: (params: {
+    module?: PracticeModule | string;
+    latencyMs?: number;
+    estimatedClb?: number;
+  }) => {
+    trackEvent({
+      event: "ai_score_returned",
+      module: normalizeModule(params.module) || params.module,
+      latency_ms: params.latencyMs,
+      estimated_clb: params.estimatedClb,
+    });
+  },
+
+  aiScoringFailed: (params: {
+    module?: PracticeModule | string;
+    errorType?: string;
+    retryCount?: number;
+  }) => {
+    trackEvent({
+      event: "ai_scoring_failed",
+      module: normalizeModule(params.module) || params.module,
+      error_type: params.errorType,
+      retry_count: params.retryCount,
+    });
+  },
+
+  aiFeedbackRated: (params: {
+    rating: number | string;
+    module?: PracticeModule | string;
+    reasonText?: string;
+  }) => {
+    trackEvent({
+      event: "ai_feedback_rated",
+      rating: params.rating,
+      module: normalizeModule(params.module) || params.module,
+      reason_text: params.reasonText,
+    });
+  },
+
+  scoreReportView: (params: {
+    testId?: string;
+    module?: PracticeModule;
+    overallClb?: number;
+    listeningClb?: number;
+    readingClb?: number;
+    writingClb?: number;
+    speakingClb?: number;
+  }) => {
+    trackEvent({
+      event: "score_report_view",
+      test_id: params.testId,
+      module: params.module,
+      overall_clb: params.overallClb,
+      listening_clb: params.listeningClb,
+      reading_clb: params.readingClb,
+      writing_clb: params.writingClb,
+      speaking_clb: params.speakingClb,
+    });
+  },
+
+  onboardingStepComplete: (params: {
+    stepName: string;
+    stepNumber: number;
+    totalSteps: number;
+  }) => {
+    trackEvent({
+      event: "onboarding_step_complete",
+      step_name: params.stepName,
+      step_number: params.stepNumber,
+      total_steps: params.totalSteps,
+    });
+  },
+
+  onboardingComplete: (params?: {
+    durationSec?: number;
+    stepsSkipped?: number;
+  }) => {
+    trackEvent({
+      event: "onboarding_complete",
+      duration_sec: params?.durationSec,
+      steps_skipped: params?.stepsSkipped,
+    });
+  },
+
+  testDateSet: (params: {
+    testDate: string;
+    daysUntilTest?: number;
+    isBooked?: boolean;
+  }) => {
+    trackEvent({
+      event: "test_date_set",
+      test_date: params.testDate,
+      days_until_test: params.daysUntilTest,
+      is_booked: params.isBooked,
+    });
+  },
+
+  targetScoreSet: (params: {
+    targetClb: number | string;
+    purpose?: string;
+  }) => {
+    trackEvent({
+      event: "target_score_set",
+      target_clb: params.targetClb,
+      purpose: params.purpose,
+    });
+  },
+
+  paywallView: (params?: {
+    triggerSource?: string;
+    plansShown?: string | number;
+    daysUntilTest?: number;
+  }) => {
+    trackEvent({
+      event: "paywall_view",
+      trigger_source: params?.triggerSource,
+      plans_shown: params?.plansShown,
+      days_until_test: params?.daysUntilTest,
+    });
+  },
+
+  viewPromotion: (params: {
+    promotionId: string;
+    promotionName?: string;
+    creativeSlot?: string;
+  }) => {
+    trackEvent({
+      event: "view_promotion",
+      promotion_id: params.promotionId,
+      promotion_name: params.promotionName,
+      creative_slot: params.creativeSlot,
+    });
+  },
+
+  selectPromotion: (params: {
+    promotionId: string;
+    promotionName?: string;
+    creativeSlot?: string;
+  }) => {
+    trackEvent({
+      event: "select_promotion",
+      promotion_id: params.promotionId,
+      promotion_name: params.promotionName,
+      creative_slot: params.creativeSlot,
+    });
+  },
+
+  paymentFailed: (params: {
+    errorCode?: string;
+    declineReason?: string;
+    paymentType?: string;
+    value?: number;
+    attemptNumber?: number;
+  }) => {
+    trackEvent({
+      event: "payment_failed",
+      error_code: params.errorCode,
+      decline_reason: params.declineReason,
+      payment_type: params.paymentType,
+      value: params.value,
+      attempt_number: params.attemptNumber,
+    });
+  },
+
+  checkoutError: (params: {
+    errorType?: string;
+    step?: string;
+    fieldName?: string;
+  }) => {
+    trackEvent({
+      event: "checkout_error",
+      error_type: params.errorType,
+      step: params.step,
+      field_name: params.fieldName,
+    });
+  },
+
+  promoCodeApply: (params: {
+    coupon: string;
+    discountPct?: number;
+    result: "applied" | "invalid" | "expired";
+  }) => {
+    trackEvent({
+      event: "promo_code_apply",
+      coupon: params.coupon,
+      discount_pct: params.discountPct,
+      result: params.result,
+    });
+  },
+
+  cancelFlowStart: (params?: {
+    plan?: string;
+    daysSubscribed?: number;
+    testsCompleted?: number;
+  }) => {
+    trackEvent({
+      event: "cancel_flow_start",
+      plan: params?.plan,
+      days_subscribed: params?.daysSubscribed,
+      tests_completed: params?.testsCompleted,
+    });
+  },
+
+  cancelReasonSubmit: (params: {
+    reason: string;
+    reasonText?: string;
+    plan?: string;
+  }) => {
+    trackEvent({
+      event: "cancel_reason_submit",
+      reason: params.reason,
+      reason_text: params.reasonText,
+      plan: params.plan,
+    });
+  },
+
+  npsResponse: (params: {
+    score: number;
+    surveyTrigger?: string;
+    comment?: string;
+  }) => {
+    trackEvent({
+      event: "nps_response",
+      score: params.score,
+      survey_trigger: params.surveyTrigger,
+      comment: params.comment,
+    });
+  },
+
+  exception: (params: {
+    description: string;
+    fatal?: boolean;
+    pageLocation?: string;
+    browser?: string;
+  }) => {
+    trackEvent({
+      event: "exception",
+      description: params.description.slice(0, 500),
+      fatal: params.fatal ?? true,
+      page_location:
+        params.pageLocation ||
+        (isBrowser ? window.location.href : undefined),
+      browser: params.browser,
+    });
+  },
+
+  webVitals: (params: {
+    metricName: "LCP" | "INP" | "CLS" | string;
+    value: number;
+    pageLocation?: string;
+    contentGroup?: string;
+  }) => {
+    trackEvent({
+      event: "web_vitals",
+      metric_name: params.metricName,
+      value: params.value,
+      page_location:
+        params.pageLocation ||
+        (isBrowser ? window.location.href : undefined),
+      content_group:
+        params.contentGroup ||
+        contentGroupFromPath(
+          isBrowser ? window.location.pathname : undefined
+        ),
+    });
+  },
+
+  vocabPracticeComplete: (params: {
+    setId: string;
+    cardsReviewed?: number;
+    accuracy?: number;
+  }) => {
+    trackEvent({
+      event: "vocab_practice_complete",
+      set_id: params.setId,
+      cards_reviewed: params.cardsReviewed,
+      accuracy: params.accuracy,
+    });
+  },
+
+  reactivationSession: (params: {
+    daysDormant: number;
+    triggerChannel?: string;
+    daysUntilTest?: number;
+  }) => {
+    trackEvent({
+      event: "reactivation_session",
+      days_dormant: params.daysDormant,
+      trigger_channel: params.triggerChannel,
+      days_until_test: params.daysUntilTest,
+    });
+  },
+
+  planChange: (params: {
+    fromPlan: string;
+    toPlan: string;
+    direction: "upgrade" | "downgrade" | "lateral";
+    mrrDelta?: number;
+  }) => {
+    trackEvent({
+      event: "plan_change",
+      from_plan: params.fromPlan,
+      to_plan: params.toPlan,
+      direction: params.direction,
+      mrr_delta: params.mrrDelta,
+    });
+  },
+
+  subscriptionRenew: (params: {
+    plan?: string;
+    termNumber?: number;
+    value?: number;
+    currency?: string;
+  }) => {
+    trackEvent({
+      event: "subscription_renew",
+      plan: params.plan,
+      term_number: params.termNumber,
+      value: params.value,
+      currency: params.currency || "CAD",
     });
   },
 };

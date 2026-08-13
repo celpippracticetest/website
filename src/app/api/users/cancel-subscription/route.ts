@@ -7,6 +7,7 @@ import {
   resolveStripeCustomerId,
 } from "@/lib/resolveStripeCustomerId";
 import { matchUsersCollectionByWebUserIds } from "@/lib/users/userDocumentIdentity";
+import { sendGa4Events } from "@/lib/ga4MeasurementProtocol";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 function normalizeDate(value: unknown): Date | null {
@@ -25,6 +26,9 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
     const flowId = typeof body?.flowId === "string" ? body.flowId : null;
+    const reason = typeof body?.reason === "string" ? body.reason : null;
+    const reasonText =
+      typeof body?.reasonText === "string" ? body.reasonText : null;
 
     const authAdmin = await appUserAdmin();
     const user = await authAdmin.users.getUser(userId);
@@ -115,9 +119,41 @@ export async function POST(req: NextRequest) {
       flowId,
       eventName: "subscription_cancelled_success",
       step: "confirm",
-      reason: null,
-      metadata: null,
+      reason: reason || null,
+      metadata: reasonText ? { reasonText } : null,
       createdAt: now,
+    });
+
+    const plan =
+      (user.publicMetadata as Record<string, unknown> | undefined)?.planType ||
+      (user.publicMetadata as Record<string, unknown> | undefined)?.plan ||
+      undefined;
+    const gaClientId = `uid.${userId.replace(/[^A-Za-z0-9._-]/g, "").slice(0, 64) || "unknown"}`;
+    const events: { name: string; params?: Record<string, unknown> }[] = [];
+    if (reason) {
+      events.push({
+        name: "cancel_reason_submit",
+        params: {
+          reason,
+          reason_text: reasonText || undefined,
+          plan: typeof plan === "string" ? plan : undefined,
+          flow_id: flowId || undefined,
+        },
+      });
+    }
+    events.push({
+      name: "subscription_cancel",
+      params: {
+        plan: typeof plan === "string" ? plan : undefined,
+        days_subscribed: subscriptionDurationDays,
+        flow_id: flowId || undefined,
+        cancellation_reason: reason || "user_cancelled",
+      },
+    });
+    void sendGa4Events({
+      clientId: gaClientId,
+      userId,
+      events,
     });
 
     return NextResponse.json({ success: true });

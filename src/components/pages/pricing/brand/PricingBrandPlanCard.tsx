@@ -55,12 +55,14 @@ export function PricingBrandPlanCard({
       stripePriceId: plan.stripePriceId,
       stripeProductId: plan.stripeProductId,
       legacyType: plan.type,
+      itemName: plan.planTitle || plan.title || name,
+      itemPrice: plan.price,
       extraFields: pricingCheckoutFields,
       attributionFields: attribution,
       isLoaded,
       isSignedIn,
     });
-  }, [attribution, isLoaded, isSignedIn, plan, pricingCheckoutFields]);
+  }, [attribution, isLoaded, isSignedIn, name, plan, pricingCheckoutFields]);
 
   return (
     <article

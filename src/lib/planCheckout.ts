@@ -1,8 +1,15 @@
+import { trackEcommerce, trackKpi } from "@/lib/analytics";
 import { mergePendingGa4IntoAttribution } from "@/lib/ga4BrowserIds";
 import {
   buildSignUpUrlForCheckout,
   getSignedCheckoutSessionBase,
 } from "@/lib/checkoutRequireAuth";
+
+function parsePlanPrice(raw?: string | null): number {
+  if (!raw) return 0;
+  const n = Number(String(raw).replace(/[^0-9.]/g, ""));
+  return Number.isFinite(n) ? n : 0;
+}
 
 /** Legacy env product ids keyed by CMS `type` label. */
 export function legacyCheckoutProductForPlanType(type: string): string {
@@ -47,6 +54,8 @@ export function submitPlanCheckout(args: {
   stripePriceId?: string | null;
   stripeProductId?: string | null;
   legacyType?: string | null;
+  itemName?: string | null;
+  itemPrice?: string | number | null;
   extraFields?: Record<string, string>;
   attributionFields?: Record<string, string>;
   isLoaded: boolean;
@@ -67,7 +76,38 @@ export function submitPlanCheckout(args: {
     stripeProductId: args.stripeProductId,
     legacyType: args.legacyType,
   });
-  if (!action) return false;
+  if (!action) {
+    trackKpi.checkoutError({
+      errorType: "missing_price_or_product",
+      step: "submit_plan_checkout",
+    });
+    return false;
+  }
+
+  const itemId =
+    args.stripePriceId?.trim() ||
+    args.stripeProductId?.trim() ||
+    args.legacyType ||
+    "plan";
+  const value =
+    typeof args.itemPrice === "number"
+      ? args.itemPrice
+      : parsePlanPrice(args.itemPrice ?? null);
+  const items = [
+    {
+      item_id: itemId,
+      item_name: args.itemName || args.legacyType || "Subscription",
+      price: value,
+      quantity: 1,
+    },
+  ];
+
+  try {
+    trackEcommerce.selectItem(items, "pricing_plans", "Pricing Plans");
+    trackEcommerce.beginCheckout(items, "CAD", value);
+  } catch {
+    // never block checkout on analytics
+  }
 
   const form = document.createElement("form");
   form.method = "POST";

@@ -1,5 +1,5 @@
 // Utility functions for logging user activities
-import { trackExam, trackPractice, trackAuth, trackEcommerce } from "./gtm";
+import { trackExam, trackPractice, trackAuth } from "@/lib/analytics";
 
 export interface ActivityLogData {
   eventType:

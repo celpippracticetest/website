@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, ArrowRight } from "lucide-react";
@@ -19,6 +19,7 @@ import UpgradeModal from "@/components/modal/UpgradeModal";
 import LoginModal from "@/components/modal/LoginModal";
 import SvgChevronRight from "@/components/icons/ChevronRight";
 import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
+import { trackKpi } from "@/lib/analytics";
 import { ActivityLogger } from "@/lib/userActivity";
 import { useLeaguePoints } from "@/hooks/useLeaguePoints";
 import { useTrophySystem } from "@/hooks/useTrophySystem";
@@ -34,6 +35,8 @@ import {
   retakeTask,
   submitObjectivePracticeAnswers,
 } from "@/lib/objectivePracticeSubmit";
+import { usePracticeSessionAnalytics } from "@/hooks/usePracticeSessionAnalytics";
+import { useTimerExpiredAnalytics } from "@/hooks/useTimerExpiredAnalytics";
 
 interface ListeningPracticeViewProps {
   practice: TPracticeDto;
@@ -108,6 +111,25 @@ const ListeningPracticeView = ({
           return sum + (p.questions?.length ?? 0);
         }, 0);
 
+  const completedRef = useRef(false);
+  useTimerExpiredAnalytics(
+    time,
+    "listening",
+    Math.max(0, totalQuestionsCount - Object.keys(selectedAnswers).length),
+  );
+  usePracticeSessionAnalytics({
+    testId: selectedPracticeId || practice.id,
+    module: "listening",
+    completedRef,
+    getPercentComplete: () =>
+      totalQuestionsCount
+        ? Math.round(
+            (Object.keys(selectedAnswers).length / totalQuestionsCount) * 100,
+          )
+        : 0,
+    getLastQuestionIndex: () => questionIndexInPractice,
+  });
+
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
 
@@ -115,11 +137,6 @@ const ListeningPracticeView = ({
       timer = setInterval(() => {
         setTime((prevTime) => prevTime - 1);
       }, 1000);
-    }
-
-    if (time === 0 && timer) {
-      clearInterval(timer);
-      // Handle time's up logic here if needed
     }
 
     return () => {
@@ -134,9 +151,15 @@ const ListeningPracticeView = ({
     setPassageIndex(0);
     setQuestionIndex(0);
     setPage("instructions");
+    completedRef.current = false;
 
     if (previousAnswer?.answers) {
       setSelectedAnswers(previousAnswer.answers);
+      if (selectedPracticeId) {
+        trackKpi.practiceTestResume({
+          testId: selectedPracticeId,
+        });
+      }
     } else {
       setSelectedAnswers({});
     }
@@ -152,6 +175,9 @@ const ListeningPracticeView = ({
           const data = await response.json();
           if (data.answers) {
             setSelectedAnswers(data.answers);
+            trackKpi.practiceTestResume({
+              testId: selectedPracticeId,
+            });
           }
         }
       } catch (error) {
@@ -191,6 +217,7 @@ const ListeningPracticeView = ({
 
           if (response.ok) {
             const result = await response.json();
+            completedRef.current = true;
             // Log practice completed
             const attemptId = `practice_${practice.id}_${Date.now()}`;
             await ActivityLogger.practiceCompleted(
