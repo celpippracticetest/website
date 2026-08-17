@@ -50,10 +50,10 @@ const PlanCard = ({
   };
 
   return (
-    <div className="relative mt-[12px] screen1280:!mt-[32px] w-full screen744:!w-[176px] screen744:!h-[214px] screen1280:!w-[202px] screen1280:!h-[215px]">
+    <div className="relative mt-[12px] screen1280:!mt-[32px] w-full screen744:!w-[176px] screen744:!max-w-[176px] screen744:!shrink-0 screen744:!h-[214px] screen1280:!w-[202px] screen1280:!max-w-[202px] screen1280:!h-[215px]">
       <article
         aria-label={`Plan card for ${title} plan`}
-        className="relative  mx-[16px]  z-[1] before:absolute before:rounded-[24px]  hover:before:shadow-[6px_4px_16px_0px_#FC7A5066,_-6px_-4px_16px_0px_#4A7DFF66] before:transition-shadow before:duration-300 before:ease before:content-[''] before:inset-0 before:transform before:translate-z-[-1px] hover:cursor-pointer screen744:!w-[176px] screen744:!h-[211px] screen1280:!w-[202px] screen1280:!h-[215px] rounded-[24px] px-[12px] py-[16px] screen1280:!p-[16px] bg-white"
+        className="relative mx-[16px] screen744:!mx-0 z-[1] before:absolute before:rounded-[24px]  hover:before:shadow-[6px_4px_16px_0px_#FC7A5066,_-6px_-4px_16px_0px_#4A7DFF66] before:transition-shadow before:duration-300 before:ease before:content-[''] before:inset-0 before:transform before:translate-z-[-1px] hover:cursor-pointer w-auto screen744:!w-full screen744:!h-[211px] screen1280:!h-[215px] rounded-[24px] px-[12px] py-[16px] screen1280:!p-[16px] bg-white"
       >
         <div className=" flex gap-[16px] justify-between flex-col screen1280:!flex-row  ">
           <div
