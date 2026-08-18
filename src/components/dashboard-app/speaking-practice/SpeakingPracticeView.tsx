@@ -195,8 +195,6 @@ const SpeakingPracticeView = ({
     setText("");
     setProgressBar(0);
     setIsSubmit(false);
-    setPointsAwarded(false);
-    setAiFeedbackPointsAwarded(false);
     if (isRecording) {
       cancelRecording();
     }
