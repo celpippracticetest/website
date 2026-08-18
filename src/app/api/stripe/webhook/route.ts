@@ -302,8 +302,11 @@ async function updateUserPublicMetadata(
     const currentMetadata = user.publicMetadata || {};
     const updatedMetadata = { ...currentMetadata, ...newFields };
 
+    // Patch only the keys in this event. Re-sending the full publicMetadata
+    // object can write a synthetic `plan: "free"` default from getUser and
+    // overwrite a concurrent Plus grant.
     await authAdmin.users.updateUserMetadata(userId, {
-      publicMetadata: updatedMetadata,
+      publicMetadata: newFields,
     });
     logger.info("Successfully updated metadata for user", {
       component: "stripe_webhook",
@@ -315,18 +318,9 @@ async function updateUserPublicMetadata(
     // Keep `user_profiles` in sync (CMS + write-authoritative entitlements).
     try {
       await upsertUserProfilePlanFields(userId, {
-        plan:
-          typeof newFields.plan === "string"
-            ? newFields.plan
-            : typeof updatedMetadata.plan === "string"
-              ? updatedMetadata.plan
-              : undefined,
+        plan: typeof newFields.plan === "string" ? newFields.plan : undefined,
         planType:
-          typeof newFields.planType === "string"
-            ? newFields.planType
-            : typeof updatedMetadata.planType === "string"
-              ? updatedMetadata.planType
-              : undefined,
+          typeof newFields.planType === "string" ? newFields.planType : undefined,
         publicMetadata: updatedMetadata as Record<string, unknown>,
       });
     } catch (profileErr) {
@@ -755,6 +749,17 @@ export async function POST(req: Request) {
         const isMockExamPurchase = metadata.purchase_type === "mock_exam";
         const purchasedMockExamId = metadata.mock_exam_id;
 
+        let planRenewsAt: string | null | undefined;
+        if (session.subscription) {
+          const subscriptionForPeriod = await stripe.subscriptions.retrieve(
+            session.subscription as string
+          );
+          const periodEnd = subscriptionCurrentPeriodEndUnix(subscriptionForPeriod);
+          if (periodEnd) {
+            planRenewsAt = new Date(periodEnd * 1000).toISOString();
+          }
+        }
+
         // Check if user has any discount fields that need to be cleared (subscription path)
         const hasDiscountFields =
           userMetadata?.referralCode ||
@@ -785,6 +790,7 @@ export async function POST(req: Request) {
             ),
             lastMockExamPurchaseId: purchasedMockExamId,
             lastMockExamPurchaseAt: new Date().toISOString(),
+            ...(planRenewsAt ? { planRenewsAt, planExpiresAt: null } : {}),
           });
         } else if (hasDiscountFields) {
           // Clear all discount fields after any successful purchase
@@ -809,7 +815,8 @@ export async function POST(req: Request) {
             planOverrideAt: null,
             purchaseAmount: (session.amount_total || 0) / 100,
             purchaseCurrency: (session.currency || "cad").toUpperCase(),
-            totalSpend: ((userMetadata.totalSpend as number) || 0) + ((session.amount_total || 0) / 100)
+            totalSpend: ((userMetadata.totalSpend as number) || 0) + ((session.amount_total || 0) / 100),
+            ...(planRenewsAt ? { planRenewsAt, planExpiresAt: null } : {}),
           });
           if (partnerPromoToDeactivate) {
             try {
@@ -844,7 +851,8 @@ export async function POST(req: Request) {
             planOverrideAt: null,
             purchaseAmount: (session.amount_total || 0) / 100,
             purchaseCurrency: (session.currency || "cad").toUpperCase(),
-            totalSpend: ((userMetadata.totalSpend as number) || 0) + ((session.amount_total || 0) / 100)
+            totalSpend: ((userMetadata.totalSpend as number) || 0) + ((session.amount_total || 0) / 100),
+            ...(planRenewsAt ? { planRenewsAt } : {}),
           });
         }
       }
@@ -867,14 +875,6 @@ export async function POST(req: Request) {
           console.warn(
             `Cannot update metadata: subscription ${subscription.id} is canceled.`
           );
-        }
-
-        const periodEnd = subscriptionCurrentPeriodEndUnix(subscription);
-        if (periodEnd) {
-          await updateUserPublicMetadata(metadata.user_id, {
-            planRenewsAt: new Date(periodEnd * 1000).toISOString(),
-            planExpiresAt: null,
-          });
         }
       }
 

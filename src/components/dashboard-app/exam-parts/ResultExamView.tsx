@@ -298,27 +298,27 @@ const ResultExamView = ({
 
       <div className="px-[16px] screen744:!px-[24px] mt-[24px]">
         <Tabs defaultValue="listening" className="w-full pb-[100px] ">
-          <TabsList className="screen744:!grid grid-cols-4 flex justify-start shrink-0 overflow-x-auto px-[8px] w-full gap-[0]">
+          <TabsList className="grid grid-cols-4 w-full gap-0 px-1">
             <TabsTrigger
-              className="max-w-[160px]  screen744:!max-w-full shrink-0"
+              className="min-w-0 px-1 text-[11px] screen744:!text-[14px]"
               value="listening"
             >
               Listening
             </TabsTrigger>
             <TabsTrigger
-              className="max-w-[160px]  screen744:!max-w-full shrink-0"
+              className="min-w-0 px-1 text-[11px] screen744:!text-[14px]"
               value="reading"
             >
               Reading
             </TabsTrigger>
             <TabsTrigger
-              className="max-w-[160px]  screen744:!max-w-full shrink-0"
+              className="min-w-0 px-1 text-[11px] screen744:!text-[14px]"
               value="writing"
             >
               Writing
             </TabsTrigger>
             <TabsTrigger
-              className="max-w-[160px]  screen744:!max-w-full shrink-0"
+              className="min-w-0 px-1 text-[11px] screen744:!text-[14px]"
               value="speaking"
             >
               Speaking

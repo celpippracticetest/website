@@ -121,11 +121,14 @@ export async function appUserAdmin() {
         userId: string,
         args: { publicMetadata?: Record<string, unknown>; privateMetadata?: Record<string, unknown> },
       ) => {
+        invalidateAuthAdminUserCache(userId);
         const user = await loadSupabaseUserByExternalId(userId);
         if (!user) throw new Error(`User not found: ${userId}`);
         const uid = user.id;
-        const app = { ...(user.app_metadata ?? {}) } as Record<string, unknown>;
-        const meta = { ...(user.user_metadata ?? {}) } as Record<string, unknown>;
+        invalidateAuthAdminUserCache(uid);
+        const fresh = (await getAuthAdminUserById(uid)) ?? user;
+        const app = { ...(fresh.app_metadata ?? {}) } as Record<string, unknown>;
+        const meta = { ...(fresh.user_metadata ?? {}) } as Record<string, unknown>;
 
         if (args.publicMetadata) {
           const { app: appPatch, userMeta: userPatch } = splitPublicMetadataPatch(args.publicMetadata);

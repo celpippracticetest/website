@@ -129,7 +129,7 @@ export const WordMenu: React.FC<WordMenuProps> = ({
   };
 
   return (
-    <Popover.Root open={isOpen} onOpenChange={setIsOpen}>
+    <Popover.Root modal={false} open={isOpen} onOpenChange={setIsOpen}>
       {virtualRect ? (
         <Popover.Anchor
           virtualRef={{

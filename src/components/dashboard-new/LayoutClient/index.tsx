@@ -840,8 +840,7 @@ const LayoutClient = ({
               className={clsx(
                 "transition-all flex justify-between w-full duration-1000 ease-in-out",
                 // Mobile (< 1280)
-                "fixed top-0 left-0 right-0 z-[50] h-[72px] px-[16px] screen744:!px-[24px] rounded-b-[32px] border-b border-[#D1DEFF] backdrop-blur-[8px]",
-                "bg-[linear-gradient(90deg,_rgba(255,_255,_255,_0.65)_0%,_rgba(255,_255,_255,_0.2)_100%)]",
+                "fixed top-0 left-0 right-0 z-[50] h-[72px] px-[16px] screen744:!px-[24px] rounded-b-[32px] border-b border-[#D1DEFF] bg-white",
                 // Desktop (>= 1280)
                 "screen1280:!relative screen1280:!z-[50] screen1280:!mt-[24px] screen1280:!rounded-[32px] screen1280:!h-[80px] screen1280:!max-w-[1280px] screen1280:!mx-auto screen1280:!pl-[24px] screen1280:!border screen1280:!px-[16px]",
                 "items-center",

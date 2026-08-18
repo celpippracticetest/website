@@ -123,6 +123,7 @@ const PracticeResultModal = ({
   return (
     <>
       <div
+        data-dismiss-sheet="true"
         onClick={onClose}
         className="fixed inset-0 z-50 bg-stone-300/80 backdrop-blur-sm transition-all duration-300 animate-in fade-in-0"
       ></div>
@@ -135,6 +136,7 @@ const PracticeResultModal = ({
         <div className="text-[14px] text-muted-foreground border-slate-300 p-6 pb-28 flex flex-col gap-4">
           <button
             type="button"
+            data-dismiss-sheet="true"
             className="rounded-sm flex items-center gap-2 text-gray-800 outline-none mb-4"
             onClick={onClose}
           >

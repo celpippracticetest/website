@@ -242,6 +242,17 @@ export const GlobalInteractiveProvider: React.FC = () => {
   );
 
   const handleClick = useCallback((e: MouseEvent) => {
+    const target = e.target;
+    if (
+      target instanceof Element &&
+      target.closest("[data-dismiss-sheet='true']")
+    ) {
+      setIsOpen(false);
+      setHoveredWord(null);
+      setVirtualRect(null);
+      return;
+    }
+
     // Keep the click functionality as a fallback or to force it
     const result = getWordAtPoint(e.clientX, e.clientY);
     if (result) {

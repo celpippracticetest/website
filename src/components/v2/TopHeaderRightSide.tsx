@@ -18,32 +18,19 @@ const TopHeaderRightSide = () => {
     <div className="flex gap-[16px] screen744:gap-[32px] screen1280:!gap-[28px]">
       <div className="flex gap-[12px] items-center">
         {!isLoaded ? (
-          <>
-            <Skeleton className="screen744:!hidden flex w-[40px] h-[40px] rounded-sm" />
-            <Skeleton className="screen744:!flex hidden w-[100px] h-[36px] rounded-md" />
-          </>
+          <Skeleton className="flex h-10 w-[88px] rounded-full" />
         ) : (
           !hasActivePlan && (
-            <>
-              <Button
-                className="screen744:!hidden flex"
-                variant="secondary"
-                round="sm"
-                onClick={() => setPremiumPlanModalState()}
-                aria-label="Open Premium Plans"
-              >
-                <SvgCrown />
-              </Button>
-              <Button
-                className="screen744:!flex hidden"
-                variant="secondary"
-                size="sm"
-                onClick={() => setPremiumPlanModalState()}
-                aria-label="Open Premium Plans"
-              >
-                <SvgCrown /> Pricing
-              </Button>
-            </>
+            <Button
+              className="h-10 w-auto min-w-0 gap-1.5 px-3 text-[13px] screen744:!px-4 screen744:!text-[14px]"
+              variant="secondary"
+              size="sm"
+              onClick={() => setPremiumPlanModalState()}
+              aria-label="Open pricing"
+            >
+              <SvgCrown />
+              Pricing
+            </Button>
           )
         )}
       </div>

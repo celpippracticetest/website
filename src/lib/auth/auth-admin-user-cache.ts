@@ -81,10 +81,12 @@ export function invalidateAuthAdminUserCache(uid?: string) {
   if (!uid) {
     userByIdCache.clear();
     resolveIdCache.clear();
+    inflightUserById.clear();
     return;
   }
   const id = uid.trim();
   userByIdCache.delete(id);
+  inflightUserById.delete(id);
   for (const [k, v] of resolveIdCache) {
     if (k === id || v.value === id) resolveIdCache.delete(k);
   }
