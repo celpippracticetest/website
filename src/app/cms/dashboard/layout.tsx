@@ -380,14 +380,12 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
                       className={`flex items-center ${
                         collapsed ? "justify-center" : "justify-start"
                       } gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${
-                        pathname.startsWith("/cms/dashboard/blog") &&
-                        !pathname.startsWith("/cms/dashboard/blog/keywords")
+                        pathname.startsWith("/cms/dashboard/blog")
                           ? "bg-gray-100 text-gray-900"
                           : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                       }`}
                       aria-current={
-                        pathname.startsWith("/cms/dashboard/blog") &&
-                        !pathname.startsWith("/cms/dashboard/blog/keywords")
+                        pathname.startsWith("/cms/dashboard/blog")
                           ? "page"
                           : undefined
                       }
@@ -395,28 +393,6 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
                     >
                       <span aria-hidden>📝</span>
                       {!collapsed && <span>Blog</span>}
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      href="/cms/dashboard/blog/keywords"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={`flex items-center ${
-                        collapsed ? "justify-center" : "justify-start"
-                      } gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${
-                        pathname.startsWith("/cms/dashboard/blog/keywords")
-                          ? "bg-gray-100 text-gray-900"
-                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                      }`}
-                      aria-current={
-                        pathname.startsWith("/cms/dashboard/blog/keywords")
-                          ? "page"
-                          : undefined
-                      }
-                      title="Blog keywords"
-                    >
-                      <span aria-hidden>🏷️</span>
-                      {!collapsed && <span>Blog keywords</span>}
                     </Link>
                   </li>
                 </ul>

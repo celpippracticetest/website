@@ -878,14 +878,13 @@ export const trackPractice = {
     examId?: string,
     options?: { module?: string; timeOnFeedbackSec?: number; sectionsExpanded?: number }
   ) => {
-    trackEvent({
-      event: "ai_feedback_viewed",
-      practice_id: practiceId,
-      exam_id: examId,
+    trackKpi.aiFeedbackViewed({
       context,
-      module: normalizeModule(options?.module) || normalizeModule(context),
-      time_on_feedback_sec: options?.timeOnFeedbackSec,
-      sections_expanded: options?.sectionsExpanded,
+      practiceId,
+      examId,
+      module: options?.module,
+      timeOnFeedbackSec: options?.timeOnFeedbackSec,
+      sectionsExpanded: options?.sectionsExpanded,
     });
   },
 };
@@ -1402,6 +1401,25 @@ export const trackKpi = {
       module: normalizeModule(params.module) || params.module,
       error_type: params.errorType,
       retry_count: params.retryCount,
+    });
+  },
+
+  aiFeedbackViewed: (params: {
+    context: "practice" | "exam";
+    practiceId?: string;
+    examId?: string;
+    module?: PracticeModule | string;
+    timeOnFeedbackSec?: number;
+    sectionsExpanded?: number;
+  }) => {
+    trackEvent({
+      event: "ai_feedback_viewed",
+      practice_id: params.practiceId,
+      exam_id: params.examId,
+      context: params.context,
+      module: normalizeModule(params.module) || params.module,
+      time_on_feedback_sec: params.timeOnFeedbackSec,
+      sections_expanded: params.sectionsExpanded,
     });
   },
 

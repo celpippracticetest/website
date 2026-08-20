@@ -172,6 +172,9 @@ export interface AIFeedbackViewedEvent extends GTMEvent {
   practice_id?: string;
   exam_id?: string;
   context: "practice" | "exam";
+  module?: string;
+  time_on_feedback_sec?: number;
+  sections_expanded?: number;
 }
 
 export interface ExplanationOpenEvent extends GTMEvent {

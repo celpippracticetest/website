@@ -12,7 +12,8 @@ import { InteractiveText } from "./InteractiveText";
 import { diffWords } from "diff";
 import { useEffect } from "react";
 import { useAskBeavoStore } from "@/stores/askBeavoStore";
-import { trackKpi, trackPractice } from "@/lib/analytics";
+import { trackKpi } from "@/lib/analytics";
+import { useAiFeedbackViewTracking } from "@/hooks/useAiFeedbackViewTracking";
 
 interface PracticeResultModalProps {
   isOpen: boolean;
@@ -37,31 +38,30 @@ const PracticeResultModal = ({
   const [feedbackRating, setFeedbackRating] = React.useState<
     "up" | "down" | null
   >(null);
-  const viewedRef = React.useRef(false);
   const { askAboutWord, setOpen } = useAskBeavoStore();
   const moduleName = type === "WRITING" ? "writing" : "speaking";
+  const { markSection } = useAiFeedbackViewTracking({
+    enabled: isOpen,
+    context: "practice",
+    module: moduleName,
+    practiceId: data?.practiceId || data?.id,
+    initialSections: ["feedback"],
+  });
 
-  // Reset tab when modal opens
   React.useEffect(() => {
     if (isOpen) {
       setActiveTab("feedback");
       setOnlyShowCorrect(false);
       setFeedbackRating(null);
-      if (!viewedRef.current) {
-        viewedRef.current = true;
-        trackPractice.aiFeedbackViewed(
-          "practice",
-          data?.practiceId || data?.id,
-          undefined,
-          { module: moduleName },
-        );
-      }
+      markSection("feedback");
     } else {
-      viewedRef.current = false;
-      // Close Ask Beavo modal when PracticeResult modal closes
       setOpen(false);
     }
-  }, [isOpen, setOpen, data?.practiceId, data?.id, moduleName]);
+  }, [isOpen, setOpen, markSection]);
+
+  React.useEffect(() => {
+    if (isOpen) markSection(activeTab);
+  }, [isOpen, activeTab, markSection]);
 
   if (!isOpen) return null;
 
@@ -162,7 +162,11 @@ const PracticeResultModal = ({
           <div className="border border-slate-200 rounded-lg overflow-hidden bg-white mb-2">
             <button
               type="button"
-              onClick={() => setIsTaskResponseOpen(!isTaskResponseOpen)}
+              onClick={() => {
+                const next = !isTaskResponseOpen;
+                setIsTaskResponseOpen(next);
+                if (next) markSection("task_response");
+              }}
               className="w-full flex items-center justify-between p-4 bg-white hover:bg-slate-50 transition-colors"
             >
               <span className="font-semibold text-slate-900 border-none">
@@ -317,6 +321,7 @@ const PracticeResultModal = ({
               <button
                 onClick={() => {
                   setActiveTab("feedback");
+                  markSection("feedback");
                   document
                     .getElementById("feedback")
                     ?.scrollIntoView({ behavior: "smooth" });
@@ -332,6 +337,7 @@ const PracticeResultModal = ({
               <button
                 onClick={() => {
                   setActiveTab("improvements");
+                  markSection("improvements");
                   document
                     .getElementById("improvements")
                     ?.scrollIntoView({ behavior: "smooth" });
@@ -347,6 +353,7 @@ const PracticeResultModal = ({
               <button
                 onClick={() => {
                   setActiveTab("betterVersion");
+                  markSection("betterVersion");
                   document
                     .getElementById("betterVersion")
                     ?.scrollIntoView({ behavior: "smooth" });

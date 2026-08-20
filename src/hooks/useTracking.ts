@@ -224,8 +224,13 @@ export function usePracticeTracking() {
     ),
 
     aiFeedbackViewed: useCallback(
-      (context: "practice" | "exam", practiceId?: string, examId?: string) => {
-        trackPractice.aiFeedbackViewed(context, practiceId, examId);
+      (
+        context: "practice" | "exam",
+        practiceId?: string,
+        examId?: string,
+        options?: { module?: string; timeOnFeedbackSec?: number; sectionsExpanded?: number }
+      ) => {
+        trackPractice.aiFeedbackViewed(context, practiceId, examId, options);
       },
       []
     ),

@@ -25,7 +25,6 @@ export const DEDICATED_DOCUMENT_COLLECTIONS: readonly string[] = [
   "account_deletion_flow_events",
   "account_deletion_surveys",
   "account_device_restrictions",
-  "blog_target_keywords",
   "cancellation_flow_events",
   "cancellation_surveys",
   "checkouts",

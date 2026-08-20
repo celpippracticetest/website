@@ -26,7 +26,6 @@ export const DEFAULT_MONGO_PG_SYNC_COLLECTIONS: readonly string[] = [
   "account_deletion_surveys",
   "account_device_restrictions",
   "answers",
-  "blog_target_keywords",
   "cancellation_flow_events",
   "cancellation_surveys",
   "checkouts",

@@ -1,7 +1,6 @@
 import documentsClient from "@/lib/appDocumentsClient";
 import { BlogRepository } from "@/repositories/blog.repo";
 import { NextRequest, NextResponse } from "next/server";
-import { BlogTargetKeywordRepository } from "@/repositories/blog-target-keyword.repo";
 
 const SYSTEM_PROMPT = `You are an expert, certified CELPIP instructor and SEO content writer for CELPIP Practice Test (celpipguide.ca). Your audience consists of ESL (English as a Second Language) test-takers preparing for the CELPIP exam to achieve their Canadian PR or citizenship.
 Given a user prompt containing recent forum discussions or news, you must output a single JSON object that fills the entire blog create form.
@@ -21,7 +20,6 @@ JSON schema (all string lengths are limits; stay under them):
 
 Rules:
 - ESL Readability (Crucial): Aim for a Flesch reading-ease score of 70-85. Keep sentences short, minimize multi-syllable words, and use simple B1/B2-level vocabulary.
-- Target Keywords: Ensure all core target keywords provided in the prompt are used at least once naturally within the contentHtml.
 - E-E-A-T & Tone of Voice: Use a "Neutral" to "Somewhat casual" tone. Write with human empathy and expert authority. Avoid highly formal academic jargon.
 - Content Structure: The first 1-2 paragraphs MUST be a "Position Zero" paragraph—a direct, concise answer to the main topic to capture AI Overviews.
 - Actionable Value: Include at least one practical example, sample answer, or actionable tip within the HTML.
@@ -101,27 +99,13 @@ export async function GET(req: NextRequest) {
       redditContent = "General advice on achieving CLB 9+ in CELPIP speaking and writing tasks.";
     }
 
-    // 2. Fetch SEO Target Keywords
-    let targetPhrases: string[] = [];
-    try {
-      const kwRepo = new BlogTargetKeywordRepository(documentsClient);
-      targetPhrases = await kwRepo.listActivePhrases();
-    } catch (e) {
-      console.warn("Blog generate-content: could not load target keywords", e);
-    }
-
-    const keywordsBlock =
-      targetPhrases.length > 0
-        ? `\n\nSite-wide SEO target keywords from your CMS (mandatory: use each phrase at least once naturally in contentHtml; include every phrase in the comma-separated "keywords" field together with other relevant terms; use in meta where they fit naturally):\n${targetPhrases.map((p, i) => `${i + 1}. ${p}`).join("\n")}`
-        : "";
-
-    // 3. Generate Blog using LLM
+    // 2. Generate Blog using LLM
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) {
       return NextResponse.json({ message: "AI service is not configured." }, { status: 503 });
     }
 
-    const prompt = `Here are the top trending questions and discussions from Reddit about the CELPIP exam today:\n\n${redditContent}\n\nPlease create an insightful, SEO-optimized blog post addressing these common topics or the single most prominent topic. Ensure it's helpful for CELPIP test-takers.${keywordsBlock}`;
+    const prompt = `Here are the top trending questions and discussions from Reddit about the CELPIP exam today:\n\n${redditContent}\n\nPlease create an insightful, SEO-optimized blog post addressing these common topics or the single most prominent topic. Ensure it's helpful for CELPIP test-takers.`;
 
     const openRouterResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",

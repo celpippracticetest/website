@@ -806,13 +806,17 @@ export const trackPractice = {
   aiFeedbackViewed: (
     context: "practice" | "exam",
     practiceId?: string,
-    examId?: string
+    examId?: string,
+    options?: { module?: string; timeOnFeedbackSec?: number; sectionsExpanded?: number }
   ) => {
     pushToDataLayer({
       event: "ai_feedback_viewed",
       practice_id: practiceId,
       exam_id: examId,
       context,
+      module: options?.module,
+      time_on_feedback_sec: options?.timeOnFeedbackSec,
+      sections_expanded: options?.sectionsExpanded,
     });
   },
 };

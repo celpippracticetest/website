@@ -349,12 +349,6 @@ export const PAGE_SEO_REGISTRY: Record<string, PageSeoItem> = {
     description: "Create and edit CELPIP blog posts.",
     indexability: "noindex",
   },
-  "/cms/dashboard/blog/keywords": {
-    path: "/cms/dashboard/blog/keywords",
-    title: "Blog Keywords",
-    description: "Manage blog keyword research and targets.",
-    indexability: "noindex",
-  },
   "/cms/dashboard/cancellation-surveys": {
     path: "/cms/dashboard/cancellation-surveys",
     title: "Cancellation Surveys",

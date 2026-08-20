@@ -315,6 +315,12 @@ const CUSTOM_METRICS = [
     description: "Time spent reading AI feedback.",
   },
   {
+    parameterName: "sections_expanded",
+    displayName: "Sections expanded",
+    measurementUnit: "STANDARD",
+    description: "AI feedback sections the user opened.",
+  },
+  {
     parameterName: "days_subscribed",
     displayName: "Days subscribed",
     measurementUnit: "STANDARD",

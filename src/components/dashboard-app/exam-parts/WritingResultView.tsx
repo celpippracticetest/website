@@ -10,6 +10,7 @@ import * as React from "react";
 import AudioPlayer from "../listening-practice/components/AudioPlayer";
 import { PRACTICE_PARTS } from "@/constants";
 import { mockExamPartHref } from "@/lib/mockExamAttemptId";
+import { useAiFeedbackViewTracking } from "@/hooks/useAiFeedbackViewTracking";
 
 const WritingResultView = ({
   examPart,
@@ -23,6 +24,7 @@ const WritingResultView = ({
   const [showMoreBetterVersion, setShowMoreBetterVersion] =
     React.useState(false);
   const [showMoreHowToImprove, setShowMoreHowToImprove] = React.useState(false);
+  const [feedbackOpen, setFeedbackOpen] = React.useState(false);
   const fetchUsersAnswer = async () => {
     try {
       const url = new URL("/api/exams/answers/writing", window.location.origin);
@@ -61,6 +63,19 @@ const WritingResultView = ({
   React.useEffect(() => {
     fetchUsersAnswer();
   }, [examPart?.examId, examPart?.partId, attemptId]);
+  useAiFeedbackViewTracking({
+    enabled: Boolean(examPart && answer?.result && feedbackOpen),
+    context: "exam",
+    module: "writing",
+    examId: examPart?.examId?.toString(),
+    practiceId: attemptId ?? undefined,
+    initialSections: [
+      "overview",
+      "mistakes",
+      "better_version",
+      "how_to_improve",
+    ],
+  });
   if (!examPart) {
     return <div></div>;
   }
@@ -111,6 +126,7 @@ const WritingResultView = ({
       className="border  border-[#D5D6D8] rounded-[8px] bg-white overflow-hidden"
       type="single"
       collapsible
+      onValueChange={(value) => setFeedbackOpen(value === "item-1")}
     >
       <Accordion.Item value="item-1">
         <Accordion.Header className="flex">

@@ -27,6 +27,7 @@ const GTM_MIRROR_EVENTS = new Set([
   "ai_scoring_requested",
   "ai_score_returned",
   "ai_scoring_failed",
+  "ai_feedback_viewed",
   "ai_feedback_rated",
   "speaking_task_submit",
   "mic_permission_result",
