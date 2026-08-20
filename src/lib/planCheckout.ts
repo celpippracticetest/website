@@ -99,6 +99,7 @@ export function submitPlanCheckout(args: {
       item_name: args.itemName || args.legacyType || "Subscription",
       price: value,
       quantity: 1,
+      index: 0,
     },
   ];
 

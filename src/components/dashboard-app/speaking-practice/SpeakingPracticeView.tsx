@@ -112,7 +112,7 @@ const SpeakingPracticeView = ({
   const [isSubmit, setIsSubmit] = useState(false);
   const [, setText] = useState("");
   const [isRecording, setIsRecording] = useState(false);
-  const [, setAudioURL] = useState<string | null>(null);
+  const [audioURL, setAudioURL] = useState<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunks = useRef<Blob[]>([]);
   const shouldShowPractice: any =
@@ -125,11 +125,15 @@ const SpeakingPracticeView = ({
     (state) => state.setPremiumPlanModalState,
   );
   const completedRef = useRef(false);
-  useTimerExpiredAnalytics(time, "speaking");
+  const retakesRef = useRef(0);
+  const scoringRetryRef = useRef(0);
+  useTimerExpiredAnalytics(time, "speaking", audioURL ? 0 : 1);
   usePracticeSessionAnalytics({
     testId: practice.id,
     module: "speaking",
     completedRef,
+    getPercentComplete: () => (audioURL ? 80 : isRecording ? 40 : 0),
+    getLastQuestionIndex: () => 0,
   });
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
@@ -298,11 +302,14 @@ const SpeakingPracticeView = ({
         trackKpi.speakingTaskSubmit({
           taskNumber: Number(practice.taskId) || 1,
           durationSec: recordingTime,
+          retakes: retakesRef.current,
           isFree,
         });
+        retakesRef.current += 1;
         trackKpi.aiScoringRequested({
           module: "speaking",
           taskNumber: Number(practice.taskId) || 1,
+          inputLength: blob.size,
         });
 
         fetch("/api/answers/speaking", {
@@ -316,6 +323,7 @@ const SpeakingPracticeView = ({
               trackKpi.aiScoringFailed({
                 module: "speaking",
                 errorType: `http_${response.status}`,
+                retryCount: (scoringRetryRef.current += 1),
               });
               throw new Error("Failed to upload audio");
             }

@@ -380,13 +380,19 @@ export const ActivityLogger = {
   async scoreReportViewed(
     attemptId: string,
     context: "practice" | "mock",
-    skill?: "Listening" | "Reading" | "Writing" | "Speaking"
+    skill?: "Listening" | "Reading" | "Writing" | "Speaking",
+    scores?: {
+      overallClb?: number;
+      listeningClb?: number;
+      readingClb?: number;
+      writingClb?: number;
+      speakingClb?: number;
+    }
   ) {
-    // Track in GTM
     if (context === "practice" && skill) {
-      trackPractice.resultsViewed(attemptId, skill);
+      trackPractice.resultsViewed(attemptId, skill, scores?.overallClb);
     } else if (context === "mock") {
-      trackExam.resultsViewed(attemptId);
+      trackExam.resultsViewed(attemptId, scores?.overallClb, scores);
     }
 
     // Persist user activity to the document store

@@ -75,7 +75,7 @@ export default function EmailConfirmClient() {
           return;
         }
 
-        trackAuth.emailVerified();
+        trackAuth.emailVerified(undefined, data.session.user.created_at);
         const deepLink = `celpipapp://auth#${buildAppReturnHash(data.session)}`;
         setStatus("done");
         setMessage("Opening the CELPIP app…");
@@ -107,7 +107,7 @@ export default function EmailConfirmClient() {
           return;
         }
 
-        trackAuth.emailVerified();
+        trackAuth.emailVerified(undefined, data.session.user.created_at);
         const deepLink = `celpipapp://auth#${buildAppReturnHash(data.session)}`;
         setStatus("done");
         setMessage("Opening the CELPIP app…");

@@ -29,7 +29,7 @@ export function buildSubscriptionRenewEvent(params: {
     name: "subscription_renew" as const,
     params: {
       plan: params.plan,
-      term_number: params.termNumber ?? 1,
+      term_number: params.termNumber,
       value: params.value,
       currency: params.currency || "CAD",
       subscription_id: params.subscriptionId,

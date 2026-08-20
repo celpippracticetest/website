@@ -16,6 +16,19 @@ function normalizeDate(value: unknown): Date | null {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+function monthlyMrrFromPrice(price: Stripe.Price | string | undefined): number | undefined {
+  if (!price || typeof price === "string") return undefined;
+  const amount = (price.unit_amount || 0) / 100;
+  const recurring = price.recurring;
+  if (!recurring?.interval || amount <= 0) return undefined;
+  const count = recurring.interval_count || 1;
+  if (recurring.interval === "month") return amount / count;
+  if (recurring.interval === "year") return amount / (12 * count);
+  if (recurring.interval === "week") return (amount * 52) / (12 * count);
+  if (recurring.interval === "day") return (amount * 365) / (12 * count);
+  return undefined;
+}
+
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
 
@@ -146,6 +159,19 @@ export async function POST(req: NextRequest) {
       params: {
         plan: typeof plan === "string" ? plan : undefined,
         days_subscribed: subscriptionDurationDays,
+        mrr_lost: monthlyMrrFromPrice(subscriptions.data[0]?.items.data[0]?.price),
+        will_expire_at: subscriptions.data[0]?.cancel_at
+          ? new Date(subscriptions.data[0].cancel_at * 1000).toISOString()
+          : (() => {
+              const periodEnd = (
+                subscriptions.data[0] as Stripe.Subscription & {
+                  current_period_end?: number;
+                }
+              )?.current_period_end;
+              return periodEnd
+                ? new Date(periodEnd * 1000).toISOString()
+                : undefined;
+            })(),
         flow_id: flowId || undefined,
         cancellation_reason: reason || "user_cancelled",
       },

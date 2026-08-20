@@ -36,6 +36,7 @@ export default function AudioPlayerV2({
   className = "",
 }: AudioPlayerV2Props) {
   const audioRef = useRef<HTMLAudioElement>(null);
+  const playCountRef = useRef(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -138,9 +139,11 @@ export default function AudioPlayerV2({
       if (isPlaying) {
         audio.pause();
       } else {
+        playCountRef.current += 1;
         trackEngagement.audioPlayed("listening_clip", audioUrl, {
           clipId: audioUrl,
           module: "listening",
+          replayCount: playCountRef.current,
         });
         void audio.play().catch((err: unknown) => {
           trackKpi.audioError({

@@ -108,13 +108,6 @@ const ResultExamView = ({
     }
   }, [exams?.id, selectedAttemptId]);
 
-  // Log score report viewed
-  useEffect(() => {
-    if (user && exams) {
-      ActivityLogger.scoreReportViewed(exams.id, "mock");
-    }
-  }, [user, exams]);
-
   // Detect incomplete sections
   const getIncompleteSections = () => {
     const sections = [];
@@ -254,6 +247,28 @@ const ResultExamView = ({
       .reduce((sum, p) => sum + p, 0);
     return scaleToBand(weightedPercent);
   })();
+
+  useEffect(() => {
+    if (!user || !exams) return;
+    const overall = Math.round(
+      (listeningAverage + readingAverage + writingAverage + speakingAverage) /
+        4,
+    );
+    ActivityLogger.scoreReportViewed(exams.id, "mock", undefined, {
+      overallClb: overall,
+      listeningClb: listeningAverage,
+      readingClb: readingAverage,
+      writingClb: writingAverage,
+      speakingClb: speakingAverage,
+    });
+  }, [
+    user,
+    exams,
+    listeningAverage,
+    readingAverage,
+    writingAverage,
+    speakingAverage,
+  ]);
 
   useEffect(() => {
     if (

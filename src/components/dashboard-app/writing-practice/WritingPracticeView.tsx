@@ -121,12 +121,14 @@ const WritingPracticeView = ({
     (state) => state.setPremiumPlanModalState,
   );
   const completedRef = useRef(false);
-  useTimerExpiredAnalytics(time, "writing");
+  const scoringRetryRef = useRef(0);
+  useTimerExpiredAnalytics(time, "writing", text.trim() ? 0 : 1);
   usePracticeSessionAnalytics({
     testId: practice.id,
     module: "writing",
     completedRef,
     getPercentComplete: () => (text.trim() ? 50 : 0),
+    getLastQuestionIndex: () => 0,
   });
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
@@ -235,6 +237,7 @@ const WritingPracticeView = ({
         trackKpi.aiScoringFailed({
           module: "writing",
           errorType: `http_${response.status}`,
+          retryCount: (scoringRetryRef.current += 1),
         });
         throw new Error("Network response was not ok.");
       }
@@ -277,6 +280,7 @@ const WritingPracticeView = ({
       trackKpi.aiScoringFailed({
         module: "writing",
         errorType: error instanceof Error ? error.name : "unknown",
+        retryCount: (scoringRetryRef.current += 1),
       });
       console.error("Error submitting answer:", error);
     } finally {

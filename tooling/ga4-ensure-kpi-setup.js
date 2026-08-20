@@ -120,6 +120,31 @@ const EVENT_DIMENSIONS = [
     description: "Discount code applied at checkout.",
   },
   {
+    parameterName: "plan",
+    displayName: "Plan",
+    description: "Subscription plan name on renew, cancel, or plan change.",
+  },
+  {
+    parameterName: "purpose",
+    displayName: "Test purpose",
+    description: "pr, citizenship, work, study, or professional.",
+  },
+  {
+    parameterName: "source_page",
+    displayName: "Source page",
+    description: "Page path where sign up or a CTA started.",
+  },
+  {
+    parameterName: "referral_code",
+    displayName: "Referral code",
+    description: "Referral code at registration.",
+  },
+  {
+    parameterName: "difficulty",
+    displayName: "Difficulty",
+    description: "Practice item difficulty.",
+  },
+  {
     parameterName: "cta_location",
     displayName: "CTA location",
     description: "Where a CTA was clicked.",
@@ -297,6 +322,12 @@ const CUSTOM_METRICS = [
     description: "Nth attempt of this test.",
   },
   {
+    parameterName: "term_number",
+    displayName: "Term number",
+    measurementUnit: "STANDARD",
+    description: "Which paid billing period this subscription invoice is.",
+  },
+  {
     parameterName: "incorrect_count",
     displayName: "Incorrect answer count",
     measurementUnit: "STANDARD",
@@ -337,6 +368,90 @@ const CUSTOM_METRICS = [
     displayName: "Hours since pause",
     measurementUnit: "STANDARD",
     description: "Hours between abandon and resume.",
+  },
+  {
+    parameterName: "days_since_last_login",
+    displayName: "Days since last login",
+    measurementUnit: "STANDARD",
+    description: "Days between returning logins.",
+  },
+  {
+    parameterName: "replay_count",
+    displayName: "Replay count",
+    measurementUnit: "STANDARD",
+    description: "Times a listening clip was played.",
+  },
+  {
+    parameterName: "retakes",
+    displayName: "Speaking retakes",
+    measurementUnit: "STANDARD",
+    description: "Times a speaking task was re-recorded.",
+  },
+  {
+    parameterName: "retry_count",
+    displayName: "Retry count",
+    measurementUnit: "STANDARD",
+    description: "AI scoring retries after failure.",
+  },
+  {
+    parameterName: "input_length",
+    displayName: "Input length",
+    measurementUnit: "STANDARD",
+    description: "Characters or bytes sent to AI scoring.",
+  },
+  {
+    parameterName: "questions_unanswered",
+    displayName: "Questions unanswered",
+    measurementUnit: "STANDARD",
+    description: "Unanswered questions when the timer expires.",
+  },
+  {
+    parameterName: "percent_scrolled",
+    displayName: "Percent scrolled",
+    measurementUnit: "STANDARD",
+    description: "Scroll depth threshold on content pages.",
+  },
+  {
+    parameterName: "days_since_purchase",
+    displayName: "Days since purchase",
+    measurementUnit: "STANDARD",
+    description: "Age of the original purchase at refund.",
+  },
+  {
+    parameterName: "overall_clb",
+    displayName: "Overall CLB",
+    measurementUnit: "STANDARD",
+    description: "Overall CLB on a score report.",
+  },
+  {
+    parameterName: "listening_clb",
+    displayName: "Listening CLB",
+    measurementUnit: "STANDARD",
+    description: "Listening CLB on a score report.",
+  },
+  {
+    parameterName: "reading_clb",
+    displayName: "Reading CLB",
+    measurementUnit: "STANDARD",
+    description: "Reading CLB on a score report.",
+  },
+  {
+    parameterName: "writing_clb",
+    displayName: "Writing CLB",
+    measurementUnit: "STANDARD",
+    description: "Writing CLB on a score report.",
+  },
+  {
+    parameterName: "speaking_clb",
+    displayName: "Speaking CLB",
+    measurementUnit: "STANDARD",
+    description: "Speaking CLB on a score report.",
+  },
+  {
+    parameterName: "last_question_index",
+    displayName: "Last question index",
+    measurementUnit: "STANDARD",
+    description: "Last question reached before abandon.",
   },
 ];
 

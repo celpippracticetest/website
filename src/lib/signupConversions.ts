@@ -24,7 +24,7 @@ export async function sendSignupConversionEvents(args: {
     events: [
       {
         name: "sign_up",
-        params: { method },
+        params: { method, source_page: args.eventSourceUrl || undefined },
       },
     ],
   });

@@ -107,6 +107,13 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
           (typeof user?.publicMetadata?.plan === "string"
             ? user.publicMetadata.plan
             : undefined),
+        daysSubscribed: (() => {
+          const raw = user?.publicMetadata?.purchaseDate;
+          if (!raw) return undefined;
+          const start = new Date(String(raw)).getTime();
+          if (!Number.isFinite(start)) return undefined;
+          return Math.max(0, Math.ceil((Date.now() - start) / 86_400_000));
+        })(),
       });
       const response = await fetch("/api/stripe/create-portal-session", {
         method: "POST",

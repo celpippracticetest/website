@@ -155,6 +155,79 @@ function getUserContext(): UserContext {
   }
 }
 
+const KPI_ATTEMPT_PREFIX = "kpi_attempt_";
+const KPI_PAUSE_PREFIX = "kpi_pause_at_";
+
+function inferDeviceType(): string | undefined {
+  if (!isBrowser) return undefined;
+  const ua = navigator.userAgent;
+  if (/iPad|Tablet|PlayBook/i.test(ua)) return "tablet";
+  if (/Mobi|Android|iPhone|iPod/i.test(ua)) return "mobile";
+  return "desktop";
+}
+
+function currentSourcePage(): string | undefined {
+  if (!isBrowser) return undefined;
+  return `${window.location.pathname}${window.location.search}`;
+}
+
+function currentReferralCode(): string | undefined {
+  if (!isBrowser) return undefined;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const fromQuery = params.get("ref") || params.get("referral");
+    if (fromQuery?.trim()) return fromQuery.trim();
+    return (
+      normalizeString(localStorage.getItem("referral_code")) ||
+      normalizeString(localStorage.getItem("pending_referral_code")) ||
+      undefined
+    );
+  } catch {
+    return undefined;
+  }
+}
+
+function hoursSinceIso(iso?: string | null): number | undefined {
+  if (!iso) return undefined;
+  const t = new Date(iso).getTime();
+  if (!Number.isFinite(t)) return undefined;
+  return Math.max(0, Math.round(((Date.now() - t) / 3_600_000) * 10) / 10);
+}
+
+function nextAttemptNumber(testId: string): number {
+  if (!isBrowser || !testId) return 1;
+  try {
+    const key = `${KPI_ATTEMPT_PREFIX}${testId}`;
+    const next = (Number(localStorage.getItem(key)) || 0) + 1;
+    localStorage.setItem(key, String(next));
+    return next;
+  } catch {
+    return 1;
+  }
+}
+
+function markPracticePaused(testId?: string): void {
+  if (!isBrowser || !testId) return;
+  try {
+    localStorage.setItem(`${KPI_PAUSE_PREFIX}${testId}`, String(Date.now()));
+  } catch {
+    /* ignore */
+  }
+}
+
+function hoursSincePracticePause(testId: string): number | undefined {
+  if (!isBrowser || !testId) return undefined;
+  try {
+    const raw = localStorage.getItem(`${KPI_PAUSE_PREFIX}${testId}`);
+    if (!raw) return undefined;
+    const then = Number(raw);
+    if (!Number.isFinite(then) || then <= 0) return undefined;
+    return Math.max(0, Math.round(((Date.now() - then) / 3_600_000) * 10) / 10);
+  } catch {
+    return undefined;
+  }
+}
+
 function normalizeString(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
@@ -640,6 +713,8 @@ export const trackAuth = {
       event: "sign_up",
       user_id: userId,
       method,
+      source_page: currentSourcePage(),
+      referral_code: currentReferralCode(),
       ...attributionData,
       event_id: eventId,
       value: 1,
@@ -682,10 +757,10 @@ export const trackAuth = {
     });
   },
 
-  emailVerified: (hoursToVerify?: number) => {
+  emailVerified: (hoursToVerify?: number, createdAt?: string) => {
     trackEvent({
       event: "email_verified",
-      hours_to_verify: hoursToVerify,
+      hours_to_verify: hoursToVerify ?? hoursSinceIso(createdAt),
     });
   },
 
@@ -793,10 +868,23 @@ export const trackExam = {
     });
   },
 
-  resultsViewed: (examId: string, score?: number) => {
+  resultsViewed: (
+    examId: string,
+    score?: number,
+    skillScores?: {
+      listeningClb?: number;
+      readingClb?: number;
+      writingClb?: number;
+      speakingClb?: number;
+    }
+  ) => {
     trackKpi.scoreReportView({
       testId: examId,
       overallClb: score,
+      listeningClb: skillScores?.listeningClb,
+      readingClb: skillScores?.readingClb,
+      writingClb: skillScores?.writingClb,
+      speakingClb: skillScores?.speakingClb,
     });
   },
 
@@ -896,7 +984,9 @@ export const trackEcommerce = {
   viewItemList: (items: any[], itemListId?: string, itemListName?: string) => {
     trackEvent({
       event: "view_item_list",
+      currency: "CAD",
       ecommerce: {
+        currency: "CAD",
         item_list_id: itemListId,
         item_list_name: itemListName,
         items,
@@ -927,6 +1017,7 @@ export const trackEcommerce = {
       event: "begin_checkout",
       value,
       currency,
+      coupon,
       ecommerce: {
         currency,
         value,
@@ -1204,14 +1295,18 @@ export const trackKpi = {
       (params.testType === "full_mock" &&
         !params.module &&
         consumeDiagnosticStart());
+    const isFree =
+      params.isFree ??
+      (getUserContext().user_plan == null ||
+        getUserContext().user_plan === "free");
     trackEvent({
       event: "practice_test_start",
       test_id: params.testId,
       test_type: params.testType,
       module: params.module,
       difficulty: params.difficulty,
-      is_free: params.isFree,
-      attempt_number: params.attemptNumber,
+      is_free: isFree,
+      attempt_number: params.attemptNumber ?? nextAttemptNumber(params.testId),
       is_diagnostic: isDiagnostic,
     });
     if (isDiagnostic) {
@@ -1220,7 +1315,7 @@ export const trackKpi = {
         test_id: params.testId,
         test_type: params.testType,
         module: params.module,
-        is_free: params.isFree,
+        is_free: isFree,
       });
     }
   },
@@ -1272,6 +1367,7 @@ export const trackKpi = {
     lastQuestionIndex?: number;
     exitReason?: string;
   }) => {
+    markPracticePaused(params.testId);
     trackEvent({
       event: "practice_test_abandon",
       test_id: params.testId,
@@ -1289,7 +1385,8 @@ export const trackKpi = {
     trackEvent({
       event: "practice_test_resume",
       test_id: params.testId,
-      hours_since_pause: params.hoursSincePause,
+      hours_since_pause:
+        params.hoursSincePause ?? hoursSincePracticePause(params.testId),
     });
   },
 
@@ -1315,7 +1412,7 @@ export const trackKpi = {
       clip_id: params.clipId,
       error_type: params.errorType,
       browser: params.browser,
-      device: params.device,
+      device: params.device || inferDeviceType(),
     });
   },
 
@@ -1359,7 +1456,7 @@ export const trackKpi = {
       result: params.result,
       mic_result: params.result,
       browser: params.browser,
-      device: params.device,
+      device: params.device || inferDeviceType(),
     });
   },
 
@@ -1565,7 +1662,8 @@ export const trackKpi = {
       event: "paywall_view",
       trigger_source: params?.triggerSource,
       plans_shown: params?.plansShown,
-      days_until_test: params?.daysUntilTest,
+      days_until_test:
+        params?.daysUntilTest ?? getKpiEventContext().days_until_test,
     });
   },
 
@@ -1738,7 +1836,8 @@ export const trackKpi = {
       event: "reactivation_session",
       days_dormant: params.daysDormant,
       trigger_channel: params.triggerChannel,
-      days_until_test: params.daysUntilTest,
+      days_until_test:
+        params.daysUntilTest ?? getKpiEventContext().days_until_test,
     });
   },
 

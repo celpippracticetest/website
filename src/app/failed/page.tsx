@@ -28,6 +28,7 @@ export default function Success() {
       errorCode: "stripe_checkout_return",
       declineReason: "payment_failed_page",
       paymentType: "checkout",
+      attemptNumber: 1,
     });
   }, []);
 

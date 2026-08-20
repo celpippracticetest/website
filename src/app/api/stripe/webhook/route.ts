@@ -187,6 +187,117 @@ function buildStripeRenewalPurchaseItems(
   ];
 }
 
+function resolveRenewalPlanName(
+  metadata: Record<string, string | undefined> | null | undefined,
+  invoice: {
+    lines?: { data?: Array<{ description?: string | null; price?: unknown }> };
+  }
+): string | null {
+  const fromMeta = readMetadataValue(metadata, "plan_name");
+  if (fromMeta) return fromMeta.slice(0, 100);
+  const line = invoice?.lines?.data?.[0];
+  const description =
+    typeof line?.description === "string" ? line.description.trim() : "";
+  if (description) return description.slice(0, 100);
+  const price = line?.price;
+  if (price && typeof price === "object") {
+    const nickname =
+      typeof (price as { nickname?: unknown }).nickname === "string"
+        ? String((price as { nickname: string }).nickname).trim()
+        : "";
+    if (nickname) return nickname.slice(0, 100);
+  }
+  return null;
+}
+
+function resolveTermNumber(
+  subscription: Stripe.Subscription | null | undefined,
+  invoice: { lines?: { data?: Array<{ period?: { start?: number } }> } }
+): number | undefined {
+  const item = subscription?.items?.data?.[0];
+  const price = item?.price;
+  const recurring =
+    price && typeof price !== "string" ? price.recurring : null;
+  const startUnix = subscription?.start_date;
+  const periodStart = invoice?.lines?.data?.[0]?.period?.start;
+  if (!recurring?.interval || !startUnix || !periodStart) return undefined;
+
+  const intervalCount = recurring.interval_count || 1;
+  let periodsElapsed = 0;
+  if (recurring.interval === "month") {
+    const start = new Date(startUnix * 1000);
+    const period = new Date(periodStart * 1000);
+    periodsElapsed =
+      (period.getUTCFullYear() - start.getUTCFullYear()) * 12 +
+      (period.getUTCMonth() - start.getUTCMonth());
+  } else if (recurring.interval === "year") {
+    const start = new Date(startUnix * 1000);
+    const period = new Date(periodStart * 1000);
+    periodsElapsed = period.getUTCFullYear() - start.getUTCFullYear();
+  } else if (recurring.interval === "week") {
+    periodsElapsed = Math.round((periodStart - startUnix) / (7 * 86400));
+  } else if (recurring.interval === "day") {
+    periodsElapsed = Math.round((periodStart - startUnix) / 86400);
+  } else {
+    return undefined;
+  }
+
+  return Math.max(1, Math.round(periodsElapsed / intervalCount));
+}
+
+function readCheckoutCoupon(session: Stripe.Checkout.Session): string | undefined {
+  const discounts = session.discounts;
+  if (!Array.isArray(discounts) || !discounts[0]) return undefined;
+  const discount = discounts[0] as {
+    coupon?: string | { id?: string; name?: string };
+    promotion_code?: string | { code?: string; id?: string };
+  };
+  if (typeof discount.coupon === "string" && discount.coupon.trim()) {
+    return discount.coupon.trim();
+  }
+  if (discount.coupon && typeof discount.coupon === "object") {
+    const id = discount.coupon.id || discount.coupon.name;
+    if (id) return id;
+  }
+  if (typeof discount.promotion_code === "string" && discount.promotion_code.trim()) {
+    return discount.promotion_code.trim();
+  }
+  if (discount.promotion_code && typeof discount.promotion_code === "object") {
+    return discount.promotion_code.code || discount.promotion_code.id;
+  }
+  return undefined;
+}
+
+function subscriptionTermFromPlanName(planName?: string | null): string | undefined {
+  if (!planName) return undefined;
+  const n = planName.toLowerCase();
+  if (n.includes("week")) return "week";
+  if (n.includes("year") || n.includes("annual")) return "year";
+  if (n.includes("quarter") || n.includes("3-month") || n.includes("3 month")) {
+    return "quarter";
+  }
+  if (n.includes("month")) return "month";
+  return undefined;
+}
+
+function monthlyMrrFromPrice(price: Stripe.Price | string | undefined): number | undefined {
+  if (!price || typeof price === "string") return undefined;
+  const amount = (price.unit_amount || 0) / 100;
+  const recurring = price.recurring;
+  if (!recurring?.interval || amount <= 0) return undefined;
+  const count = recurring.interval_count || 1;
+  if (recurring.interval === "month") return amount / count;
+  if (recurring.interval === "year") return amount / (12 * count);
+  if (recurring.interval === "week") return (amount * 52) / (12 * count);
+  if (recurring.interval === "day") return (amount * 365) / (12 * count);
+  return undefined;
+}
+
+function daysSinceUnix(unix?: number | null): number | undefined {
+  if (!unix) return undefined;
+  return Math.max(0, Math.ceil((Date.now() / 1000 - unix) / 86400));
+}
+
 /** Meta CAPI Purchase — mirrors GA4 MP purchase sends from this webhook. */
 function sendMetaPurchaseEvent(args: {
   transactionId: string;
@@ -951,10 +1062,15 @@ export async function POST(req: Request) {
             params: {
               transaction_id: session.id,
               value: (session.amount_total || 0) / 100,
-              currency: (session.currency || "usd").toUpperCase(),
+              currency: (session.currency || "cad").toUpperCase(),
               purchase_type: metadata?.purchase_type || "first_purchase",
               billing_mode:
                 session.mode === "subscription" ? "subscription" : "one_time",
+              coupon: readCheckoutCoupon(session),
+              subscription_term:
+                subscriptionTermFromPlanName(checkoutPlanName) ||
+                (session.mode === "subscription" ? "month" : undefined),
+              is_trial_conversion: false,
               ...(checkoutPlanName ? { plan_name: checkoutPlanName } : {}),
               items: buildStripeCheckoutPurchaseItems(session, metadata),
               ...buildStripeGaAttributionParams(metadata),
@@ -1275,12 +1391,17 @@ export async function POST(req: Request) {
       ) {
         subscriptionId = rawSubscription?.id;
       }
+      let subscription: Stripe.Subscription | null = null;
       let subscriptionMetadata: Record<string, string | undefined> | null = null;
       if (subscriptionId) {
         try {
-          const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-          subscriptionMetadata = subscription.metadata as Record<string, string | undefined>;
+          subscription = await stripe.subscriptions.retrieve(subscriptionId);
+          subscriptionMetadata = subscription.metadata as Record<
+            string,
+            string | undefined
+          >;
         } catch {
+          subscription = null;
           subscriptionMetadata = null;
         }
       }
@@ -1353,9 +1474,9 @@ export async function POST(req: Request) {
                 // Subscription renewals: `purchase` here only. Initial checkout
                 // is counted from `checkout.session.completed` (avoid duplicate).
                 if (invoicePurchaseType === "subscription_renewal") {
-                  const renewalPlanName = readMetadataValue(
+                  const renewalPlanName = resolveRenewalPlanName(
                     subscriptionMetadata ?? undefined,
-                    "plan_name"
+                    invoice
                   );
                   void sendGa4Events({
                     clientId: buildStripeGaClientId({
@@ -1394,6 +1515,7 @@ export async function POST(req: Request) {
                         value: (invoice?.amount_paid || 0) / 100,
                         currency: (invoice?.currency || "usd").toUpperCase(),
                         subscriptionId: subscriptionId || undefined,
+                        termNumber: resolveTermNumber(subscription, invoice),
                         extra: buildStripeGaAttributionParams(subscriptionMetadata),
                       }),
                     ],
@@ -1420,9 +1542,9 @@ export async function POST(req: Request) {
           `No checkout session or user found for invoice ${invoiceId}, skipping repository update`
         );
         if (invoicePurchaseType === "subscription_renewal") {
-          const renewalPlanName = readMetadataValue(
+          const renewalPlanName = resolveRenewalPlanName(
             subscriptionMetadata ?? undefined,
-            "plan_name"
+            invoice
           );
           void sendGa4Events({
             clientId: buildStripeGaClientId({
@@ -1455,6 +1577,7 @@ export async function POST(req: Request) {
                 value: (invoice?.amount_paid || 0) / 100,
                 currency: (invoice?.currency || "usd").toUpperCase(),
                 subscriptionId: subscriptionId || undefined,
+                termNumber: resolveTermNumber(subscription, invoice),
                 extra: buildStripeGaAttributionParams(subscriptionMetadata),
               }),
             ],
@@ -1496,7 +1619,7 @@ export async function POST(req: Request) {
               : "first_purchase";
 
           if (purchaseType === "subscription_renewal") {
-            const renewalPlanName = readMetadataValue(metadata, "plan_name");
+            const renewalPlanName = resolveRenewalPlanName(metadata, invoice);
             void sendGa4Events({
               clientId: buildStripeGaClientId({
                 metadata,
@@ -1529,6 +1652,7 @@ export async function POST(req: Request) {
                   value: (invoice?.amount_paid || 0) / 100,
                   currency: (invoice?.currency || "usd").toUpperCase(),
                   subscriptionId: subscriptionId || undefined,
+                  termNumber: resolveTermNumber(subscription, invoice),
                   extra: buildStripeGaAttributionParams(metadata),
                 }),
               ],
@@ -1725,6 +1849,14 @@ export async function POST(req: Request) {
               subscription_id: subscription.id,
               transaction_id: usableCheckoutId || subscription.id,
               cancellation_reason: "stripe_subscription_deleted",
+              plan: readMetadataValue(subscriptionMetadata, "plan_name") || undefined,
+              days_subscribed: daysSinceUnix(subscription.start_date),
+              mrr_lost: monthlyMrrFromPrice(subscription.items.data[0]?.price),
+              will_expire_at: subscription.ended_at
+                ? new Date(subscription.ended_at * 1000).toISOString()
+                : subscription.cancel_at
+                  ? new Date(subscription.cancel_at * 1000).toISOString()
+                  : undefined,
               ...buildStripeGaAttributionParams(subscriptionMetadata),
             },
           },
@@ -1827,6 +1959,31 @@ export async function POST(req: Request) {
           action: "charge_refunded_admin_skip",
           metadata: { chargeId: chargeObj.id, refundId },
         });
+      }
+
+      void sendGa4Events({
+        clientId: buildStripeGaClientId({
+          customerId:
+            typeof chargeObj.customer === "string" ? chargeObj.customer : null,
+          userId: null,
+          sessionId: null,
+          subscriptionId: null,
+        }),
+        events: [
+          {
+            name: "refund_request",
+            params: {
+              reason: skipSubscriptionCancel
+                ? "admin_plan_change"
+                : "charge_refunded",
+              days_since_purchase: daysSinceUnix(chargeObj.created),
+              value: (chargeObj.amount_refunded || chargeObj.amount || 0) / 100,
+              currency: String(chargeObj.currency || "cad").toUpperCase(),
+              transaction_id: chargeObj.id,
+            },
+          },
+        ],
+      });
         return NextResponse.json({ received: true });
       }
 
