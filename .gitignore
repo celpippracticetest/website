@@ -53,3 +53,6 @@ next-env.d.ts
 # clerk configuration (can include secrets)
 /.clerk/
 
+# GA4 Admin OAuth refresh token from `ga4-ensure-kpi-setup.js --login`
+.ga4-admin-oauth.json
+

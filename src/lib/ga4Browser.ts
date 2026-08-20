@@ -10,6 +10,33 @@ const GA4_EVENTS_BLOCKED = new Set([
   "ads_enhanced_conversion",
 ]);
 
+/** Named dataLayer events for GTM Preview / KPI triggers (no extra GA4 Event tags). */
+const GTM_MIRROR_EVENTS = new Set([
+  "explanation_open",
+  "incorrect_answer",
+  "diagnostic_test_start",
+  "diagnostic_test_complete",
+  "onboarding_complete",
+  "onboarding_step_complete",
+  "test_date_set",
+  "target_score_set",
+  "practice_test_start",
+  "practice_test_complete",
+  "practice_test_abandon",
+  "paywall_view",
+  "ai_scoring_requested",
+  "ai_score_returned",
+  "ai_scoring_failed",
+  "ai_feedback_rated",
+  "speaking_task_submit",
+  "mic_permission_result",
+  "nps_response",
+  "cancel_reason_submit",
+  "score_report_view",
+  "web_vitals",
+  "payment_failed",
+]);
+
 const GA4_STRIP_KEYS = new Set([
   "event",
   "user_data",
@@ -127,6 +154,16 @@ function dispatchGa4Event(eventName: string, params: Record<string, unknown>): b
 
   try {
     gtag("event", eventName, params);
+    if (
+      GTM_MIRROR_EVENTS.has(eventName) &&
+      typeof window !== "undefined" &&
+      Array.isArray((window as Window & { dataLayer?: unknown[] }).dataLayer)
+    ) {
+      (window as Window & { dataLayer: Record<string, unknown>[] }).dataLayer.push({
+        event: eventName,
+        ...params,
+      });
+    }
     return true;
   } catch (error) {
     if (DEBUG) {

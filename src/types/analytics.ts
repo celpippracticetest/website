@@ -174,6 +174,43 @@ export interface AIFeedbackViewedEvent extends GTMEvent {
   context: "practice" | "exam";
 }
 
+export interface ExplanationOpenEvent extends GTMEvent {
+  event: "explanation_open";
+  module?: string;
+  test_id?: string;
+  incorrect_count?: number;
+  question_count?: number;
+  source?: string;
+}
+
+export interface IncorrectAnswerEvent extends GTMEvent {
+  event: "incorrect_answer";
+  module?: string;
+  test_id?: string;
+  incorrect_count: number;
+  question_count?: number;
+}
+
+export interface DiagnosticTestStartEvent extends GTMEvent {
+  event: "diagnostic_test_start";
+  test_id: string;
+  module?: string;
+}
+
+export interface DiagnosticTestCompleteEvent extends GTMEvent {
+  event: "diagnostic_test_complete";
+  test_id: string;
+  module?: string;
+  estimated_clb?: number;
+}
+
+export interface StudyPlanTaskCompleteEvent extends GTMEvent {
+  event: "study_plan_task_complete";
+  task_id?: string;
+  on_time?: boolean;
+  module?: string;
+}
+
 // E-commerce Events (GA4 Standard)
 export interface EcommerceItem {
   item_id: string;

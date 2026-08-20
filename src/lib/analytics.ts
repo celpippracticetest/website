@@ -4,6 +4,13 @@ import { getAnalyticsStyleContext } from "@/lib/analyticsStyleContext";
 import { getAnalyticsPricingModelContext } from "@/lib/analyticsPricingModelContext";
 import { contentGroupFromPath } from "@/lib/contentGroup";
 import { sendGa4Event, updateGa4Consent } from "@/lib/ga4Browser";
+import {
+  consumeDiagnosticComplete,
+  consumeDiagnosticStart,
+  getKpiEventContext,
+  persistTargetClb,
+  persistTestDateContext,
+} from "@/lib/ga4KpiContext";
 import type { GaConsentState } from "@/lib/consent";
 import {
   GOOGLE_ADS_CONVERSION_ID,
@@ -396,8 +403,10 @@ export function trackEvent(
   try {
     const styleContext = getAnalyticsStyleContext();
     const pricingModelContext = getAnalyticsPricingModelContext();
+    const kpiContext = getKpiEventContext();
     const enrichedEvent = enrichContext
       ? {
+          ...kpiContext,
           ...event,
           ...getUserContext(),
           ...(event.style === undefined ? styleContext : {}),
@@ -1189,7 +1198,13 @@ export const trackKpi = {
     difficulty?: string;
     isFree?: boolean;
     attemptNumber?: number;
+    isDiagnostic?: boolean;
   }) => {
+    const isDiagnostic =
+      params.isDiagnostic ??
+      (params.testType === "full_mock" &&
+        !params.module &&
+        consumeDiagnosticStart());
     trackEvent({
       event: "practice_test_start",
       test_id: params.testId,
@@ -1198,7 +1213,17 @@ export const trackKpi = {
       difficulty: params.difficulty,
       is_free: params.isFree,
       attempt_number: params.attemptNumber,
+      is_diagnostic: isDiagnostic,
     });
+    if (isDiagnostic) {
+      trackEvent({
+        event: "diagnostic_test_start",
+        test_id: params.testId,
+        test_type: params.testType,
+        module: params.module,
+        is_free: params.isFree,
+      });
+    }
   },
 
   practiceTestComplete: (params: {
@@ -1210,7 +1235,13 @@ export const trackKpi = {
     estimatedClb?: number;
     questionsAttempted?: number;
     completionRate?: number;
+    isDiagnostic?: boolean;
   }) => {
+    const isDiagnostic =
+      params.isDiagnostic ??
+      (params.testType === "full_mock" &&
+        !params.module &&
+        consumeDiagnosticComplete());
     trackEvent({
       event: "practice_test_complete",
       test_id: params.testId,
@@ -1221,7 +1252,18 @@ export const trackKpi = {
       estimated_clb: params.estimatedClb,
       questions_attempted: params.questionsAttempted,
       completion_rate: params.completionRate,
+      is_diagnostic: isDiagnostic,
     });
+    if (isDiagnostic) {
+      trackEvent({
+        event: "diagnostic_test_complete",
+        test_id: params.testId,
+        test_type: params.testType,
+        module: params.module,
+        duration_sec: params.durationSec,
+        estimated_clb: params.estimatedClb,
+      });
+    }
   },
 
   practiceTestAbandon: (params: {
@@ -1316,6 +1358,7 @@ export const trackKpi = {
     trackEvent({
       event: "mic_permission_result",
       result: params.result,
+      mic_result: params.result,
       browser: params.browser,
       device: params.device,
     });
@@ -1425,10 +1468,12 @@ export const trackKpi = {
     daysUntilTest?: number;
     isBooked?: boolean;
   }) => {
+    const persisted = persistTestDateContext(params.testDate);
     trackEvent({
       event: "test_date_set",
       test_date: params.testDate,
-      days_until_test: params.daysUntilTest,
+      days_until_test: params.daysUntilTest ?? persisted.daysUntilTest,
+      days_until_test_bucket: persisted.bucket,
       is_booked: params.isBooked,
     });
   },
@@ -1437,10 +1482,59 @@ export const trackKpi = {
     targetClb: number | string;
     purpose?: string;
   }) => {
+    persistTargetClb(params.targetClb);
     trackEvent({
       event: "target_score_set",
       target_clb: params.targetClb,
       purpose: params.purpose,
+    });
+  },
+
+  explanationOpen: (params: {
+    module?: PracticeModule | string;
+    testId?: string;
+    questionIndex?: number;
+    incorrectCount?: number;
+    questionCount?: number;
+    source?: "score_report" | "practice_review" | "ask_ai";
+  }) => {
+    trackEvent({
+      event: "explanation_open",
+      module: normalizeModule(params.module) || params.module,
+      test_id: params.testId,
+      question_index: params.questionIndex,
+      incorrect_count: params.incorrectCount,
+      question_count: params.questionCount,
+      source: params.source,
+      explain_source: params.source,
+    });
+  },
+
+  incorrectAnswerShown: (params: {
+    module?: PracticeModule | string;
+    testId?: string;
+    incorrectCount: number;
+    questionCount?: number;
+  }) => {
+    trackEvent({
+      event: "incorrect_answer",
+      module: normalizeModule(params.module) || params.module,
+      test_id: params.testId,
+      incorrect_count: params.incorrectCount,
+      question_count: params.questionCount,
+    });
+  },
+
+  studyPlanTaskComplete: (params: {
+    taskId?: string;
+    onTime?: boolean;
+    skill?: PracticeModule | string;
+  }) => {
+    trackEvent({
+      event: "study_plan_task_complete",
+      task_id: params.taskId,
+      on_time: params.onTime,
+      module: normalizeModule(params.skill) || params.skill,
     });
   },
 
@@ -1547,6 +1641,7 @@ export const trackKpi = {
     trackEvent({
       event: "cancel_reason_submit",
       reason: params.reason,
+      cancellation_reason: params.reason,
       reason_text: params.reasonText,
       plan: params.plan,
     });

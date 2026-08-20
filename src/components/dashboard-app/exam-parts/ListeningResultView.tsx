@@ -1,3 +1,5 @@
+"use client";
+
 import SvgArrowRight from "@/components/icons/ArrowRight";
 import SvgChevronDownExam from "@/components/icons/ChevronDownExam";
 import { TListeningAndReadingAnswerDto } from "@/models/answer";
@@ -7,6 +9,7 @@ import { Accordion } from "radix-ui";
 import * as React from "react";
 import { PRACTICE_PARTS } from "@/constants";
 import { mockExamPartHref } from "@/lib/mockExamAttemptId";
+import { trackKpi } from "@/lib/analytics";
 
 const ListeningResultView = ({
   examPart,
@@ -31,12 +34,35 @@ const ListeningResultView = ({
     (q: any, index: number) =>
       userAnswer?.answers[index] && q.answer === userAnswer?.answers[index],
   ).length;
+  const incorrectCount = Math.max(0, allQuestions.length - numberOfCorrect);
+  const explanationOpenedRef = React.useRef(false);
+
+  const handleAccordionChange = (value: string) => {
+    if (!value || explanationOpenedRef.current) return;
+    explanationOpenedRef.current = true;
+    if (incorrectCount > 0) {
+      trackKpi.incorrectAnswerShown({
+        module: "listening",
+        testId: examPart?.examId?.toString(),
+        incorrectCount,
+        questionCount: allQuestions.length,
+      });
+    }
+    trackKpi.explanationOpen({
+      module: "listening",
+      testId: examPart?.examId?.toString(),
+      incorrectCount,
+      questionCount: allQuestions.length,
+      source: "score_report",
+    });
+  };
 
   return (
     <Accordion.Root
       className="border  border-[#D5D6D8] rounded-[8px] bg-white overflow-hidden"
       type="single"
       collapsible
+      onValueChange={handleAccordionChange}
     >
       <Accordion.Item value="item-1">
         <Accordion.Header className="flex">

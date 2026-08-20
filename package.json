@@ -15,6 +15,7 @@
     "migrate:clerk:supabase": "npx --yes tsx ./tooling/migrate-clerk-to-supabase.ts",
     "migrate:clerk:supabase:latest-500": "npx --yes tsx ./tooling/migrate-clerk-to-supabase.ts -- --max-users=500",
     "ga4:ensure-skill-dimension": "node ./tooling/ga4-ensure-skill-type-dimension.js",
+    "ga4:ensure-kpi-setup": "node ./tooling/ga4-ensure-kpi-setup.js",
     "ads:spend-to-bq": "node ./tooling/google-ads-spend-to-bq.js",
     "ads:meta-to-bq": "node ./tooling/meta-ads-spend-to-bq.js",
     "ads:csv-to-bq": "node ./tooling/ad-spend-csv-to-bq.js",

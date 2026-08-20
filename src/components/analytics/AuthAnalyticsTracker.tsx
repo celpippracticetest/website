@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { trackKpi } from "@/lib/analytics";
 import { setGa4UserId } from "@/lib/ga4Browser";
+import { persistTargetClb, syncKpiUserProperties } from "@/lib/ga4KpiContext";
 
 const LAST_ACTIVE_KEY = "celpip_last_active_at";
 const REACTIVATION_ONCE_KEY = "celpip_reactivation_fired";
@@ -39,6 +40,22 @@ export default function AuthAnalyticsTracker() {
       publicMetadata: user.publicMetadata as AnalyticsUser["publicMetadata"],
     };
     setGa4UserId(user.id);
+
+    const meta = user.publicMetadata as AnalyticsUser["publicMetadata"] & {
+      targetCLB?: unknown;
+      targetClb?: unknown;
+    };
+    const targetClb = meta?.targetCLB ?? meta?.targetClb;
+    if (targetClb != null && String(targetClb) !== "Not specified") {
+      persistTargetClb(String(targetClb));
+    }
+    syncKpiUserProperties({
+      userPlan: meta?.plan != null ? String(meta.plan) : "free",
+      targetClb:
+        targetClb != null && String(targetClb) !== "Not specified"
+          ? String(targetClb)
+          : undefined,
+    });
 
     try {
       const now = Date.now();
