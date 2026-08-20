@@ -11,7 +11,7 @@ export type GaConsentState = {
   ad_personalization: "granted" | "denied";
 };
 
-/** Matches gtag defaults in `layout.tsx`. */
+/** Matches gtag defaults in `layout.tsx` (`beforeInteractive` consent snippet). */
 export const ESSENTIAL_CONSENT: GaConsentState = {
   analytics_storage: "granted",
   ad_storage: "denied",

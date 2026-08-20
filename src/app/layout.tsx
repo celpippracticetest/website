@@ -109,6 +109,25 @@ export default async function RootLayout({
   return (
     <html suppressHydrationWarning className={jakarta.variable} lang="en">
       <head>
+        {/* Consent Mode default MUST run before GTM/GA4 read consent. */}
+        <Script
+          id="google-consent-default"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              window.gtag = gtag;
+              gtag('consent', 'default', {
+                analytics_storage: 'granted',
+                ad_storage: 'denied',
+                ad_user_data: 'denied',
+                ad_personalization: 'denied'
+              });
+            `,
+          }}
+        />
+
         {/* Critical preloads */}
         <link
           rel="preload"
@@ -275,12 +294,6 @@ export default async function RootLayout({
               function gtag(){dataLayer.push(arguments);}
               window.gtag = gtag;
               gtag('js', new Date());
-              gtag('consent', 'default', {
-                analytics_storage: 'granted',
-                ad_storage: 'denied',
-                ad_user_data: 'denied',
-                ad_personalization: 'denied'
-              });
               gtag('config', '${GA4_MEASUREMENT_ID}', {
                 send_page_view: false
               });
