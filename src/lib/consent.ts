@@ -11,7 +11,7 @@ export type GaConsentState = {
   ad_personalization: "granted" | "denied";
 };
 
-/** Matches gtag defaults in `layout.tsx` (`beforeInteractive` consent snippet). */
+/** Opt-down if a CMP later restricts ads. Not the on-page default. */
 export const ESSENTIAL_CONSENT: GaConsentState = {
   analytics_storage: "granted",
   ad_storage: "denied",
@@ -19,7 +19,7 @@ export const ESSENTIAL_CONSENT: GaConsentState = {
   ad_personalization: "denied",
 };
 
-/** Marketing / ads consent — same shape as Google's Consent Mode v2 update. */
+/** Matches gtag defaults in `layout.tsx` (`beforeInteractive` consent snippet). */
 export const MARKETING_CONSENT: GaConsentState = {
   analytics_storage: "granted",
   ad_storage: "granted",
