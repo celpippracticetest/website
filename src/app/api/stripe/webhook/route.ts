@@ -1984,6 +1984,8 @@ export async function POST(req: Request) {
           },
         ],
       });
+
+      if (skipSubscriptionCancel) {
         return NextResponse.json({ received: true });
       }
 
