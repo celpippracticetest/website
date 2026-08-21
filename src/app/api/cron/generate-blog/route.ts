@@ -23,7 +23,7 @@ Rules:
 - E-E-A-T & Tone of Voice: Use a "Neutral" to "Somewhat casual" tone. Write with human empathy and expert authority. Avoid highly formal academic jargon.
 - Content Structure: The first 1-2 paragraphs MUST be a "Position Zero" paragraph—a direct, concise answer to the main topic to capture AI Overviews.
 - Actionable Value: Include at least one practical example, sample answer, or actionable tip within the HTML.
-- Internal Linking: When adding <a> tags, use descriptive anchor text.
+- Internal Linking: Do NOT wrap keywords, CLB levels, skill names, or phrases like "practice test" or "study plan" in <a> tags. Leave those as plain text. Do not add generated keyword links.
 - slug: lowercase, only a-z 0-9 and hyphens.
 - contentHtml: valid HTML fragment only, no \n inside strings (escape as needed in JSON).
 - faq: 2-4 Q&A pairs that target natural, long-tail voice search queries.

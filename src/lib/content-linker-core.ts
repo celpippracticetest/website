@@ -110,6 +110,62 @@ function sanitizeContentTag(tag: string): string {
   return tag;
 }
 
+function isGeneratedKeywordAnchor(tag: string): boolean {
+  if (!/^<a[\s>]/i.test(tag)) return false;
+  if (/\bcel-internal-kw-link\b/i.test(tag)) return true;
+  if (/\btitle\s*=\s*(["'])Learn more about [^"']*\1/i.test(tag)) return true;
+
+  const hrefMatch = tag.match(/\bhref\s*=\s*(["'])([^"']*)\1/i);
+  const href = hrefMatch?.[2] ?? "";
+  const opensNewTab = /\btarget\s*=\s*(["'])_blank\1/i.test(tag);
+  // Blog generators wrap keywords in new-tab internal <a> tags.
+  if (opensNewTab && isInternalHref(href)) return true;
+
+  return false;
+}
+
+/**
+ * Normalize tags and strip self-links / auto-generated keyword anchors.
+ * Does not inject new keyword links.
+ */
+export function sanitizeContentHtml(html: string, currentPath?: string): string {
+  if (!html) return html;
+
+  const normalizedCurrentPath = currentPath ? normalizeToPath(currentPath) : "";
+  const parts = html.split(/(<[^>]+>)/g);
+  let processedHtml = "";
+  let dropAnchorContents = false;
+
+  for (const part of parts) {
+    if (part.startsWith("<")) {
+      const sanitizedTag = sanitizeContentTag(part);
+
+      if (/^<a[\s>]/i.test(sanitizedTag)) {
+        const hrefMatch = sanitizedTag.match(/href\s*=\s*["']([^"']+)["']/i);
+        const href = hrefMatch?.[1] ?? "";
+        const isSelfAnchor =
+          !!normalizedCurrentPath && href
+            ? normalizeToPath(href) === normalizedCurrentPath
+            : false;
+        const isGeneratedKeyword = isGeneratedKeywordAnchor(sanitizedTag);
+
+        dropAnchorContents = isSelfAnchor || isGeneratedKeyword;
+        if (!dropAnchorContents) processedHtml += sanitizedTag;
+      } else if (/^<\/a>/i.test(sanitizedTag)) {
+        if (!dropAnchorContents) processedHtml += sanitizedTag;
+        dropAnchorContents = false;
+      } else {
+        processedHtml += sanitizedTag;
+      }
+      continue;
+    }
+
+    processedHtml += part;
+  }
+
+  return processedHtml;
+}
+
 /**
  * Pure function to inject internal links into HTML content.
  * Does NOT fetch data - requires links to be passed in.
@@ -120,7 +176,8 @@ export function linkContentCore(
   links: LinkerConfig[],
   currentPath?: string
 ): string {
-  if (!html || !links || links.length === 0) return html;
+  const prepared = sanitizeContentHtml(html, currentPath);
+  if (!prepared || !links || links.length === 0) return prepared;
 
   // Avoid "self links" where a keyword would link to the page currently being rendered.
   // Example: keyword "CLB 9" targeting "/wiki/clb9" should not be linked inside "/wiki/clb9".
@@ -140,73 +197,45 @@ export function linkContentCore(
     return `\\b${escaped}\\b`;
   });
 
-  if (patterns.length === 0) return html;
+  if (patterns.length === 0) return prepared;
 
   const masterPattern = new RegExp(`(${patterns.join('|')})`, 'gi');
 
   // Split by HTML tags to isolate text content
-  const parts = html.split(/(<[^>]+>)/g);
+  const parts = prepared.split(/(<[^>]+>)/g);
 
   let processedHtml = "";
   let insideLink = false;
-  let insideSelfAnchor = false;
 
   for (const part of parts) {
-    // If it's a tag
     if (part.startsWith("<")) {
-      const sanitizedTag = sanitizeContentTag(part);
-
-      // Track if we are inside an anchor tag to avoid nested links.
-      // Additionally, if the anchor points to the current page, strip it
-      // (turn into plain text) to prevent self-linking even when the HTML
-      // already contains an <a> tag.
-      if (/^<a[\s>]/i.test(sanitizedTag)) {
-        const hrefMatch = sanitizedTag.match(/href\s*=\s*["']([^"']+)["']/i);
-        const href = hrefMatch?.[1] ?? "";
-        const isSelfAnchor =
-          !!normalizedCurrentPath && href
-            ? normalizeToPath(href) === normalizedCurrentPath
-            : false;
-
-        if (!isSelfAnchor) processedHtml += sanitizedTag;
+      if (/^<a[\s>]/i.test(part)) {
+        processedHtml += part;
         insideLink = true;
-        insideSelfAnchor = isSelfAnchor;
-      } else if (/^<\/a>/i.test(sanitizedTag)) {
-        if (!insideSelfAnchor) processedHtml += sanitizedTag;
+      } else if (/^<\/a>/i.test(part)) {
+        processedHtml += part;
         insideLink = false;
-        insideSelfAnchor = false;
       } else {
-        processedHtml += sanitizedTag;
+        processedHtml += part;
       }
       continue;
     }
 
-    // If it's text and we're not inside a link, process it
     if (!insideLink && part.trim().length > 0) {
-      let text = part;
-      
-      // Replace keywords with links
-      text = text.replace(masterPattern, (match) => {
+      const text = part.replace(masterPattern, (match) => {
         const candidates = sortedLinks.filter(
           (l) => l.keyword.toLowerCase() === match.toLowerCase()
         );
         if (candidates.length === 0) return match;
 
-        // If we couldn't filter them out correctly for any reason, still prevent
-        // linking to the current page at render time.
-        if (normalizedCurrentPath) {
-          const nonSelf = candidates.find(
-            (l) => normalizeToPath(l.url) !== normalizedCurrentPath
-          );
-          if (!nonSelf) return match;
-          const linkConfig = nonSelf;
-          return `<a href="${normalizeInternalHref(linkConfig.url)}" class="cel-internal-kw-link text-primary font-medium no-underline hover:no-underline" title="Learn more about ${linkConfig.keyword}">${match}</a>`;
-        }
+        const linkConfig = normalizedCurrentPath
+          ? candidates.find((l) => normalizeToPath(l.url) !== normalizedCurrentPath)
+          : candidates[0];
+        if (!linkConfig) return match;
 
-        const linkConfig = candidates[0];
         return `<a href="${normalizeInternalHref(linkConfig.url)}" class="cel-internal-kw-link text-primary font-medium no-underline hover:no-underline" title="Learn more about ${linkConfig.keyword}">${match}</a>`;
       });
-      
+
       processedHtml += text;
     } else {
       processedHtml += part;

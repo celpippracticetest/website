@@ -9,7 +9,7 @@ import {
   getRelatedPublishedPosts,
   isIndexablePublishedBlogSlug,
 } from "@/lib/blog/public";
-import { linkContentServer } from "@/lib/content-linker-server";
+import { sanitizeContentHtml } from "@/lib/content-linker-core";
 import BlogArticleAnalytics from "@/components/analytics/BlogArticleAnalytics";
 import {
   Accordion,
@@ -45,11 +45,16 @@ function buildBlogTitle(title: string): string {
   }
 
   const withSuffix = `${trimmed}${BLOG_TITLE_SUFFIX}`;
-  return withSuffix.length <= 68 ? withSuffix : `${trimmed.substring(0, 68 - BLOG_TITLE_SUFFIX.length - 3)}...${BLOG_TITLE_SUFFIX}`;
+  return withSuffix.length <= 68
+    ? withSuffix
+    : `${trimmed.substring(0, 68 - BLOG_TITLE_SUFFIX.length - 3)}...${BLOG_TITLE_SUFFIX}`;
 }
 
 function stripHtml(html: string): string {
-  return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  return html
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function formatDate(value?: Date | string | null): string {
@@ -63,7 +68,9 @@ function formatDate(value?: Date | string | null): string {
   return date.toLocaleDateString();
 }
 
-export async function generateMetadata({ params }: BlogPageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: BlogPageProps): Promise<Metadata> {
   const { slug: requestedSlug } = await params;
   const slug = normalizeWikiSlug(requestedSlug);
   const post = await getPublishedBlogPostBySlug(requestedSlug);
@@ -80,10 +87,12 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
   }
 
   const baseUrl = new URL(
-    process.env.APP_BASE_URL || "https://celpipguide.ca"
+    process.env.APP_BASE_URL || "https://celpipguide.ca",
   ).toString();
   const fallbackDescription =
-    post.excerpt || stripHtml(post.contentHtml).slice(0, 155) || "CELPIP preparation article.";
+    post.excerpt ||
+    stripHtml(post.contentHtml).slice(0, 155) ||
+    "CELPIP preparation article.";
   const title = buildBlogTitle(post.seo?.metaTitle || post.title);
   const description =
     (BLOG_META_DESCRIPTION_OVERRIDES[slug] ??
@@ -92,12 +101,16 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
     fallbackDescription;
   const shouldIndex = isIndexablePublishedBlogSlug(post.slug);
   const canonicalPath = `/blog/${post.slug}`;
-  const path = post.seo?.canonicalUrl?.startsWith("http") ? null : (post.seo?.canonicalUrl || canonicalPath);
-  const canonical = path === null
-    ? (post.seo?.canonicalUrl ?? "")
-    : new URL(path.startsWith("/") ? path : `/${path}`, baseUrl).toString();
+  const path = post.seo?.canonicalUrl?.startsWith("http")
+    ? null
+    : post.seo?.canonicalUrl || canonicalPath;
+  const canonical =
+    path === null
+      ? (post.seo?.canonicalUrl ?? "")
+      : new URL(path.startsWith("/") ? path : `/${path}`, baseUrl).toString();
   const ogImage = post.seo?.ogImageUrl || post.featuredImage?.url;
-  const ogImageAlt = post.seo?.ogImageAlt || post.featuredImage?.alt || post.title;
+  const ogImageAlt =
+    post.seo?.ogImageAlt || post.featuredImage?.alt || post.title;
 
   return {
     title,
@@ -122,7 +135,9 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
           ]
         : undefined,
       authors: [post.authorName],
-      publishedTime: post.publishedAt ? new Date(post.publishedAt).toISOString() : undefined,
+      publishedTime: post.publishedAt
+        ? new Date(post.publishedAt).toISOString()
+        : undefined,
       tags: post.tags,
     },
     twitter: {
@@ -156,11 +171,20 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
     redirect(`/blog/${slug}`);
   }
 
-  const relatedPosts = await getRelatedPublishedPosts(post.id, post.categories, post.tags, 3);
-  const siteBase = (process.env.APP_BASE_URL || "https://celpipguide.ca").replace(/\/$/, "");
-  const canonicalUrl = post.seo?.canonicalUrl || `${siteBase}/blog/${post.slug}`;
+  const relatedPosts = await getRelatedPublishedPosts(
+    post.id,
+    post.categories,
+    post.tags,
+    3,
+  );
+  const siteBase = (
+    process.env.APP_BASE_URL || "https://celpipguide.ca"
+  ).replace(/\/$/, "");
+  const canonicalUrl =
+    post.seo?.canonicalUrl || `${siteBase}/blog/${post.slug}`;
   const ogImage = post.seo?.ogImageUrl || post.featuredImage?.url;
-  const ogImageAlt = post.seo?.ogImageAlt || post.featuredImage?.alt || post.title;
+  const ogImageAlt =
+    post.seo?.ogImageAlt || post.featuredImage?.alt || post.title;
   const schemaImage = ogImage || `${siteBase}/images/hero.png`;
 
   const blogPostingSchema = {
@@ -226,20 +250,23 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
   const faqSchema =
     fullFaq.length > 0
       ? {
-        "@context": "https://schema.org",
-        "@type": "FAQPage",
-        mainEntity: fullFaq.map((item) => ({
-          "@type": "Question",
-          name: item.question,
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: item.answer,
-          },
-        })),
-      }
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: fullFaq.map((item) => ({
+            "@type": "Question",
+            name: item.question,
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: item.answer,
+            },
+          })),
+        }
       : null;
 
-  const linkedContent = await linkContentServer(post.contentHtml, `/blog/${post.slug}`);
+  const articleHtml = sanitizeContentHtml(
+    post.contentHtml,
+    `/blog/${post.slug}`,
+  );
 
   return (
     <Box className="cel-container py-10 md:py-14">
@@ -265,7 +292,9 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
           <span className="text-slate-700">{post.title}</span>
         </Box>
 
-        <p className="text-sm font-medium uppercase tracking-wide text-blue-600">CELPIP Blog</p>
+        <p className="text-sm font-medium uppercase tracking-wide text-blue-600">
+          CELPIP Blog
+        </p>
         <h1 className="mt-3 text-3xl font-bold leading-tight text-slate-900 md:text-5xl">
           {post.title}
         </h1>
@@ -283,19 +312,25 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
 
         <Box className="mt-6 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
           <Box className="flex min-h-[14rem] w-full flex-col justify-center p-6">
-            <p className="text-xs font-medium uppercase tracking-wide text-blue-600">CELPIP Blog</p>
-            <h2 className="mt-3 text-2xl font-bold leading-tight text-slate-900">{post.title}</h2>
+            <p className="text-xs font-medium uppercase tracking-wide text-blue-600">
+              CELPIP Blog
+            </p>
+            <h2 className="mt-3 text-2xl font-bold leading-tight text-slate-900">
+              {post.title}
+            </h2>
           </Box>
         </Box>
 
         <article
           className="article-content prose prose-blue mt-8 max-w-none overflow-x-auto"
-          dangerouslySetInnerHTML={{ __html: linkedContent }}
+          dangerouslySetInnerHTML={{ __html: articleHtml }}
         />
 
         {fullFaq.length > 0 ? (
           <Box className="mt-10 border-t border-slate-200 pt-10">
-            <h2 className="text-xl font-bold text-slate-900">Frequently Asked Questions</h2>
+            <h2 className="text-xl font-bold text-slate-900">
+              Frequently Asked Questions
+            </h2>
             <Accordion type="single" collapsible className="mt-4 w-full">
               {fullFaq.map((item, index) => (
                 <AccordionItem key={index} value={`faq-${index}`}>
@@ -314,15 +349,23 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
 
       {relatedPosts.length ? (
         <Box className="mx-auto mt-12 flex max-w-4xl flex-col gap-4">
-          <h2 className="text-2xl font-bold text-slate-900">Related Articles</h2>
+          <h2 className="text-2xl font-bold text-slate-900">
+            Related Articles
+          </h2>
           <Box className="flex flex-col gap-4">
             {relatedPosts.map((related) => (
-              <Link key={related.id} href={`/blog/${related.slug}`} className="group block">
+              <Link
+                key={related.id}
+                href={`/blog/${related.slug}`}
+                className="group block"
+              >
                 <Card className="overflow-hidden border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md">
                   <Box className="flex flex-col sm:flex-row sm:items-stretch">
                     <Box className="relative w-full shrink-0 overflow-hidden bg-slate-100 sm:h-[180px] sm:w-80 sm:shrink-0 sm:aspect-auto">
                       <Box className="flex h-full w-full flex-col justify-center p-5">
-                        <p className="mt-3 line-clamp-2 text-lg font-semibold text-slate-900">{related.title}</p>
+                        <p className="mt-3 line-clamp-2 text-lg font-semibold text-slate-900">
+                          {related.title}
+                        </p>
                       </Box>
                     </Box>
                     <CardContent className="flex min-h-0 flex-1 flex-col justify-center overflow-hidden p-5 sm:h-[180px]">
@@ -338,7 +381,8 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
                         {related.excerpt || "Read the full article."}
                       </p>
                       <span className="mt-3 inline-flex items-center text-sm font-medium text-blue-600 group-hover:underline">
-                        Read article <ChevronRight className="ml-0.5 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                        Read article{" "}
+                        <ChevronRight className="ml-0.5 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                       </span>
                     </CardContent>
                   </Box>
