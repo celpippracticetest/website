@@ -110,23 +110,9 @@ function sanitizeContentTag(tag: string): string {
   return tag;
 }
 
-function isGeneratedKeywordAnchor(tag: string): boolean {
-  if (!/^<a[\s>]/i.test(tag)) return false;
-  if (/\bcel-internal-kw-link\b/i.test(tag)) return true;
-  if (/\btitle\s*=\s*(["'])Learn more about [^"']*\1/i.test(tag)) return true;
-
-  const hrefMatch = tag.match(/\bhref\s*=\s*(["'])([^"']*)\1/i);
-  const href = hrefMatch?.[2] ?? "";
-  const opensNewTab = /\btarget\s*=\s*(["'])_blank\1/i.test(tag);
-  // Blog generators wrap keywords in new-tab internal <a> tags.
-  if (opensNewTab && isInternalHref(href)) return true;
-
-  return false;
-}
-
 /**
- * Normalize tags and strip self-links / auto-generated keyword anchors.
- * Does not inject new keyword links.
+ * Normalize tags and strip self-links. Keeps authored <a> tags in the HTML
+ * so blog (and other) content links stay clickable.
  */
 export function sanitizeContentHtml(html: string, currentPath?: string): string {
   if (!html) return html;
@@ -134,7 +120,7 @@ export function sanitizeContentHtml(html: string, currentPath?: string): string 
   const normalizedCurrentPath = currentPath ? normalizeToPath(currentPath) : "";
   const parts = html.split(/(<[^>]+>)/g);
   let processedHtml = "";
-  let dropAnchorContents = false;
+  let insideSelfAnchor = false;
 
   for (const part of parts) {
     if (part.startsWith("<")) {
@@ -147,13 +133,12 @@ export function sanitizeContentHtml(html: string, currentPath?: string): string 
           !!normalizedCurrentPath && href
             ? normalizeToPath(href) === normalizedCurrentPath
             : false;
-        const isGeneratedKeyword = isGeneratedKeywordAnchor(sanitizedTag);
 
-        dropAnchorContents = isSelfAnchor || isGeneratedKeyword;
-        if (!dropAnchorContents) processedHtml += sanitizedTag;
+        if (!isSelfAnchor) processedHtml += sanitizedTag;
+        insideSelfAnchor = isSelfAnchor;
       } else if (/^<\/a>/i.test(sanitizedTag)) {
-        if (!dropAnchorContents) processedHtml += sanitizedTag;
-        dropAnchorContents = false;
+        if (!insideSelfAnchor) processedHtml += sanitizedTag;
+        insideSelfAnchor = false;
       } else {
         processedHtml += sanitizedTag;
       }

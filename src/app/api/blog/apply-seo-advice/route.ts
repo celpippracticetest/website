@@ -20,7 +20,7 @@ Output requirements:
 - Start contentHtml with <p> or <h2>.
 - Headings (H2/H3): prefer clear, reader-first section titles; do not turn every heading into a keyword stack (avoid \"What Is CELPIP [section]?\"-style titles). Keep primary phrases in body paragraphs and meta fields where appropriate.
 - Make edits by weaving keywords naturally; avoid keyword stuffing.
-- Do NOT wrap keywords, CLB levels, or phrases like "practice test" or "study plan" in <a> tags. Unwrap any generated keyword links to plain text.
+- Keep existing authored <a> tags in contentHtml so readers can click them. You MAY add editorial links. Do NOT auto-wrap keywords or short phrases like "practice test" on every mention.
 - Keep the article coherent and consistent with the input.
 
 JSON schema:
