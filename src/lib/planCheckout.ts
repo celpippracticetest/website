@@ -110,9 +110,13 @@ export function submitPlanCheckout(args: {
     // never block checkout on analytics
   }
 
+  if (notifyCelpipNativeIap(action)) {
+    return true;
+  }
+
   const form = document.createElement("form");
   form.method = "POST";
-  form.action = action;
+  form.setAttribute("action", action);
 
   const add = (name: string, value: string) => {
     const input = document.createElement("input");
@@ -132,8 +136,23 @@ export function submitPlanCheckout(args: {
       if (value) add(key, value);
     }
   }
+  if (args.stripePriceId?.trim()) add("price", args.stripePriceId.trim());
+  if (args.stripeProductId?.trim()) add("product", args.stripeProductId.trim());
 
   document.body.appendChild(form);
-  form.submit();
+  form.requestSubmit();
+  return true;
+}
+
+function notifyCelpipNativeIap(action: string): boolean {
+  if (typeof navigator === "undefined") return false;
+  if (!/CelpipAppWebView/i.test(navigator.userAgent)) return false;
+  const native = (
+    window as Window & {
+      CelpipNativeIap?: { postMessage: (message: string) => void };
+    }
+  ).CelpipNativeIap;
+  if (!native?.postMessage) return false;
+  native.postMessage(action);
   return true;
 }

@@ -112,6 +112,9 @@ export function PricingBrandPlanCard({
       <button
         type="button"
         disabled={!canCheckout || !isLoaded}
+        data-stripe-price={plan?.stripePriceId ?? ""}
+        data-stripe-product={plan?.stripeProductId ?? ""}
+        data-plan-type={plan?.type ?? ""}
         onClick={onCheckout}
         className={cn(
           "mt-[18px] w-full cursor-pointer rounded-full border-0 px-0 py-[13px] text-sm font-semibold text-white shadow-[0_6px_14px_rgba(77,126,247,0.28)] transition-[transform,background] duration-150 ease-out enabled:hover:-translate-y-px enabled:hover:bg-[#3d6fe8] disabled:cursor-not-allowed disabled:opacity-60",
