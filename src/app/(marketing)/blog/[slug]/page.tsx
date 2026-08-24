@@ -10,6 +10,7 @@ import {
   isIndexablePublishedBlogSlug,
 } from "@/lib/blog/public";
 import { sanitizeContentHtml } from "@/lib/content-linker-core";
+import { resolveBlogContentHtml } from "@/lib/blog/editorHtml";
 import BlogArticleAnalytics from "@/components/analytics/BlogArticleAnalytics";
 import {
   Accordion,
@@ -91,7 +92,10 @@ export async function generateMetadata({
   ).toString();
   const fallbackDescription =
     post.excerpt ||
-    stripHtml(post.contentHtml).slice(0, 155) ||
+    stripHtml(resolveBlogContentHtml(post.contentHtml, post.contentJson)).slice(
+      0,
+      155,
+    ) ||
     "CELPIP preparation article.";
   const title = buildBlogTitle(post.seo?.metaTitle || post.title);
   const description =
@@ -264,7 +268,7 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
       : null;
 
   const articleHtml = sanitizeContentHtml(
-    post.contentHtml,
+    resolveBlogContentHtml(post.contentHtml, post.contentJson),
     `/blog/${post.slug}`,
   );
 

@@ -5,12 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Box } from "@/components/ui/Box";
 import { EditorContent, useEditor } from "@tiptap/react";
 import type { JSONContent } from "@tiptap/core";
-import StarterKit from "@tiptap/starter-kit";
-import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
-import Image from "@tiptap/extension-image";
-import Underline from "@tiptap/extension-underline";
-import { TableKit } from "@tiptap/extension-table/kit";
+import { blogEditorExtensions } from "@/lib/blog/editorHtml";
 
 type TiptapBlogEditorProps = {
   /** Initial content as ProseMirror JSON or HTML string (e.g. from AI generation). */
@@ -27,26 +23,17 @@ export default function TiptapBlogEditor({
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
-      StarterKit.configure({
-        heading: {
-          levels: [2, 3, 4],
-        },
-      }),
-      Underline,
-      Link.configure({
-        openOnClick: false,
-        autolink: true,
-        defaultProtocol: "https",
-        HTMLAttributes: {
-          target: "_self",
-        },
-      }),
-      Image,
-      TableKit,
+      ...blogEditorExtensions,
       Placeholder.configure({
         placeholder,
       }),
     ],
+    onCreate: ({ editor: currentEditor }) => {
+      onChange({
+        json: currentEditor.getJSON(),
+        html: currentEditor.getHTML(),
+      });
+    },
     content:
       typeof initialContent === "string" && initialContent.trim()
         ? initialContent

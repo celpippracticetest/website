@@ -2,15 +2,9 @@ import { ObjectId } from "bson";
 import type { AppDocumentsClient } from "@/lib/pg/types";
 import { getSql } from "@/lib/pg/pool";
 import { normalizeWikiSlug, normalizeWikiSlugStorage } from "@/lib/wiki/slug";
-import {
-  BlogSchema,
-  BlogSchemaDto,
-  BlogSeoSchema,
-  TBlogSchemaDto,
-  TBlogStatus,
-  TBlogWriteInput,
-} from "@/models/blog.model";
+import { BlogSchema, BlogSchemaDto, BlogSeoSchema, TBlogSchemaDto, TBlogStatus, TBlogWriteInput } from "@/models/blog.model";
 import postgres from "postgres";
+import { blogJsonToHtml } from "@/lib/blog/editorHtml";
 
 const BLOG_SELECT_SQL =
   "mongo_id, title, slug, excerpt, content_html, content_json, status, author_name, categories, tags, featured_image, faq, ai_snippet, seo, published_at, created_at, updated_at";
@@ -225,9 +219,11 @@ export class BlogRepository {
     const faq = dto.faq ?? [];
     const aiSnippet = dto.aiSnippet ?? { question: "", answer: "" };
 
+    const contentHtml = blogJsonToHtml(dto.contentJson) ?? dto.contentHtml;
     const blog = BlogSchema.parse({
       _id: new ObjectId(mongoId),
       ...dto,
+      contentHtml,
       slug,
       categories,
       tags,
@@ -478,9 +474,10 @@ export class BlogRepository {
 
     const title = dto.title ?? current.title;
     const excerpt = dto.excerpt ?? current.excerpt;
-    const contentHtml = dto.contentHtml ?? current.contentHtml;
     const contentJson =
       dto.contentJson !== undefined ? dto.contentJson : current.contentJson ?? null;
+    const contentHtml =
+      blogJsonToHtml(contentJson) ?? dto.contentHtml ?? current.contentHtml;
     const authorName = dto.authorName ?? current.authorName;
     const categories =
       dto.categories !== undefined

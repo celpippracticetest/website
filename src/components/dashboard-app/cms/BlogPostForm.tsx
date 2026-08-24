@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -44,7 +44,14 @@ const blogFaqItemSchema = z.object({
 
 const blogAiSnippetSchema = z.object({
   question: z.string().trim().optional(),
-  answer: z.string().trim().max(400, "Keep answer under 400 characters (approx 50-60 words) for best snippet chance.").optional(),
+  answer: z
+    .string()
+    .trim()
+    .max(
+      400,
+      "Keep answer under 400 characters (approx 50-60 words) for best snippet chance.",
+    )
+    .optional(),
 });
 
 const blogFormSchema = z.object({
@@ -53,7 +60,10 @@ const blogFormSchema = z.object({
     .string()
     .trim()
     .toLowerCase()
-    .regex(/^[a-z0-9-]+$/, "Slug can only contain lowercase letters, numbers, and hyphens."),
+    .regex(
+      /^[a-z0-9-]+$/,
+      "Slug can only contain lowercase letters, numbers, and hyphens.",
+    ),
   status: z.enum(["draft", "published"]),
   excerpt: z.string().trim().max(320, "Excerpt must be under 320 characters."),
   authorName: z.string().trim().min(2, "Author name is required."),
@@ -76,7 +86,9 @@ const blogFormSchema = z.object({
 });
 
 type BlogFormValues = z.infer<typeof blogFormSchema>;
-export type BlogPostSubmitPayload = TBlogWriteInput & { publishToLinkedIn?: boolean };
+export type BlogPostSubmitPayload = TBlogWriteInput & {
+  publishToLinkedIn?: boolean;
+};
 
 type BlogPostFormProps = {
   initialData?: TBlogSchemaDto | null;
@@ -119,13 +131,17 @@ function getInitialJson(value?: unknown): JSONContent | null {
   return value as JSONContent;
 }
 
-const BLOG_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_BASE_URL || "https://celpipguide.ca";
+const BLOG_BASE_URL =
+  process.env.NEXT_PUBLIC_APP_URL ||
+  process.env.APP_BASE_URL ||
+  "https://celpipguide.ca";
 const BLOG_JSON_SAMPLE = JSON.stringify(
   {
     title: "CELPIP Reading Tips to Increase Your Score Fast",
     slug: "celpip-reading-tips-increase-score-fast",
     status: "draft",
-    excerpt: "Learn practical reading strategies to improve speed, accuracy, and confidence in the CELPIP reading section.",
+    excerpt:
+      "Learn practical reading strategies to improve speed, accuracy, and confidence in the CELPIP reading section.",
     authorName: "CELPIP Practice Test Team",
     categories: ["Reading", "Study Plan"],
     tags: ["celpip reading", "time management", "score improvement"],
@@ -135,8 +151,10 @@ const BLOG_JSON_SAMPLE = JSON.stringify(
     },
     seo: {
       metaTitle: "CELPIP Reading Tips: Improve Score with Smart Strategy",
-      metaDescription: "Use these proven CELPIP reading tips to improve speed, avoid common mistakes, and increase your score.",
-      canonicalUrl: "https://celpipguide.ca/blog/celpip-reading-tips-increase-score-fast",
+      metaDescription:
+        "Use these proven CELPIP reading tips to improve speed, avoid common mistakes, and increase your score.",
+      canonicalUrl:
+        "https://celpipguide.ca/blog/celpip-reading-tips-increase-score-fast",
       ogImageUrl: "https://celpipguide.ca/images/blog/reading-tips-cover.jpg",
       ogImageAlt: "CELPIP reading preparation desk setup",
       keywords: ["CELPIP reading tips", "CELPIP score", "CELPIP preparation"],
@@ -147,7 +165,8 @@ const BLOG_JSON_SAMPLE = JSON.stringify(
     faq: [
       {
         question: "How can I improve CELPIP reading score quickly?",
-        answer: "Practice with timed sets daily, review wrong answers carefully, and use keyword scanning to locate key details faster.",
+        answer:
+          "Practice with timed sets daily, review wrong answers carefully, and use keyword scanning to locate key details faster.",
       },
     ],
     aiSnippet: {
@@ -158,7 +177,7 @@ const BLOG_JSON_SAMPLE = JSON.stringify(
     publishToLinkedIn: false,
   },
   null,
-  2
+  2,
 );
 
 type BlogJsonImportInput = Partial<
@@ -179,9 +198,7 @@ type BlogJsonImportInput = Partial<
 
 function normalizeStringArray(value: unknown): string[] {
   if (Array.isArray(value)) {
-    return value
-      .map((item) => String(item ?? "").trim())
-      .filter(Boolean);
+    return value.map((item) => String(item ?? "").trim()).filter(Boolean);
   }
   if (typeof value === "string") {
     return value
@@ -192,7 +209,11 @@ function normalizeStringArray(value: unknown): string[] {
   return [];
 }
 
-export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogPostFormProps) {
+export default function BlogPostForm({
+  initialData,
+  onSubmit,
+  isLoading,
+}: BlogPostFormProps) {
   const [slugEdited, setSlugEdited] = useState(Boolean(initialData?.slug));
   const [isImageUploading, setIsImageUploading] = useState(false);
   const [imageUploadError, setImageUploadError] = useState<string | null>(null);
@@ -203,6 +224,7 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
   const [jsonInput, setJsonInput] = useState("");
   const [jsonImportError, setJsonImportError] = useState<string | null>(null);
   const [editorContentKey, setEditorContentKey] = useState(0);
+  const didHydrateEditor = useRef(false);
 
   const defaultValues: BlogFormValues = useMemo(
     () => ({
@@ -220,20 +242,25 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
       canonicalUrl:
         initialData?.seo?.canonicalUrl ??
         (initialData?.slug ? `${BLOG_BASE_URL}/blog/${initialData.slug}` : ""),
-      ogImageUrl: initialData?.seo?.ogImageUrl ?? initialData?.featuredImage?.url ?? "",
-      ogImageAlt: initialData?.seo?.ogImageAlt ?? initialData?.featuredImage?.alt ?? "",
+      ogImageUrl:
+        initialData?.seo?.ogImageUrl ?? initialData?.featuredImage?.url ?? "",
+      ogImageAlt:
+        initialData?.seo?.ogImageAlt ?? initialData?.featuredImage?.alt ?? "",
       keywordsInput: (initialData?.seo?.keywords ?? []).join(", "),
       publishedAt: toDatetimeLocal(initialData?.publishedAt),
       contentHtml: initialData?.contentHtml ?? "",
       contentJson: getInitialJson(initialData?.contentJson),
-      faq: (initialData?.faq ?? []).map((item) => ({ question: item.question, answer: item.answer })),
+      faq: (initialData?.faq ?? []).map((item) => ({
+        question: item.question,
+        answer: item.answer,
+      })),
       aiSnippet: {
         question: initialData?.aiSnippet?.question ?? "",
         answer: initialData?.aiSnippet?.answer ?? "",
       },
       publishToLinkedIn: false,
     }),
-    [initialData]
+    [initialData],
   );
 
   const form = useForm<BlogFormValues>({
@@ -241,7 +268,11 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
     defaultValues,
   });
 
-  const { fields: faqFields, append: appendFaq, remove: removeFaq } = useFieldArray({
+  const {
+    fields: faqFields,
+    append: appendFaq,
+    remove: removeFaq,
+  } = useFieldArray({
     control: form.control,
     name: "faq",
   });
@@ -252,6 +283,10 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
   const ogImageUrl = form.watch("ogImageUrl");
 
   useEffect(() => {
+    didHydrateEditor.current = false;
+  }, [editorContentKey]);
+
+  useEffect(() => {
     if (!slugEdited) {
       form.setValue("slug", slugify(title), { shouldValidate: true });
     }
@@ -259,7 +294,9 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
 
   useEffect(() => {
     if (slug && !canonicalUrl?.trim()) {
-      form.setValue("canonicalUrl", `${BLOG_BASE_URL}/blog/${slug}`, { shouldValidate: false });
+      form.setValue("canonicalUrl", `${BLOG_BASE_URL}/blog/${slug}`, {
+        shouldValidate: false,
+      });
     }
   }, [slug, canonicalUrl, form]);
 
@@ -288,22 +325,49 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
         throw new Error(data.message || "Failed to generate content.");
       }
       // Fill all form fields from AI response
-      if (data.title != null) form.setValue("title", String(data.title).trim(), { shouldDirty: true });
+      if (data.title != null)
+        form.setValue("title", String(data.title).trim(), {
+          shouldDirty: true,
+        });
       if (data.slug != null) {
-        form.setValue("slug", slugify(String(data.slug)), { shouldDirty: true });
+        form.setValue("slug", slugify(String(data.slug)), {
+          shouldDirty: true,
+        });
         setSlugEdited(true);
       }
-      if (data.excerpt != null) form.setValue("excerpt", String(data.excerpt).trim().slice(0, 320), { shouldDirty: true });
+      if (data.excerpt != null)
+        form.setValue("excerpt", String(data.excerpt).trim().slice(0, 320), {
+          shouldDirty: true,
+        });
       if (data.contentHtml != null) {
-        form.setValue("contentHtml", String(data.contentHtml).trim(), { shouldDirty: true });
+        form.setValue("contentHtml", String(data.contentHtml).trim(), {
+          shouldDirty: true,
+        });
         form.setValue("contentJson", null, { shouldDirty: true });
         setEditorContentKey((k) => k + 1);
       }
-      if (data.metaTitle != null) form.setValue("metaTitle", String(data.metaTitle).trim().slice(0, 70), { shouldDirty: true });
-      if (data.metaDescription != null) form.setValue("metaDescription", String(data.metaDescription).trim().slice(0, 160), { shouldDirty: true });
-      if (data.keywordsInput != null) form.setValue("keywordsInput", String(data.keywordsInput).trim(), { shouldDirty: true });
-      if (data.categoriesInput != null) form.setValue("categoriesInput", String(data.categoriesInput).trim(), { shouldDirty: true });
-      if (data.tagsInput != null) form.setValue("tagsInput", String(data.tagsInput).trim(), { shouldDirty: true });
+      if (data.metaTitle != null)
+        form.setValue("metaTitle", String(data.metaTitle).trim().slice(0, 70), {
+          shouldDirty: true,
+        });
+      if (data.metaDescription != null)
+        form.setValue(
+          "metaDescription",
+          String(data.metaDescription).trim().slice(0, 160),
+          { shouldDirty: true },
+        );
+      if (data.keywordsInput != null)
+        form.setValue("keywordsInput", String(data.keywordsInput).trim(), {
+          shouldDirty: true,
+        });
+      if (data.categoriesInput != null)
+        form.setValue("categoriesInput", String(data.categoriesInput).trim(), {
+          shouldDirty: true,
+        });
+      if (data.tagsInput != null)
+        form.setValue("tagsInput", String(data.tagsInput).trim(), {
+          shouldDirty: true,
+        });
       if (Array.isArray(data.faq) && data.faq.length > 0) {
         form.setValue(
           "faq",
@@ -311,21 +375,33 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
             question: String(item?.question ?? "").trim(),
             answer: String(item?.answer ?? "").trim(),
           })),
-          { shouldDirty: true }
+          { shouldDirty: true },
         );
       }
       if (data.aiSnippet && typeof data.aiSnippet === "object") {
-        form.setValue("aiSnippet.question", String(data.aiSnippet.question ?? "").trim(), { shouldDirty: true });
-        form.setValue("aiSnippet.answer", String(data.aiSnippet.answer ?? "").trim().slice(0, 400), { shouldDirty: true });
+        form.setValue(
+          "aiSnippet.question",
+          String(data.aiSnippet.question ?? "").trim(),
+          { shouldDirty: true },
+        );
+        form.setValue(
+          "aiSnippet.answer",
+          String(data.aiSnippet.answer ?? "")
+            .trim()
+            .slice(0, 400),
+          { shouldDirty: true },
+        );
       }
       toast({
         title: "Form filled with AI",
-        description: "All fields have been filled from your prompt. Review and edit before saving.",
+        description:
+          "All fields have been filled from your prompt. Review and edit before saving.",
       });
     } catch (err) {
       toast({
         title: "Generation failed",
-        description: err instanceof Error ? err.message : "Something went wrong.",
+        description:
+          err instanceof Error ? err.message : "Something went wrong.",
         variant: "destructive",
       });
     } finally {
@@ -338,7 +414,8 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
     if (!prompt) {
       toast({
         title: "SEO advice required",
-        description: "Describe what you want to improve (keywords, title/H1, headings, meta, etc.).",
+        description:
+          "Describe what you want to improve (keywords, title/H1, headings, meta, etc.).",
         variant: "destructive",
       });
       return;
@@ -368,23 +445,47 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
       }
 
       if (data.title != null && typeof data.title === "string") {
-        form.setValue("title", String(data.title).trim(), { shouldDirty: true });
+        form.setValue("title", String(data.title).trim(), {
+          shouldDirty: true,
+        });
       }
       if (data.excerpt != null && typeof data.excerpt === "string") {
-        form.setValue("excerpt", String(data.excerpt).trim().slice(0, 320), { shouldDirty: true });
+        form.setValue("excerpt", String(data.excerpt).trim().slice(0, 320), {
+          shouldDirty: true,
+        });
       }
       if (data.metaTitle != null && typeof data.metaTitle === "string") {
-        form.setValue("metaTitle", String(data.metaTitle).trim().slice(0, 70), { shouldDirty: true });
+        form.setValue("metaTitle", String(data.metaTitle).trim().slice(0, 70), {
+          shouldDirty: true,
+        });
       }
-      if (data.metaDescription != null && typeof data.metaDescription === "string") {
-        form.setValue("metaDescription", String(data.metaDescription).trim().slice(0, 160), { shouldDirty: true });
+      if (
+        data.metaDescription != null &&
+        typeof data.metaDescription === "string"
+      ) {
+        form.setValue(
+          "metaDescription",
+          String(data.metaDescription).trim().slice(0, 160),
+          { shouldDirty: true },
+        );
       }
-      if (data.keywordsInput != null && typeof data.keywordsInput === "string") {
-        form.setValue("keywordsInput", String(data.keywordsInput).trim(), { shouldDirty: true });
+      if (
+        data.keywordsInput != null &&
+        typeof data.keywordsInput === "string"
+      ) {
+        form.setValue("keywordsInput", String(data.keywordsInput).trim(), {
+          shouldDirty: true,
+        });
       }
 
-      if (data.contentHtml != null && typeof data.contentHtml === "string" && data.contentHtml.trim()) {
-        form.setValue("contentHtml", String(data.contentHtml).trim(), { shouldDirty: true });
+      if (
+        data.contentHtml != null &&
+        typeof data.contentHtml === "string" &&
+        data.contentHtml.trim()
+      ) {
+        form.setValue("contentHtml", String(data.contentHtml).trim(), {
+          shouldDirty: true,
+        });
         // Ensure the editor re-initializes from HTML.
         form.setValue("contentJson", null, { shouldDirty: true });
         setEditorContentKey((k) => k + 1);
@@ -392,12 +493,14 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
 
       toast({
         title: "AI SEO fixes applied",
-        description: "Review the updated title/content/meta/keywords, then save the post.",
+        description:
+          "Review the updated title/content/meta/keywords, then save the post.",
       });
     } catch (err) {
       toast({
         title: "SEO fixes failed",
-        description: err instanceof Error ? err.message : "Something went wrong.",
+        description:
+          err instanceof Error ? err.message : "Something went wrong.",
         variant: "destructive",
       });
     } finally {
@@ -427,11 +530,15 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
       }
 
       if (typeof parsed.excerpt === "string") {
-        form.setValue("excerpt", parsed.excerpt.trim().slice(0, 320), { shouldDirty: true });
+        form.setValue("excerpt", parsed.excerpt.trim().slice(0, 320), {
+          shouldDirty: true,
+        });
       }
 
       if (typeof parsed.authorName === "string") {
-        form.setValue("authorName", parsed.authorName.trim(), { shouldDirty: true });
+        form.setValue("authorName", parsed.authorName.trim(), {
+          shouldDirty: true,
+        });
       }
 
       const categoriesInput =
@@ -439,11 +546,15 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
           ? parsed.categoriesInput
           : normalizeStringArray(parsed.categories).join(", ");
       if (categoriesInput) {
-        form.setValue("categoriesInput", categoriesInput, { shouldDirty: true });
+        form.setValue("categoriesInput", categoriesInput, {
+          shouldDirty: true,
+        });
       }
 
       const tagsInput =
-        typeof parsed.tagsInput === "string" ? parsed.tagsInput : normalizeStringArray(parsed.tags).join(", ");
+        typeof parsed.tagsInput === "string"
+          ? parsed.tagsInput
+          : normalizeStringArray(parsed.tags).join(", ");
       if (tagsInput) {
         form.setValue("tagsInput", tagsInput, { shouldDirty: true });
       }
@@ -455,7 +566,10 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
             ? parsed.featuredImage.url
             : "";
       if (featuredImageUrl) {
-        form.setValue("featuredImageUrl", featuredImageUrl.trim(), { shouldDirty: true, shouldValidate: true });
+        form.setValue("featuredImageUrl", featuredImageUrl.trim(), {
+          shouldDirty: true,
+          shouldValidate: true,
+        });
       }
 
       const featuredImageAlt =
@@ -465,41 +579,78 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
             ? parsed.featuredImage.alt
             : "";
       if (featuredImageAlt) {
-        form.setValue("featuredImageAlt", featuredImageAlt.trim(), { shouldDirty: true });
-      }
-
-      if (typeof parsed.metaTitle === "string" || typeof parsed.seo?.metaTitle === "string") {
-        form.setValue("metaTitle", String(parsed.metaTitle ?? parsed.seo?.metaTitle ?? "").trim().slice(0, 70), {
+        form.setValue("featuredImageAlt", featuredImageAlt.trim(), {
           shouldDirty: true,
         });
       }
 
-      if (typeof parsed.metaDescription === "string" || typeof parsed.seo?.metaDescription === "string") {
+      if (
+        typeof parsed.metaTitle === "string" ||
+        typeof parsed.seo?.metaTitle === "string"
+      ) {
         form.setValue(
-          "metaDescription",
-          String(parsed.metaDescription ?? parsed.seo?.metaDescription ?? "").trim().slice(0, 160),
+          "metaTitle",
+          String(parsed.metaTitle ?? parsed.seo?.metaTitle ?? "")
+            .trim()
+            .slice(0, 70),
           {
             shouldDirty: true,
-          }
+          },
         );
       }
 
-      if (typeof parsed.canonicalUrl === "string" || typeof parsed.seo?.canonicalUrl === "string") {
-        form.setValue("canonicalUrl", String(parsed.canonicalUrl ?? parsed.seo?.canonicalUrl ?? "").trim(), {
-          shouldDirty: true,
-        });
+      if (
+        typeof parsed.metaDescription === "string" ||
+        typeof parsed.seo?.metaDescription === "string"
+      ) {
+        form.setValue(
+          "metaDescription",
+          String(parsed.metaDescription ?? parsed.seo?.metaDescription ?? "")
+            .trim()
+            .slice(0, 160),
+          {
+            shouldDirty: true,
+          },
+        );
       }
 
-      if (typeof parsed.ogImageUrl === "string" || typeof parsed.seo?.ogImageUrl === "string") {
-        form.setValue("ogImageUrl", String(parsed.ogImageUrl ?? parsed.seo?.ogImageUrl ?? "").trim(), {
-          shouldDirty: true,
-        });
+      if (
+        typeof parsed.canonicalUrl === "string" ||
+        typeof parsed.seo?.canonicalUrl === "string"
+      ) {
+        form.setValue(
+          "canonicalUrl",
+          String(parsed.canonicalUrl ?? parsed.seo?.canonicalUrl ?? "").trim(),
+          {
+            shouldDirty: true,
+          },
+        );
       }
 
-      if (typeof parsed.ogImageAlt === "string" || typeof parsed.seo?.ogImageAlt === "string") {
-        form.setValue("ogImageAlt", String(parsed.ogImageAlt ?? parsed.seo?.ogImageAlt ?? "").trim(), {
-          shouldDirty: true,
-        });
+      if (
+        typeof parsed.ogImageUrl === "string" ||
+        typeof parsed.seo?.ogImageUrl === "string"
+      ) {
+        form.setValue(
+          "ogImageUrl",
+          String(parsed.ogImageUrl ?? parsed.seo?.ogImageUrl ?? "").trim(),
+          {
+            shouldDirty: true,
+          },
+        );
+      }
+
+      if (
+        typeof parsed.ogImageAlt === "string" ||
+        typeof parsed.seo?.ogImageAlt === "string"
+      ) {
+        form.setValue(
+          "ogImageAlt",
+          String(parsed.ogImageAlt ?? parsed.seo?.ogImageAlt ?? "").trim(),
+          {
+            shouldDirty: true,
+          },
+        );
       }
 
       const keywordsInput =
@@ -511,7 +662,9 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
       }
 
       if (parsed.publishedAt) {
-        form.setValue("publishedAt", toDatetimeLocal(parsed.publishedAt), { shouldDirty: true });
+        form.setValue("publishedAt", toDatetimeLocal(parsed.publishedAt), {
+          shouldDirty: true,
+        });
       }
 
       let shouldRefreshEditor = false;
@@ -520,7 +673,10 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
         shouldRefreshEditor = true;
       }
 
-      if (parsed.contentJson === null || (parsed.contentJson && typeof parsed.contentJson === "object")) {
+      if (
+        parsed.contentJson === null ||
+        (parsed.contentJson && typeof parsed.contentJson === "object")
+      ) {
         form.setValue("contentJson", parsed.contentJson, { shouldDirty: true });
         shouldRefreshEditor = true;
       }
@@ -536,24 +692,37 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
             question: String(item?.question ?? "").trim(),
             answer: String(item?.answer ?? "").trim(),
           })),
-          { shouldDirty: true }
+          { shouldDirty: true },
         );
       }
 
       if (parsed.aiSnippet && typeof parsed.aiSnippet === "object") {
-        form.setValue("aiSnippet.question", String(parsed.aiSnippet.question ?? "").trim(), { shouldDirty: true });
-        form.setValue("aiSnippet.answer", String(parsed.aiSnippet.answer ?? "").trim().slice(0, 400), {
+        form.setValue(
+          "aiSnippet.question",
+          String(parsed.aiSnippet.question ?? "").trim(),
+          { shouldDirty: true },
+        );
+        form.setValue(
+          "aiSnippet.answer",
+          String(parsed.aiSnippet.answer ?? "")
+            .trim()
+            .slice(0, 400),
+          {
+            shouldDirty: true,
+          },
+        );
+      }
+
+      if (typeof parsed.publishToLinkedIn === "boolean") {
+        form.setValue("publishToLinkedIn", parsed.publishToLinkedIn, {
           shouldDirty: true,
         });
       }
 
-      if (typeof parsed.publishToLinkedIn === "boolean") {
-        form.setValue("publishToLinkedIn", parsed.publishToLinkedIn, { shouldDirty: true });
-      }
-
       toast({
         title: "Form filled with JSON",
-        description: "All matching fields were imported. Review and save when ready.",
+        description:
+          "All matching fields were imported. Review and save when ready.",
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Invalid JSON.";
@@ -576,7 +745,8 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
     } catch {
       toast({
         title: "Copy failed",
-        description: "Could not copy sample JSON. Copy it manually from the textarea.",
+        description:
+          "Could not copy sample JSON. Copy it manually from the textarea.",
         variant: "destructive",
       });
     }
@@ -584,7 +754,9 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
 
   useEffect(() => {
     if (featuredImageUrl?.trim() && !ogImageUrl?.trim()) {
-      form.setValue("ogImageUrl", featuredImageUrl.trim(), { shouldValidate: false });
+      form.setValue("ogImageUrl", featuredImageUrl.trim(), {
+        shouldValidate: false,
+      });
       const alt = form.getValues("featuredImageAlt");
       if (alt && !form.getValues("ogImageAlt")?.trim()) {
         form.setValue("ogImageAlt", alt, { shouldValidate: false });
@@ -618,7 +790,9 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
         shouldValidate: true,
       });
     } catch (error) {
-      setImageUploadError(error instanceof Error ? error.message : "Could not upload image.");
+      setImageUploadError(
+        error instanceof Error ? error.message : "Could not upload image.",
+      );
     } finally {
       setIsImageUploading(false);
     }
@@ -630,15 +804,35 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
     const currentOgImageUrl = form.getValues("ogImageUrl")?.trim();
     const currentOgImageAlt = form.getValues("ogImageAlt")?.trim();
 
-    form.setValue("featuredImageUrl", "", { shouldDirty: true, shouldValidate: true });
-    form.setValue("featuredImageAlt", "", { shouldDirty: true, shouldValidate: true });
+    form.setValue("featuredImageUrl", "", {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+    form.setValue("featuredImageAlt", "", {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
 
-    if (currentOgImageUrl && currentFeaturedImageUrl && currentOgImageUrl === currentFeaturedImageUrl) {
-      form.setValue("ogImageUrl", "", { shouldDirty: true, shouldValidate: true });
+    if (
+      currentOgImageUrl &&
+      currentFeaturedImageUrl &&
+      currentOgImageUrl === currentFeaturedImageUrl
+    ) {
+      form.setValue("ogImageUrl", "", {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
     }
 
-    if (currentOgImageAlt && currentFeaturedImageAlt && currentOgImageAlt === currentFeaturedImageAlt) {
-      form.setValue("ogImageAlt", "", { shouldDirty: true, shouldValidate: true });
+    if (
+      currentOgImageAlt &&
+      currentFeaturedImageAlt &&
+      currentOgImageAlt === currentFeaturedImageAlt
+    ) {
+      form.setValue("ogImageAlt", "", {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
     }
   };
 
@@ -666,19 +860,30 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
       seo: {
         metaTitle: values.metaTitle?.trim() || undefined,
         metaDescription: values.metaDescription?.trim() || undefined,
-        canonicalUrl: values.canonicalUrl?.trim() || `${BLOG_BASE_URL}/blog/${slugify(values.slug)}`,
-        ogImageUrl: values.ogImageUrl?.trim() || values.featuredImageUrl?.trim() || undefined,
-        ogImageAlt: values.ogImageAlt?.trim() || values.featuredImageAlt?.trim() || undefined,
+        canonicalUrl:
+          values.canonicalUrl?.trim() ||
+          `${BLOG_BASE_URL}/blog/${slugify(values.slug)}`,
+        ogImageUrl:
+          values.ogImageUrl?.trim() ||
+          values.featuredImageUrl?.trim() ||
+          undefined,
+        ogImageAlt:
+          values.ogImageAlt?.trim() ||
+          values.featuredImageAlt?.trim() ||
+          undefined,
         keywords,
       },
       publishedAt: values.publishedAt ? new Date(values.publishedAt) : null,
-      faq: (values.faq ?? []).filter((item) => item.question.trim() && item.answer.trim()),
-      aiSnippet: values.aiSnippet?.question?.trim() || values.aiSnippet?.answer?.trim() 
-        ? {
-            question: values.aiSnippet.question?.trim() ?? "",
-            answer: values.aiSnippet.answer?.trim() ?? "",
-          }
-        : undefined,
+      faq: (values.faq ?? []).filter(
+        (item) => item.question.trim() && item.answer.trim(),
+      ),
+      aiSnippet:
+        values.aiSnippet?.question?.trim() || values.aiSnippet?.answer?.trim()
+          ? {
+              question: values.aiSnippet.question?.trim() ?? "",
+              answer: values.aiSnippet.answer?.trim() ?? "",
+            }
+          : undefined,
       publishToLinkedIn: values.publishToLinkedIn,
     };
 
@@ -687,11 +892,15 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(submitForm)} className="space-y-6 rounded-lg bg-white p-6 shadow">
+      <form
+        onSubmit={form.handleSubmit(submitForm)}
+        className="space-y-6 rounded-lg bg-white p-6 shadow"
+      >
         <Box className="space-y-2">
           <h2 className="text-xl font-semibold text-slate-900">Blog Details</h2>
           <p className="text-sm text-slate-500">
-            Add structured metadata now so each blog page is SEO-ready on publish.
+            Add structured metadata now so each blog page is SEO-ready on
+            publish.
           </p>
         </Box>
 
@@ -704,7 +913,10 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
                 <FormItem>
                   <FormLabel>Title</FormLabel>
                   <FormControl>
-                    <Input placeholder="Example: CELPIP Reading Tips for Faster Scores" {...field} />
+                    <Input
+                      placeholder="Example: CELPIP Reading Tips for Faster Scores"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -727,7 +939,9 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
                       }}
                     />
                   </FormControl>
-                  <FormDescription>Used as the URL: `/blog/your-slug`</FormDescription>
+                  <FormDescription>
+                    Used as the URL: `/blog/your-slug`
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -767,7 +981,8 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
                     <Input type="datetime-local" {...field} />
                   </FormControl>
                   <FormDescription>
-                    Leave empty for drafts. For published posts, this supports backdating.
+                    Leave empty for drafts. For published posts, this supports
+                    backdating.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -780,12 +995,18 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
                 <FormItem className="rounded-md border border-slate-200 p-4">
                   <Box className="flex items-start gap-3">
                     <FormControl>
-                      <Checkbox checked={field.value} onCheckedChange={(checked) => field.onChange(Boolean(checked))} />
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={(checked) =>
+                          field.onChange(Boolean(checked))
+                        }
+                      />
                     </FormControl>
                     <Box>
                       <FormLabel>Publish to LinkedIn after save</FormLabel>
                       <FormDescription>
-                        Posts this blog URL directly to LinkedIn when status is set to published.
+                        Posts this blog URL directly to LinkedIn when status is
+                        set to published.
                       </FormDescription>
                     </Box>
                   </Box>
@@ -820,7 +1041,9 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
             Fill entire form with AI
           </h3>
           <p className="mb-3 text-sm text-slate-500">
-            Describe the topic or outline. AI will fill title, slug, excerpt, full content, SEO fields, categories, tags, FAQ, and AI snippet. Optional: add a title above for context.
+            Describe the topic or outline. AI will fill title, slug, excerpt,
+            full content, SEO fields, categories, tags, FAQ, and AI snippet.
+            Optional: add a title above for context.
           </p>
           <Box className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <Textarea
@@ -857,7 +1080,8 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
             Fill entire form with JSON
           </h3>
           <p className="mb-3 text-sm text-slate-500">
-            Paste a JSON object and import it to auto-fill title, content, taxonomy, image, FAQ, AI snippet, and SEO fields.
+            Paste a JSON object and import it to auto-fill title, content,
+            taxonomy, image, FAQ, AI snippet, and SEO fields.
           </p>
           <Box className="space-y-3">
             <Textarea
@@ -866,24 +1090,45 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
               value={jsonInput}
               onChange={(event) => setJsonInput(event.target.value)}
             />
-            {jsonImportError ? <p className="text-sm text-red-600">{jsonImportError}</p> : null}
+            {jsonImportError ? (
+              <p className="text-sm text-red-600">{jsonImportError}</p>
+            ) : null}
             <Box className="flex flex-wrap gap-2">
-              <Button type="button" variant="secondary" onClick={handleFillWithJson}>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={handleFillWithJson}
+              >
                 Fill form from JSON
               </Button>
-              <Button type="button" variant="outline" onClick={() => setJsonInput(BLOG_JSON_SAMPLE)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setJsonInput(BLOG_JSON_SAMPLE)}
+              >
                 Use sample JSON
               </Button>
             </Box>
             <Box className="rounded-md border border-slate-200 bg-white p-3">
               <Box className="mb-2 flex items-center justify-between gap-2">
-                <p className="text-xs font-medium text-slate-700">Admin sample JSON</p>
-                <Button type="button" variant="ghost" size="sm" onClick={handleCopySampleJson}>
+                <p className="text-xs font-medium text-slate-700">
+                  Admin sample JSON
+                </p>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCopySampleJson}
+                >
                   <Copy className="mr-2 h-4 w-4" />
                   Copy sample
                 </Button>
               </Box>
-              <Textarea readOnly value={BLOG_JSON_SAMPLE} className="min-h-[220px] bg-slate-50 font-mono text-xs" />
+              <Textarea
+                readOnly
+                value={BLOG_JSON_SAMPLE}
+                className="min-h-[220px] bg-slate-50 font-mono text-xs"
+              />
             </Box>
           </Box>
         </Box>
@@ -902,8 +1147,10 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
                     (form.getValues("contentHtml")?.trim() || null)
                   }
                   onChange={(payload) => {
-                    form.setValue("contentHtml", payload.html, { shouldDirty: true });
-                    form.setValue("contentJson", payload.json, { shouldDirty: true });
+                    const shouldDirty = didHydrateEditor.current;
+                    didHydrateEditor.current = true;
+                    form.setValue("contentHtml", payload.html, { shouldDirty });
+                    form.setValue("contentJson", payload.json, { shouldDirty });
                   }}
                 />
               </FormControl>
@@ -913,7 +1160,9 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
         />
 
         <Box className="rounded-md border border-slate-200 p-4">
-          <h3 className="text-base font-semibold text-slate-900">Taxonomy and Author</h3>
+          <h3 className="text-base font-semibold text-slate-900">
+            Taxonomy and Author
+          </h3>
           <Box className="mt-4 flex flex-col gap-4 md:flex-row">
             <Box className="flex-1">
               <FormField
@@ -923,7 +1172,10 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
                   <FormItem>
                     <FormLabel>Author Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="CELPIP Practice Test Team" {...field} />
+                      <Input
+                        placeholder="CELPIP Practice Test Team"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -954,7 +1206,10 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
                 <FormItem>
                   <FormLabel>Tags (comma-separated)</FormLabel>
                   <FormControl>
-                    <Input placeholder="Time management, templates, score improvement" {...field} />
+                    <Input
+                      placeholder="Time management, templates, score improvement"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -964,7 +1219,9 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
         </Box>
 
         <Box className="rounded-md border border-slate-200 p-4">
-          <h3 className="text-base font-semibold text-slate-900">Featured Image</h3>
+          <h3 className="text-base font-semibold text-slate-900">
+            Featured Image
+          </h3>
           <Box className="mt-4 flex flex-col gap-4 md:flex-row">
             <Box className="flex-1">
               <FormItem>
@@ -976,7 +1233,11 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
                       className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-slate-300 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
                     >
                       <Upload className="h-4 w-4" />
-                      <span>{isImageUploading ? "Uploading..." : "Upload Featured Image"}</span>
+                      <span>
+                        {isImageUploading
+                          ? "Uploading..."
+                          : "Upload Featured Image"}
+                      </span>
                     </label>
                     <Input
                       id="blog-featured-image"
@@ -1012,13 +1273,18 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
                     {featuredImageUrl ? (
                       <img
                         src={featuredImageUrl}
-                        alt={form.getValues("featuredImageAlt") || "Uploaded featured image"}
+                        alt={
+                          form.getValues("featuredImageAlt") ||
+                          "Uploaded featured image"
+                        }
                         className="max-h-64 w-full rounded-md border border-slate-200 object-cover"
                       />
                     ) : null}
                   </Box>
                 </FormControl>
-                <FormDescription>Upload directly from your device. URL is saved automatically.</FormDescription>
+                <FormDescription>
+                  Upload directly from your device. URL is saved automatically.
+                </FormDescription>
               </FormItem>
             </Box>
             <Box className="flex-1">
@@ -1029,7 +1295,10 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
                   <FormItem>
                     <FormLabel>Image Alt</FormLabel>
                     <FormControl>
-                      <Input placeholder="Describe the image for accessibility and SEO." {...field} />
+                      <Input
+                        placeholder="Describe the image for accessibility and SEO."
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -1042,11 +1311,16 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
         <Box className="rounded-md border border-slate-200 p-4">
           <Box className="mb-4 rounded-md bg-blue-50 p-4 border border-blue-100">
             <h3 className="flex items-center gap-2 text-base font-semibold text-blue-900">
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[10px] text-white">AI</span>
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[10px] text-white">
+                AI
+              </span>
               AI Search Snippet (DEO Strategy)
             </h3>
             <p className="mt-1 text-sm text-blue-700">
-              This is the <strong>most important</strong> field for 2026 SEO. Enter a target question and a concise ~50 word answer. This will be prioritized as the first item in your FAQ schema to help AI engines (Perplexity, Gemini) find and quote your answer.
+              This is the <strong>most important</strong> field for 2026 SEO.
+              Enter a target question and a concise ~50 word answer. This will
+              be prioritized as the first item in your FAQ schema to help AI
+              engines (Perplexity, Gemini) find and quote your answer.
             </p>
             <Box className="mt-4 space-y-4">
               <FormField
@@ -1054,9 +1328,16 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
                 name="aiSnippet.question"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-blue-900">Target Question</FormLabel>
+                    <FormLabel className="text-blue-900">
+                      Target Question
+                    </FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. How to get CLB 9 in CELPIP?" className="bg-white" {...field} value={field.value ?? ""} />
+                      <Input
+                        placeholder="e.g. How to get CLB 9 in CELPIP?"
+                        className="bg-white"
+                        {...field}
+                        value={field.value ?? ""}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -1088,15 +1369,24 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
             </Box>
           </Box>
 
-          <h3 className="text-base font-semibold text-slate-900">Additional FAQ</h3>
+          <h3 className="text-base font-semibold text-slate-900">
+            Additional FAQ
+          </h3>
           <p className="mt-1 text-sm text-slate-500">
-            Add Q&A pairs for FAQPage schema. Keeps answers visible on the post and in JSON-LD for AI search (Perplexity, Gemini). Match or summarize your article content.
+            Add Q&A pairs for FAQPage schema. Keeps answers visible on the post
+            and in JSON-LD for AI search (Perplexity, Gemini). Match or
+            summarize your article content.
           </p>
           <Box className="mt-4 space-y-4">
             {faqFields.map((field, index) => (
-              <Box key={field.id} className="flex flex-col gap-3 rounded-lg border border-slate-100 bg-slate-50/50 p-4">
+              <Box
+                key={field.id}
+                className="flex flex-col gap-3 rounded-lg border border-slate-100 bg-slate-50/50 p-4"
+              >
                 <Box className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-slate-600">FAQ {index + 1}</span>
+                  <span className="text-sm font-medium text-slate-600">
+                    FAQ {index + 1}
+                  </span>
                   <Button
                     type="button"
                     variant="ghost"
@@ -1114,7 +1404,10 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
                     <FormItem>
                       <FormLabel>Question</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g. Why am I stuck at CLB 8 in CELPIP?" {...f} />
+                        <Input
+                          placeholder="e.g. Why am I stuck at CLB 8 in CELPIP?"
+                          {...f}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -1139,7 +1432,12 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
                 />
               </Box>
             ))}
-            <Button type="button" variant="outline" size="sm" onClick={() => appendFaq({ question: "", answer: "" })}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => appendFaq({ question: "", answer: "" })}
+            >
               <AddCircle className="mr-2 h-4 w-4" />
               Add FAQ item
             </Button>
@@ -1157,7 +1455,10 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
                   <FormItem>
                     <FormLabel>Meta Title</FormLabel>
                     <FormControl>
-                      <Input placeholder="Optimized SEO title (max 70 characters)" {...field} />
+                      <Input
+                        placeholder="Optimized SEO title (max 70 characters)"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -1172,7 +1473,10 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
                   <FormItem>
                     <FormLabel>Meta Description</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="Compelling SERP description (max 160 characters)" {...field} />
+                      <Textarea
+                        placeholder="Compelling SERP description (max 160 characters)"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -1189,7 +1493,10 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
                   <FormItem>
                     <FormLabel>Canonical URL (optional override)</FormLabel>
                     <FormControl>
-                      <Input placeholder="https://celpipguide.ca/blog/..." {...field} />
+                      <Input
+                        placeholder="https://celpipguide.ca/blog/..."
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -1204,7 +1511,10 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
                   <FormItem>
                     <FormLabel>Keywords (comma-separated)</FormLabel>
                     <FormControl>
-                      <Input placeholder="CELPIP, reading tips, CELPIP writing" {...field} />
+                      <Input
+                        placeholder="CELPIP, reading tips, CELPIP writing"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -1236,7 +1546,10 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
                   <FormItem>
                     <FormLabel>OG Image Alt</FormLabel>
                     <FormControl>
-                      <Input placeholder="OpenGraph image description" {...field} />
+                      <Input
+                        placeholder="OpenGraph image description"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -1251,7 +1564,9 @@ export default function BlogPostForm({ initialData, onSubmit, isLoading }: BlogP
             AI SEO Fixes (Patch Title/Meta/Keywords/Content)
           </h3>
           <p className="mt-1 text-sm text-slate-600">
-            Enter SEO advice and required changes. AI can update your `Title` (this renders as the page H1), meta title/description, keywords, and weave keywords into the article content.
+            Enter SEO advice and required changes. AI can update your `Title`
+            (this renders as the page H1), meta title/description, keywords, and
+            weave keywords into the article content.
           </p>
           <Box className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
             <Textarea
