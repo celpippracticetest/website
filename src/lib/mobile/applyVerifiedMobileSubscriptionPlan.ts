@@ -1,9 +1,7 @@
-import { appUserAdmin } from "@/lib/auth/server-auth";
-
 import { isLikelySupabaseAuthUserId } from "@/lib/auth/supabase-mobile-user-bridge";
-import documentsClient from "@/lib/appDocumentsClient";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { logger } from "@/lib/sentry-logger";
+import { syncUserPlanPublicMetadata } from "@/lib/syncUserPlanPublicMetadata";
 
 /** Upserts a Google Play purchase token → user mapping for RTDN lookups. */
 export async function trackGooglePlayPurchaseToken(args: {
@@ -60,47 +58,24 @@ function parseProductPlanMap(): Record<string, string> {
  */
 export function resolvePlanFromMobileProductId(productId: string): string {
   const map = parseProductPlanMap();
-  const mapped = map[productId];
+  const mapped = map[productId] ?? map[productId.split("|")[0] ?? ""];
   if (typeof mapped === "string" && mapped.trim()) {
     return mapped.trim();
   }
   return "plus";
 }
 
-async function syncUserPlanToUserDocument(args: {
-  userId: string;
-  plan: string;
-  platform: "google_play" | "apple";
-}): Promise<void> {
-  if (!documentsClient) return;
-  try {
-    const db = documentsClient.db();
-    const usersCollection = db.collection("users");
-    const filter = isLikelySupabaseAuthUserId(args.userId)
-      ? { supabaseUserId: args.userId }
-      : { clerkUserId: args.userId };
-    const publicMetadata = { plan: args.plan, planSource: args.platform };
-    await usersCollection.updateOne(
-      filter,
-      {
-        $set: {
-          publicMetadata,
-          plan: args.plan,
-          updatedAt: new Date(),
-          ...(isLikelySupabaseAuthUserId(args.userId)
-            ? { supabaseUserId: args.userId }
-            : { clerkUserId: args.userId }),
-        },
-      },
-      { upsert: true }
-    );
-  } catch (e) {
-    logger.warn("User plan document sync skipped or failed after mobile IAP", {
-      component: "mobile_iap",
-      userId: args.userId,
-      metadata: { error: String(e) },
-    });
+/** Billing label stored as `planType` (same field Stripe checkout writes). */
+export function resolvePlanTypeFromMobileProductId(productId: string): string {
+  const spec = productId.trim().toLowerCase();
+  const basePlan = spec.includes("|") ? spec.split("|")[1] ?? spec : spec;
+  if (basePlan.includes("3-month") || basePlan.includes("3month") || basePlan.includes("quarter")) {
+    return "3-month";
   }
+  if (basePlan.includes("month")) return "monthly";
+  if (basePlan.includes("week")) return "weekly";
+  if (basePlan.includes("year")) return "yearly";
+  return productId.trim();
 }
 
 /**
@@ -117,102 +92,64 @@ export async function applyVerifiedMobileSubscriptionPlan(args: {
   purchaseToken?: string | null;
   /** Google Play package name — stored alongside the purchase token. */
   packageName?: string | null;
+  /** Latest line-item expiry from Play / App Store, ISO string. */
+  expiresAtIso?: string | null;
 }): Promise<{ plan: string }> {
   const plan = resolvePlanFromMobileProductId(args.productId);
+  const planType = resolvePlanTypeFromMobileProductId(args.productId);
+  const purchaseDate = new Date().toISOString();
+  const expiresAt = args.expiresAtIso?.trim() || null;
+
+  const patch = {
+    plan,
+    planType,
+    planSource: args.platform,
+    planCancelled: false,
+    purchaseDate,
+    planExpiresAt: expiresAt,
+    planRenewsAt: expiresAt,
+    planOverrideSource: null,
+    planOverrideAt: null,
+  } as const;
+
+  try {
+    await syncUserPlanPublicMetadata(args.userId, patch);
+  } catch (firstErr) {
+    const fallbackId = args.supabaseAuthUserId?.trim();
+    if (fallbackId && fallbackId !== args.userId) {
+      await syncUserPlanPublicMetadata(fallbackId, patch);
+    } else {
+      throw firstErr;
+    }
+  }
 
   const supabaseAdminTarget =
     args.supabaseAuthUserId?.trim() ||
     (isLikelySupabaseAuthUserId(args.userId) ? args.userId : null);
 
-  if (supabaseAdminTarget) {
-    const admin = getSupabaseAdmin();
-    if (!admin) {
-      throw new Error("Supabase admin client is not configured.");
-    }
-
-    const { getAuthAdminUserById, setAuthAdminUserCache, invalidateAuthAdminUserCache } =
-      await import("@/lib/auth/auth-admin-user-cache");
-    const existingUser = await getAuthAdminUserById(supabaseAdminTarget);
-    if (!existingUser) {
-      throw new Error("Supabase user not found.");
-    }
-
-    const currentApp = (existingUser.app_metadata ?? {}) as Record<string, unknown>;
-    const { data: updated, error: upErr } = await admin.auth.admin.updateUserById(
-      supabaseAdminTarget,
-      {
-        app_metadata: {
-          ...currentApp,
-          plan,
-          planSource: args.platform,
-        },
-      },
-    );
-    if (upErr || !updated.user) {
-      invalidateAuthAdminUserCache(supabaseAdminTarget);
-      throw new Error(upErr?.message || "Failed to update Supabase user plan.");
-    }
-    setAuthAdminUserCache(updated.user);
-
-    if (
-      args.platform === "google_play" &&
-      args.purchaseToken &&
-      args.packageName
-    ) {
-      await trackGooglePlayPurchaseToken({
-        supabaseAuthUserId: supabaseAdminTarget,
-        purchaseToken: args.purchaseToken,
-        subscriptionId: args.productId,
-        packageName: args.packageName,
-        plan,
-      });
-    }
-
-    await syncUserPlanToUserDocument({
-      userId: args.userId,
+  if (
+    args.platform === "google_play" &&
+    args.purchaseToken &&
+    args.packageName &&
+    supabaseAdminTarget
+  ) {
+    await trackGooglePlayPurchaseToken({
+      supabaseAuthUserId: supabaseAdminTarget,
+      purchaseToken: args.purchaseToken,
+      subscriptionId: args.productId.split("|")[0] || args.productId,
+      packageName: args.packageName,
       plan,
-      platform: args.platform,
     });
-
-    logger.info("Updated plan from verified mobile purchase (Supabase)", {
-      component: "mobile_iap",
-      userId: args.userId,
-      metadata: {
-        platform: args.platform,
-        productId: args.productId,
-        plan,
-      },
-    });
-
-    return { plan };
   }
 
-  const authAdmin = await appUserAdmin();
-  const user = await authAdmin.users.getUser(args.userId);
-  const currentMetadata = (user.publicMetadata || {}) as Record<string, unknown>;
-  const updatedMetadata = {
-    ...currentMetadata,
-    plan,
-    planSource: args.platform,
-  };
-
-  await authAdmin.users.updateUserMetadata(args.userId, {
-    publicMetadata: updatedMetadata,
-  });
-
-  await syncUserPlanToUserDocument({
-    userId: args.userId,
-    plan,
-    platform: args.platform,
-  });
-
-  logger.info("Updated plan from verified mobile purchase (Clerk)", {
+  logger.info("Updated plan from verified mobile purchase", {
     component: "mobile_iap",
     userId: args.userId,
     metadata: {
       platform: args.platform,
       productId: args.productId,
       plan,
+      planType,
     },
   });
 

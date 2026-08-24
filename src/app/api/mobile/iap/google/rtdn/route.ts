@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { captureException, logger } from "@/lib/sentry-logger";
+import { syncUserPlanPublicMetadata } from "@/lib/syncUserPlanPublicMetadata";
 import {
   buildAndroidPublisherAuth,
   getGooglePlayServiceAccountJson,
@@ -73,26 +74,10 @@ function getWebhookToken(): string | null {
 }
 
 async function downgradeUserPlan(supabaseUserId: string): Promise<void> {
-  const admin = getSupabaseAdmin();
-  if (!admin) throw new Error("Supabase admin not configured.");
-
-  const { data: existing, error: getErr } =
-    await admin.auth.admin.getUserById(supabaseUserId);
-  if (getErr || !existing.user) {
-    throw new Error(getErr?.message || "Supabase user not found.");
-  }
-
-  const currentApp = (existing.user.app_metadata ?? {}) as Record<
-    string,
-    unknown
-  >;
-  await admin.auth.admin.updateUserById(supabaseUserId, {
-    app_metadata: {
-      ...currentApp,
-      plan: "free",
-      planSource: "google_play_rtdn",
-      planCancelled: true,
-    },
+  await syncUserPlanPublicMetadata(supabaseUserId, {
+    plan: "free",
+    planSource: "google_play_rtdn",
+    planCancelled: true,
   });
 }
 
@@ -100,26 +85,10 @@ async function reactivateUserPlan(
   supabaseUserId: string,
   plan: string
 ): Promise<void> {
-  const admin = getSupabaseAdmin();
-  if (!admin) throw new Error("Supabase admin not configured.");
-
-  const { data: existing, error: getErr } =
-    await admin.auth.admin.getUserById(supabaseUserId);
-  if (getErr || !existing.user) {
-    throw new Error(getErr?.message || "Supabase user not found.");
-  }
-
-  const currentApp = (existing.user.app_metadata ?? {}) as Record<
-    string,
-    unknown
-  >;
-  await admin.auth.admin.updateUserById(supabaseUserId, {
-    app_metadata: {
-      ...currentApp,
-      plan,
-      planSource: "google_play_rtdn",
-      planCancelled: false,
-    },
+  await syncUserPlanPublicMetadata(supabaseUserId, {
+    plan,
+    planSource: "google_play_rtdn",
+    planCancelled: false,
   });
 }
 

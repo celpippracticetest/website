@@ -51,6 +51,21 @@ const ACTIVE_SUBSCRIPTION_STATES: SubscriptionState[] = [
   "SUBSCRIPTION_STATE_ON_HOLD",
 ];
 
+function productIdFromV2LineItems(
+  lineItems: {
+    productId?: string | null;
+    offerDetails?: { basePlanId?: string | null } | null;
+  }[],
+  fallback: string
+): string {
+  const item = lineItems[0];
+  const subId = item?.productId?.trim();
+  const basePlan = item?.offerDetails?.basePlanId?.trim();
+  if (subId && basePlan) return `${subId}|${basePlan}`;
+  if (subId) return subId;
+  return fallback;
+}
+
 /** Returns the latest expiry ISO string across all line items, or null if none found. */
 function getLatestExpiryFromV2(lineItems: { expiryTime?: string | null }[]): string | null {
   let latest: Date | null = null;
@@ -99,11 +114,17 @@ export async function POST(request: NextRequest) {
     }
 
     const expected = getExpectedPackageName();
-    if (expected && packageName !== expected) {
-      return NextResponse.json(
-        { ok: false, message: "packageName does not match configured app." },
-        { status: 400 }
-      );
+    if (expected) {
+      const allowed = expected
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (allowed.length > 0 && !allowed.includes(packageName)) {
+        return NextResponse.json(
+          { ok: false, message: "packageName does not match configured app." },
+          { status: 400 }
+        );
+      }
     }
 
     const androidpublisher = buildAndroidPublisherAuth(credentials);
@@ -130,6 +151,7 @@ export async function POST(request: NextRequest) {
     }
 
     const lineItems = data.lineItems ?? [];
+    const playProductId = productIdFromV2LineItems(lineItems, productId);
     const expiryIso = getLatestExpiryFromV2(lineItems);
     if (expiryIso) {
       const expiryMs = new Date(expiryIso).getTime();
@@ -147,10 +169,11 @@ export async function POST(request: NextRequest) {
     await applyVerifiedMobileSubscriptionPlan({
       userId: ctx.userId,
       supabaseAuthUserId: ctx.supabaseAuthUserId,
-      productId,
+      productId: playProductId,
       platform: "google_play",
       purchaseToken,
       packageName,
+      expiresAtIso: expiryIso,
     });
 
     return NextResponse.json({ ok: true, message: null });

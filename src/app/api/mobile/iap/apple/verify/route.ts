@@ -102,6 +102,8 @@ export async function POST(request: NextRequest) {
       supabaseAuthUserId: ctx.supabaseAuthUserId,
       productId,
       platform: "apple",
+      expiresAtIso:
+        typeof expires === "number" ? new Date(expires).toISOString() : null,
     });
 
     return NextResponse.json({ ok: true, message: null });

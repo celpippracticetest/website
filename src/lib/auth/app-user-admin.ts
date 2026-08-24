@@ -17,6 +17,7 @@ import { getSupabaseAdmin } from "@/lib/supabase/admin";
 const APP_METADATA_PUBLIC_KEYS = new Set([
   "plan",
   "planType",
+  "planSource",
   "purchaseDate",
   "purchasedMockExamIds",
   "planCancelled",

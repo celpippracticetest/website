@@ -5,9 +5,11 @@ import { upsertUserProfilePlanFields } from "@/lib/users/userProfilesPg";
 export type PlanPublicMetadataPatch = {
   plan?: string;
   planType?: string;
+  planSource?: string;
   planCancelled?: boolean;
   planExpiresAt?: string | null;
   planRenewsAt?: string | null;
+  purchaseDate?: string | null;
   /** When set to "admin", Stripe webhooks should not overwrite plan entitlements. */
   planOverrideSource?: "admin" | null;
   planOverrideAt?: string | null;
