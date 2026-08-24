@@ -80,12 +80,18 @@ function sanitizeAnchorTag(tag: string): string {
   }
 
   if (normalizedHref && isInternalHref(normalizedHref)) {
+    // Stay on this tab for on-site links. `target="_blank"` makes the
+    // destination feel like it opened "somewhere else".
+    nextTag = nextTag.replace(/\s*target\s*=\s*(["'])[^"']*\1/i, "");
     nextTag = nextTag.replace(/\srel\s*=\s*(["'])([^"']*)\1/i, (_match, quote: string, value: string) => {
       const tokens = value
         .split(/\s+/)
         .map((token) => token.trim())
         .filter(Boolean)
-        .filter((token) => token.toLowerCase() !== "nofollow");
+        .filter((token) => {
+          const lower = token.toLowerCase();
+          return lower !== "nofollow" && lower !== "noopener" && lower !== "noreferrer";
+        });
 
       return tokens.length > 0 ? ` rel=${quote}${tokens.join(" ")}${quote}` : "";
     });
@@ -108,6 +114,20 @@ function sanitizeContentTag(tag: string): string {
   }
 
   return tag;
+}
+
+/**
+ * Keep wide tables scrollable without putting overflow-x-auto on the whole
+ * article (that offsets in-content link hitboxes away from the visible text).
+ */
+function wrapTablesForScroll(html: string): string {
+  if (!/<table\b/i.test(html)) return html;
+
+  return html.replace(/<table\b[\s\S]*?<\/table>/gi, (table, offset: number) => {
+    const before = html.slice(Math.max(0, offset - 120), offset);
+    if (/article-table-scroll[^>]*>\s*$/i.test(before)) return table;
+    return `<div class="article-table-scroll">${table}</div>`;
+  });
 }
 
 /**
@@ -148,7 +168,7 @@ export function sanitizeContentHtml(html: string, currentPath?: string): string 
     processedHtml += part;
   }
 
-  return processedHtml;
+  return wrapTablesForScroll(processedHtml);
 }
 
 /**

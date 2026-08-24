@@ -322,7 +322,7 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
         </Box>
 
         <article
-          className="article-content prose prose-blue mt-8 max-w-none overflow-x-auto"
+          className="article-content prose prose-blue mt-8 max-w-none"
           dangerouslySetInnerHTML={{ __html: articleHtml }}
         />
 

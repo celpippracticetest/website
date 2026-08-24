@@ -37,6 +37,9 @@ export default function TiptapBlogEditor({
         openOnClick: false,
         autolink: true,
         defaultProtocol: "https",
+        HTMLAttributes: {
+          target: "_self",
+        },
       }),
       Image,
       TableKit,
@@ -44,7 +47,10 @@ export default function TiptapBlogEditor({
         placeholder,
       }),
     ],
-    content: (typeof initialContent === "string" && initialContent.trim()) ? initialContent : (initialContent ?? "<p></p>"),
+    content:
+      typeof initialContent === "string" && initialContent.trim()
+        ? initialContent
+        : (initialContent ?? "<p></p>"),
     editorProps: {
       attributes: {
         class:
@@ -123,17 +129,25 @@ export default function TiptapBlogEditor({
         </Button>
         <Button
           type="button"
-          variant={editor.isActive("heading", { level: 2 }) ? "default" : "outline"}
+          variant={
+            editor.isActive("heading", { level: 2 }) ? "default" : "outline"
+          }
           size="sm"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+          onClick={() =>
+            editor.chain().focus().toggleHeading({ level: 2 }).run()
+          }
         >
           H2
         </Button>
         <Button
           type="button"
-          variant={editor.isActive("heading", { level: 3 }) ? "default" : "outline"}
+          variant={
+            editor.isActive("heading", { level: 3 }) ? "default" : "outline"
+          }
           size="sm"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+          onClick={() =>
+            editor.chain().focus().toggleHeading({ level: 3 }).run()
+          }
         >
           H3
         </Button>
@@ -164,7 +178,11 @@ export default function TiptapBlogEditor({
           variant="outline"
           size="sm"
           onClick={() =>
-            editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
+            editor
+              .chain()
+              .focus()
+              .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+              .run()
           }
           title="Insert table"
         >
@@ -174,7 +192,9 @@ export default function TiptapBlogEditor({
           type="button"
           variant="outline"
           size="sm"
-          onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()}
+          onClick={() =>
+            editor.chain().focus().unsetAllMarks().clearNodes().run()
+          }
         >
           Clear
         </Button>

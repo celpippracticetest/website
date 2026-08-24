@@ -212,8 +212,16 @@ svg {
     @apply mb-2;
   }
 
+  .article-table-scroll {
+    @apply my-6 max-w-full overflow-x-auto rounded-xl;
+  }
+
+  .article-table-scroll table {
+    @apply my-0;
+  }
+
   .prose table {
-    @apply w-full my-6 border-collapse overflow-hidden rounded-xl;
+    @apply w-full my-6 border-collapse rounded-xl;
   }
 
   .prose thead {

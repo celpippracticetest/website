@@ -203,7 +203,10 @@ const TopHeader = () => {
         initial={{ x: "100%" }}
         animate={{ x: isMenuOpen ? "0%" : "100%" }}
         transition={{ duration: 0.5, ease: "easeInOut" }}
-        className={` z-[9999999] fixed right-0 top-0 flex flex-col text-[#3D3B3B] bg-[#f9f9f9] p-[24px] w-full max-w-[720px] h-[100vh]`}
+        aria-hidden={!isMenuOpen}
+        className={` z-[9999999] fixed right-0 top-0 flex flex-col text-[#3D3B3B] bg-[#f9f9f9] p-[24px] w-full max-w-[720px] h-[100vh] ${
+          isMenuOpen ? "pointer-events-auto" : "pointer-events-none"
+        }`}
       >
         <div className="flex justify-between">
           <span
