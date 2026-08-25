@@ -320,7 +320,7 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
             <img
               src={ogImage}
               alt={ogImageAlt}
-              className="h-auto max-h-[28rem] w-full object-cover"
+              className="block h-auto w-full object-contain"
             />
           </Box>
         ) : null}
@@ -367,22 +367,22 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
                 >
                   <Card className="overflow-hidden border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md">
                     <Box className="flex flex-col sm:flex-row sm:items-stretch">
-                      <Box className="relative h-48 w-full shrink-0 overflow-hidden bg-slate-100 sm:h-[180px] sm:w-80 sm:shrink-0 sm:aspect-auto">
+                      <Box className="relative w-full shrink-0 overflow-hidden bg-slate-100 sm:w-80">
                         {relatedCover ? (
                           <img
                             src={relatedCover.url}
                             alt={relatedCover.alt}
-                            className="h-full w-full object-cover"
+                            className="block h-auto w-full object-contain"
                           />
                         ) : (
-                          <Box className="flex h-full w-full flex-col justify-center p-5">
-                            <p className="mt-3 line-clamp-2 text-lg font-semibold text-slate-900">
+                          <Box className="flex min-h-[8rem] w-full flex-col justify-center p-5">
+                            <p className="line-clamp-2 text-lg font-semibold text-slate-900">
                               {related.title}
                             </p>
                           </Box>
                         )}
                       </Box>
-                      <CardContent className="flex min-h-0 flex-1 flex-col justify-center overflow-hidden p-5 sm:h-[180px]">
+                      <CardContent className="flex min-h-0 flex-1 flex-col justify-center overflow-hidden p-5">
                         {related.categories.length > 0 && (
                           <Badge className="mb-2 w-fit bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs">
                             {related.categories[0]}

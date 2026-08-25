@@ -85,16 +85,16 @@ export default function BlogIndexContent({ items }: BlogIndexContentProps) {
                     href={`/blog/${featuredPost.slug}`}
                     className="group block overflow-hidden rounded-[14px] border border-outline/80 bg-white transition-all hover:border-primary1/30 hover:shadow-[0_10px_26px_rgba(51,88,207,0.08)]"
                   >
-                    <div className="flex flex-col screen1024:flex-row">
-                      <div className="relative flex min-h-[220px] items-end overflow-hidden bg-primary6 p-6 screen1024:min-h-[280px] screen1024:w-2/5 screen1024:shrink-0">
+                    <div className="flex flex-col screen1024:flex-row screen1024:items-stretch">
+                      <div className="relative flex w-full items-center justify-center overflow-hidden bg-primary6 screen1024:w-2/5 screen1024:shrink-0">
                         {featuredCover ? (
                           <img
                             src={featuredCover.url}
                             alt={featuredCover.alt}
-                            className="absolute inset-0 h-full w-full object-cover"
+                            className="block h-auto w-full object-contain"
                           />
                         ) : (
-                          <p className="line-clamp-3 text-lg font-bold leading-snug text-text1">
+                          <p className="line-clamp-3 p-6 text-lg font-bold leading-snug text-text1">
                             {featuredPost.title}
                           </p>
                         )}
@@ -174,11 +174,11 @@ export default function BlogIndexContent({ items }: BlogIndexContentProps) {
                           className="group flex h-full flex-col overflow-hidden rounded-[14px] border border-outline/80 bg-white transition-all hover:border-primary1/30 hover:shadow-[0_10px_26px_rgba(51,88,207,0.08)]"
                         >
                           {cover ? (
-                            <div className="relative h-44 w-full overflow-hidden bg-primary6">
+                            <div className="w-full overflow-hidden bg-primary6">
                               <img
                                 src={cover.url}
                                 alt={cover.alt}
-                                className="h-full w-full object-cover"
+                                className="block h-auto w-full object-contain"
                               />
                             </div>
                           ) : null}
