@@ -1,7 +1,15 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Search, Download, Eye, RotateCw, CreditCard, Ban } from "lucide-react";
+import {
+  Search,
+  Download,
+  Eye,
+  RotateCw,
+  CreditCard,
+  Ban,
+  CircleDollarSign,
+} from "lucide-react";
 import {
   hasPaidPracticeAccess,
   formatPlanLabel,
@@ -167,6 +175,9 @@ export default function UsersPage() {
   );
   const [planUpdateError, setPlanUpdateError] = useState<string | null>(null);
   const [cancelingPlayUserId, setCancelingPlayUserId] = useState<string | null>(
+    null,
+  );
+  const [refundingPlayUserId, setRefundingPlayUserId] = useState<string | null>(
     null,
   );
 
@@ -377,6 +388,36 @@ export default function UsersPage() {
       );
     } finally {
       setCancelingPlayUserId(null);
+    }
+  };
+
+  const handleRefundGooglePlay = async (user: User) => {
+    const ok = window.confirm(
+      `Refund Google Play for ${user.email || user.userId}?\n\nThis refunds the Play charge and immediately sets the account to Free.`,
+    );
+    if (!ok) return;
+    setPlanUpdateError(null);
+    setRefundingPlayUserId(user.userId);
+    try {
+      const response = await fetch(
+        `/api/admin/users/${encodeURIComponent(user.userId)}/google-play/refund`,
+        {
+          method: "POST",
+        },
+      );
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to refund Google Play");
+      }
+      await fetchUsers();
+    } catch (error) {
+      setPlanUpdateError(
+        error instanceof Error
+          ? error.message
+          : "Failed to refund Google Play subscription",
+      );
+    } finally {
+      setRefundingPlayUserId(null);
     }
   };
 
@@ -750,23 +791,46 @@ export default function UsersPage() {
                           >
                             <CreditCard className="w-4 h-4" />
                           </button>
-                          {isGooglePlayUser(user) &&
-                          hasPaidPracticeAccess(user.plan) &&
-                          !user.planCancelled ? (
-                            <button
-                              onClick={() => handleCancelGooglePlay(user)}
-                              disabled={cancelingPlayUserId === user.userId}
-                              className="text-red-600 cursor-pointer hover:text-red-900 disabled:opacity-50"
-                              title="Cancel Google Play subscription"
-                            >
-                              <Ban
-                                className={`w-4 h-4 ${
-                                  cancelingPlayUserId === user.userId
-                                    ? "animate-spin"
-                                    : ""
-                                }`}
-                              />
-                            </button>
+                          {isGooglePlayUser(user) ? (
+                            <>
+                              {hasPaidPracticeAccess(user.plan) &&
+                              !user.planCancelled ? (
+                                <button
+                                  onClick={() => handleCancelGooglePlay(user)}
+                                  disabled={
+                                    cancelingPlayUserId === user.userId ||
+                                    refundingPlayUserId === user.userId
+                                  }
+                                  className="text-red-600 cursor-pointer hover:text-red-900 disabled:opacity-50"
+                                  title="Cancel Google Play subscription"
+                                >
+                                  <Ban
+                                    className={`w-4 h-4 ${
+                                      cancelingPlayUserId === user.userId
+                                        ? "animate-spin"
+                                        : ""
+                                    }`}
+                                  />
+                                </button>
+                              ) : null}
+                              <button
+                                onClick={() => handleRefundGooglePlay(user)}
+                                disabled={
+                                  cancelingPlayUserId === user.userId ||
+                                  refundingPlayUserId === user.userId
+                                }
+                                className="text-amber-600 cursor-pointer hover:text-amber-900 disabled:opacity-50"
+                                title="Refund Google Play payment"
+                              >
+                                <CircleDollarSign
+                                  className={`w-4 h-4 ${
+                                    refundingPlayUserId === user.userId
+                                      ? "animate-spin"
+                                      : ""
+                                  }`}
+                                />
+                              </button>
+                            </>
                           ) : null}
                           <button
                             onClick={() => exportUserData(user.userId)}

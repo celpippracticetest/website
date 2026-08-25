@@ -13,6 +13,8 @@ import { ObjectId } from "bson";
 import { redirect, RedirectType } from "next/navigation";
 import SkillLandingPage from "@/components/skill-landing/SkillLandingPage";
 import { skillPagesContent } from "@/data/skill-pages-content";
+import type { Metadata } from "next";
+import { skillHubPageMetadata } from "@/lib/skillHubPageMetadata";
 interface PracticeTask {
   taskNumber: string;
   name: string;
@@ -22,27 +24,35 @@ interface PracticeSection {
   route: string;
 }
 
-export const metadata = {
-  title: "Free CELPIP Writing Practice Tests & Mock Exams | CELPIPPRACTICETEST",
-  description:
-    "Get higher CELPIP Writing marks with practice prompts, instant AI feedback, and model answers. Hone grammar, coherence, task response fast | CELPIPPRACTICETEST.com",
-  keywords: [
-    "celpip writing practice test",
-    "celpip sample writing test",
-    "celpip writing practice",
-    "celpip writing test",
-    "celpip writing samples",
-    "celpip general writing",
-    "celpip general writing test",
-    "celpip mock test writing",
-    "celpip practice test writing",
-    "celpip practice writing test",
-    "celpip general writing sample answers",
-  ],
-  alternates: {
-    canonical: "https://celpippracticetest.com/writing",
-  },
-};
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | undefined }>;
+}): Promise<Metadata> {
+  const { selectedPracticeId } = await searchParams;
+  return skillHubPageMetadata(
+    "writing",
+    undefined,
+    "Free CELPIP Writing Practice Tests & Mock Exams | CELPIPPRACTICETEST",
+    "Get higher CELPIP Writing marks with practice prompts, instant AI feedback, and model answers. Hone grammar, coherence, task response fast | CELPIPPRACTICETEST.com",
+    {
+      selectedPracticeId,
+      keywords: [
+        "celpip writing practice test",
+        "celpip sample writing test",
+        "celpip writing practice",
+        "celpip writing test",
+        "celpip writing samples",
+        "celpip general writing",
+        "celpip general writing test",
+        "celpip mock test writing",
+        "celpip practice test writing",
+        "celpip practice writing test",
+        "celpip general writing sample answers",
+      ],
+    },
+  );
+}
 
 const WritingPage = async ({
   searchParams,

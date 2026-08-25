@@ -244,6 +244,10 @@ svg {
     @apply font-semibold text-primary1 hover:underline;
   }
 
+  .prose img {
+    @apply my-6 h-auto w-full rounded-xl border border-outline/70;
+  }
+
   .prose strong {
     @apply font-bold text-text1;
   }

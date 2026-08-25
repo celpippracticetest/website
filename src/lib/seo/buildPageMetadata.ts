@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
-import { getIndexingRobotsDirective } from "@/lib/searchIndexing";
+import {
+  getIndexingRobotsDirective,
+  NOINDEX_ROBOTS,
+} from "@/lib/searchIndexing";
 import type { PageSeoItem } from "@/lib/seo/types";
 
 const DEFAULT_SITE_NAME = "CELPIP Practice Test";
@@ -23,7 +26,7 @@ export function buildPageMetadata(item: PageSeoItem): Metadata {
     getIndexingRobotsDirective(appBaseUrl).index;
   const robots = indexable
     ? getIndexingRobotsDirective(appBaseUrl)
-    : { index: false as const, follow: false as const };
+    : NOINDEX_ROBOTS;
 
   const canonical = canonicalUrl(item.canonicalPath ?? item.path);
   const ogType = item.openGraphType ?? "website";

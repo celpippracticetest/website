@@ -36,6 +36,13 @@ export function isNonIndexableDeployment(appBaseUrl?: string | null): boolean {
   return hosts.some(hostIndicatesNonIndexable);
 }
 
+export const NOINDEX_ROBOTS = {
+  index: false as const,
+  follow: false as const,
+};
+
+export const NOINDEX_X_ROBOTS_TAG = "noindex, nofollow";
+
 export function getIndexingRobotsDirective(
   appBaseUrl?: string | null,
 ): { index: boolean; follow: boolean } {

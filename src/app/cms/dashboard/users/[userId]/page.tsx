@@ -144,6 +144,7 @@ export default function UserDetailPage() {
   const [search, setSearch] = useState("");
   const [planModalOpen, setPlanModalOpen] = useState(false);
   const [cancelingPlay, setCancelingPlay] = useState(false);
+  const [refundingPlay, setRefundingPlay] = useState(false);
   const [playCancelError, setPlayCancelError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -442,55 +443,100 @@ export default function UserDetailPage() {
               >
                 Change plan…
               </button>
-              {(profile.googlePlayCanCancel ||
-                profile.billingProvider === "google_play") &&
-              hasPaidPracticeAccess(profile.plan) &&
-              !profile.planCancelled ? (
-                <button
-                  type="button"
-                  disabled={cancelingPlay}
-                  onClick={async () => {
-                    const ok = window.confirm(
-                      "Cancel Google Play auto-renew? The user keeps Plus until the current period ends.",
-                    );
-                    if (!ok) return;
-                    setPlayCancelError(null);
-                    setCancelingPlay(true);
-                    try {
-                      const response = await fetch(
-                        `/api/admin/users/${encodeURIComponent(userId)}/google-play/cancel`,
-                        {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ revokeAccess: false }),
-                        },
-                      );
-                      const data = await response.json().catch(() => ({}));
-                      if (!response.ok) {
-                        throw new Error(
-                          data.error || "Failed to cancel Google Play",
+              {profile.googlePlayCanCancel ||
+              profile.billingProvider === "google_play" ||
+              profile.googlePlaySubscriptionActive ? (
+                <>
+                  {hasPaidPracticeAccess(profile.plan) &&
+                  !profile.planCancelled ? (
+                    <button
+                      type="button"
+                      disabled={cancelingPlay || refundingPlay}
+                      onClick={async () => {
+                        const ok = window.confirm(
+                          "Cancel Google Play auto-renew? The user keeps Plus until the current period ends.",
                         );
-                      }
-                      const refreshed = await fetch(
-                        `/api/admin/users/${encodeURIComponent(userId)}`,
+                        if (!ok) return;
+                        setPlayCancelError(null);
+                        setCancelingPlay(true);
+                        try {
+                          const response = await fetch(
+                            `/api/admin/users/${encodeURIComponent(userId)}/google-play/cancel`,
+                            {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ revokeAccess: false }),
+                            },
+                          );
+                          const data = await response.json().catch(() => ({}));
+                          if (!response.ok) {
+                            throw new Error(
+                              data.error || "Failed to cancel Google Play",
+                            );
+                          }
+                          const refreshed = await fetch(
+                            `/api/admin/users/${encodeURIComponent(userId)}`,
+                          );
+                          if (refreshed.ok) {
+                            setProfile(await refreshed.json());
+                          }
+                        } catch (err) {
+                          setPlayCancelError(
+                            err instanceof Error
+                              ? err.message
+                              : "Failed to cancel Google Play",
+                          );
+                        } finally {
+                          setCancelingPlay(false);
+                        }
+                      }}
+                      className="text-xs font-medium text-red-600 hover:text-red-800 disabled:opacity-50"
+                    >
+                      {cancelingPlay ? "Canceling Play…" : "Cancel Google Play"}
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    disabled={cancelingPlay || refundingPlay}
+                    onClick={async () => {
+                      const ok = window.confirm(
+                        "Refund the Google Play charge and set this account to Free immediately?",
                       );
-                      if (refreshed.ok) {
-                        setProfile(await refreshed.json());
+                      if (!ok) return;
+                      setPlayCancelError(null);
+                      setRefundingPlay(true);
+                      try {
+                        const response = await fetch(
+                          `/api/admin/users/${encodeURIComponent(userId)}/google-play/refund`,
+                          { method: "POST" },
+                        );
+                        const data = await response.json().catch(() => ({}));
+                        if (!response.ok) {
+                          throw new Error(
+                            data.error || "Failed to refund Google Play",
+                          );
+                        }
+                        const refreshed = await fetch(
+                          `/api/admin/users/${encodeURIComponent(userId)}`,
+                        );
+                        if (refreshed.ok) {
+                          setProfile(await refreshed.json());
+                        }
+                      } catch (err) {
+                        setPlayCancelError(
+                          err instanceof Error
+                            ? err.message
+                            : "Failed to refund Google Play",
+                        );
+                      } finally {
+                        setRefundingPlay(false);
                       }
-                    } catch (err) {
-                      setPlayCancelError(
-                        err instanceof Error
-                          ? err.message
-                          : "Failed to cancel Google Play",
-                      );
-                    } finally {
-                      setCancelingPlay(false);
-                    }
-                  }}
-                  className="text-xs font-medium text-red-600 hover:text-red-800 disabled:opacity-50"
-                >
-                  {cancelingPlay ? "Canceling Play…" : "Cancel Google Play"}
-                </button>
+                    }}
+                    className="text-xs font-medium text-amber-700 hover:text-amber-900 disabled:opacity-50"
+                  >
+                    {refundingPlay ? "Refunding Play…" : "Refund Google Play"}
+                  </button>
+                </>
               ) : null}
               {playCancelError ? (
                 <span className="text-xs text-red-600">{playCancelError}</span>

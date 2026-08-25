@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import documentsClient from "@/lib/appDocumentsClient";
 import { TaskRepository } from "@/repositories/tasks.repo";
 import type { SkillRoute } from "@/lib/practiceRoutes";
+import { getIndexingRobotsDirective, NOINDEX_ROBOTS } from "@/lib/searchIndexing";
 
 function siteRoot(): string {
   return (process.env.APP_BASE_URL || "https://celpippracticetest.com").replace(
@@ -18,23 +19,29 @@ const SKILL_LABEL: Record<SkillRoute, string> = {
 };
 
 /**
- * Indexable hub + task-picker metadata: self-referencing canonical (includes ?taskId when set)
- * and task-specific title/description for CTR when a task is selected.
+ * Hub + task-picker metadata. Deep practice sessions (`/skill/:practiceId/:taskId`)
+ * are always noindex; hubs stay indexable (except preview/staging).
  */
 export async function skillHubPageMetadata(
   skill: SkillRoute,
   taskId: string | undefined,
   fallbackTitle: string,
   fallbackDescription: string,
-  extra?: { openGraph?: Metadata["openGraph"] }
+  extra?: {
+    openGraph?: Metadata["openGraph"];
+    keywords?: string[];
+    /** Deep practice session (`/skill/:practiceId/:taskId`) must stay noindex. */
+    selectedPracticeId?: string;
+  }
 ): Promise<Metadata> {
   const root = siteRoot();
   const hubPath = `/${skill}`;
+  const isPracticeSession = Boolean(extra?.selectedPracticeId);
   let canonical = `${root}${hubPath}`;
   let title = fallbackTitle;
   let description = fallbackDescription;
 
-  if (taskId) {
+  if (!isPracticeSession && taskId) {
     canonical = `${root}${hubPath}?taskId=${encodeURIComponent(taskId)}`;
     const taskRepo = new TaskRepository(documentsClient);
     const task = await taskRepo.findTaskById(taskId);
@@ -53,6 +60,7 @@ export async function skillHubPageMetadata(
   return {
     title,
     description,
+    ...(extra?.keywords?.length ? { keywords: extra.keywords } : {}),
     alternates: { canonical },
     openGraph: {
       ...ogBase,
@@ -67,6 +75,8 @@ export async function skillHubPageMetadata(
       title,
       description,
     },
-    robots: { index: true, follow: true },
+    robots: isPracticeSession
+      ? NOINDEX_ROBOTS
+      : getIndexingRobotsDirective(process.env.APP_BASE_URL),
   };
 }

@@ -14,24 +14,34 @@ import { ObjectId } from "bson";
 import { redirect, RedirectType } from "next/navigation";
 import SkillLandingPage from "@/components/skill-landing/SkillLandingPage";
 import { skillPagesContent } from "@/data/skill-pages-content";
+import type { Metadata } from "next";
+import { skillHubPageMetadata } from "@/lib/skillHubPageMetadata";
 
-export const metadata = {
-  title: "Free CELPIP Reading Practice Tests & Mock Exams | CELPIPPRACTICETEST",
-  description:
-    "Boost CELPIP Reading scores with realistic passages, quick explanations, and speed drills. Strengthen scanning, inference, and time management | CELPIPPRACTICETEST.com",
-  keywords: [
-    "celpip reading practise",
-    "celpip reading test",
-    "celpip reading sample",
-    "celpip reading test sample",
-    "celpip general reading",
-    "celpip general reading test",
-    "celpip reading practice test",
-  ],
-  alternates: {
-    canonical: "https://celpippracticetest.com/reading",
-  },
-};
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | undefined }>;
+}): Promise<Metadata> {
+  const { selectedPracticeId } = await searchParams;
+  return skillHubPageMetadata(
+    "reading",
+    undefined,
+    "Free CELPIP Reading Practice Tests & Mock Exams | CELPIPPRACTICETEST",
+    "Boost CELPIP Reading scores with realistic passages, quick explanations, and speed drills. Strengthen scanning, inference, and time management | CELPIPPRACTICETEST.com",
+    {
+      selectedPracticeId,
+      keywords: [
+        "celpip reading practise",
+        "celpip reading test",
+        "celpip reading sample",
+        "celpip reading test sample",
+        "celpip general reading",
+        "celpip general reading test",
+        "celpip reading practice test",
+      ],
+    },
+  );
+}
 
 interface PracticeTask {
   taskNumber: string;

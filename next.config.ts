@@ -151,7 +151,7 @@ const nextConfig: NextConfig = {
     /** Legacy / mistaken paths linked from older content; targets verified in prod DB (Apr 2026). */
     const fixes = [
       ["/celpip-for-medical-laboratory-technologist", "/celpip-for-medical-radiological-technologists"],
-      ["/celpip-vs-ielts", "/blog/celpip-vs-ielts-format-fees-scoring"],
+      ["/celpip-vs-ielts", "/blog/celpip-vs-ieltes"],
       ["/celpip-speaking-tips-for-healthcare", "/wiki/celpip-speaking-tips-high-score"],
       ["/how-to-score-clb-7-on-celpip-for-nursing", "/celpip-for-nurses"],
       ["/ircc-language-requirements-for-nurses", "/blog/celpip-2026-canadian-immigration-updates"],
@@ -169,12 +169,20 @@ const nextConfig: NextConfig = {
       ["/blog/clb-levels-guide", "/clb-7-explained"],
       ["/blog/engineering-emails-celpip", "/celpip-writing-task-1-samples"],
       ["/blog/grammar-checkers-for-esl", "/blog/can-chatgpt-grade-celpip-writing-score-8-9-10"],
-      ["/celpip-general-vs-ielts-general", "/blog/celpip-vs-ielts-format-fees-scoring"],
+      ["/celpip-general-vs-ielts-general", "/blog/celpip-vs-ieltes"],
       ["/celpip-reading-mistakes", "/blog/celpip-reading-tips-and-tricks"],
       ["/celpip-writing-mistakes", "/blog/7-key-strategies-to-excel-in-celpip-writing-test"],
       ["/how-to-book-celpip", "/blog/complete-guide-celpip-test-booking-results-clb"],
       ["/how-to-book-celpip-bc", "/blog/complete-guide-celpip-test-booking-results-clb"],
       ["/score-calculator", "/blog/complete-guide-celpip-test-booking-results-clb"],
+      ["/free-celpip-practice-test", "/"],
+      ["/blog/celpip-general-vs-ls-comparison", "/blog/celpip-ls-vs-general"],
+      [
+        "/blog/10-common-celpip-mistakes-that-cost-you-points-and-how-to-fix-them",
+        "/blog/most-common-celpip-mistakes",
+      ],
+      ["/blog/celpip-vs-ielts-format-fees-scoring", "/blog/celpip-vs-ieltes"],
+      ["/wiki/celpip-general-vs-ls-comparison", "/blog/celpip-ls-vs-general"],
     ].map(([source, destination]) => ({ source, destination, permanent: true }));
     return fixes;
   },
@@ -249,11 +257,28 @@ const nextConfig: NextConfig = {
       });
     }
 
+    const noindexHeader = {
+      key: "X-Robots-Tag",
+      value: "noindex, nofollow",
+    };
+
     return [
       {
         source: "/:path*",
         headers: globalHeaders,
       },
+      ...[
+        "/practice-overview",
+        "/words",
+        "/learning",
+        "/speaking/:practiceId/:taskId",
+        "/reading/:practiceId/:taskId",
+        "/writing/:practiceId/:taskId",
+        "/listening/:practiceId/:taskId",
+      ].map((source) => ({
+        source,
+        headers: [noindexHeader],
+      })),
     ];
   },
 
@@ -321,6 +346,11 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "pub-4e7dbebb45ca4fc1bdc4e071081759ca.r2.dev",
+        port: "",
+      },
+      {
+        protocol: "https",
+        hostname: "pub-f71a1a0974384d91b3711f916cce0cf4.r2.dev",
         port: "",
       },
       {

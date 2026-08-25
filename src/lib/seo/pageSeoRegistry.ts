@@ -121,6 +121,13 @@ export const PAGE_SEO_REGISTRY: Record<string, PageSeoItem> = {
       "Free CELPIP practice test hub: timed sample tasks for Listening, Reading, Writing, and Speaking. Pick skills to drill and build stamina before your exam.",
     keywords: ["celpip practice overview", "celpip free practice", "celpip sample tasks"],
   },
+  "/practice-overview": {
+    path: "/practice-overview",
+    title: "CELPIP Practice Overview | CELPIP Practice Test",
+    description:
+      "Choose CELPIP practice tasks for Listening, Reading, Writing, and Speaking.",
+    indexability: "noindex",
+  },
   "/exam": {
     path: "/exam",
     title: "CELPIP Mock Test Online — Full-Length Practice Exams",
@@ -168,6 +175,14 @@ export const PAGE_SEO_REGISTRY: Record<string, PageSeoItem> = {
     description:
       "Build and track your CELPIP vocabulary with flashcard study mode. Add words, mark them mastered, and expand your exam-ready word list.",
     keywords: ["celpip vocabulary", "celpip word list", "celpip flashcards"],
+    indexability: "noindex",
+  },
+  "/learning": {
+    path: "/learning",
+    title: "CELPIP AI Learning | CELPIP Practice Test",
+    description:
+      "Ask CELPIP-style questions and get real-time answers, strategies, and targeted practice guidance.",
+    indexability: "noindex",
   },
   "/flow": {
     path: "/flow",

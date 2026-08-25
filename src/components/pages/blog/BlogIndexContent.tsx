@@ -5,6 +5,7 @@ import Person from "@mui/icons-material/Person";
 import ArrowForward from "@mui/icons-material/ArrowForward";
 import type { TBlogSchemaDto } from "@/models/blog.model";
 import { ContentCategoryTag } from "@/components/shared/ContentCategoryTag";
+import { getBlogCoverImage } from "@/lib/blog/coverImage";
 
 interface BlogIndexContentProps {
   items: TBlogSchemaDto[];
@@ -31,6 +32,7 @@ function estimateReadTime(contentHtml?: string): string {
 export default function BlogIndexContent({ items }: BlogIndexContentProps) {
   const featuredPost = items.length > 0 ? items[0] : null;
   const recentPosts = items.length > 1 ? items.slice(1) : [];
+  const featuredCover = featuredPost ? getBlogCoverImage(featuredPost) : null;
 
   return (
     <div className="min-h-screen pb-20">
@@ -84,18 +86,26 @@ export default function BlogIndexContent({ items }: BlogIndexContentProps) {
                     className="group block overflow-hidden rounded-[14px] border border-outline/80 bg-white transition-all hover:border-primary1/30 hover:shadow-[0_10px_26px_rgba(51,88,207,0.08)]"
                   >
                     <div className="flex flex-col screen1024:flex-row">
-                      <div className="relative flex min-h-[220px] items-end bg-primary6 p-6 screen1024:min-h-[280px] screen1024:w-2/5 screen1024:shrink-0">
+                      <div className="relative flex min-h-[220px] items-end overflow-hidden bg-primary6 p-6 screen1024:min-h-[280px] screen1024:w-2/5 screen1024:shrink-0">
+                        {featuredCover ? (
+                          <img
+                            src={featuredCover.url}
+                            alt={featuredCover.alt}
+                            className="absolute inset-0 h-full w-full object-cover"
+                          />
+                        ) : (
+                          <p className="line-clamp-3 text-lg font-bold leading-snug text-text1">
+                            {featuredPost.title}
+                          </p>
+                        )}
                         {featuredPost.categories.slice(0, 2).map((cat) => (
                           <ContentCategoryTag
                             key={cat}
                             category={cat}
                             variant="surface"
-                            className="absolute left-4 top-4"
+                            className="absolute left-4 top-4 z-10"
                           />
                         ))}
-                        <p className="line-clamp-3 text-lg font-bold leading-snug text-text1">
-                          {featuredPost.title}
-                        </p>
                       </div>
 
                       <div className="flex flex-1 flex-col justify-center p-6 screen744:p-8">
@@ -155,41 +165,60 @@ export default function BlogIndexContent({ items }: BlogIndexContentProps) {
                   </div>
 
                   <div className="grid grid-cols-1 gap-5 screen744:grid-cols-2 screen1280:grid-cols-3">
-                    {recentPosts.map((post) => (
-                      <Link
-                        key={post.id}
-                        href={`/blog/${post.slug}`}
-                        className="group flex h-full flex-col rounded-[14px] border border-outline/80 bg-white p-6 transition-all hover:border-primary1/30 hover:shadow-[0_10px_26px_rgba(51,88,207,0.08)]"
-                      >
-                        {post.categories.length > 0 ? (
-                          <ContentCategoryTag category={post.categories[0]} />
-                        ) : null}
+                    {recentPosts.map((post) => {
+                      const cover = getBlogCoverImage(post);
+                      return (
+                        <Link
+                          key={post.id}
+                          href={`/blog/${post.slug}`}
+                          className="group flex h-full flex-col overflow-hidden rounded-[14px] border border-outline/80 bg-white transition-all hover:border-primary1/30 hover:shadow-[0_10px_26px_rgba(51,88,207,0.08)]"
+                        >
+                          {cover ? (
+                            <div className="relative h-44 w-full overflow-hidden bg-primary6">
+                              <img
+                                src={cover.url}
+                                alt={cover.alt}
+                                className="h-full w-full object-cover"
+                              />
+                            </div>
+                          ) : null}
+                          <div className="flex flex-1 flex-col p-6">
+                            {post.categories.length > 0 ? (
+                              <ContentCategoryTag
+                                category={post.categories[0]}
+                              />
+                            ) : null}
 
-                        <h3 className="mt-3 text-[17px] font-bold leading-snug text-text1 group-hover:text-primary1">
-                          {post.title}
-                        </h3>
+                            <h3 className="mt-3 text-[17px] font-bold leading-snug text-text1 group-hover:text-primary1">
+                              {post.title}
+                            </h3>
 
-                        <p className="mt-2 flex-1 text-[15px] leading-normal text-text2 line-clamp-3">
-                          {post.excerpt ||
-                            "Click to read more about this topic."}
-                        </p>
+                            <p className="mt-2 flex-1 text-[15px] leading-normal text-text2 line-clamp-3">
+                              {post.excerpt ||
+                                "Click to read more about this topic."}
+                            </p>
 
-                        <div className="mt-4 flex items-center justify-between gap-3 border-t border-outline/60 pt-4 text-xs text-text3">
-                          <span className="flex items-center gap-1">
-                            <CalendarToday className="h-3 w-3" aria-hidden />
-                            {formatDate(post.publishedAt)}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Schedule className="h-3 w-3" aria-hidden />
-                            {estimateReadTime(post.contentHtml)}
-                          </span>
-                        </div>
+                            <div className="mt-4 flex items-center justify-between gap-3 border-t border-outline/60 pt-4 text-xs text-text3">
+                              <span className="flex items-center gap-1">
+                                <CalendarToday
+                                  className="h-3 w-3"
+                                  aria-hidden
+                                />
+                                {formatDate(post.publishedAt)}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Schedule className="h-3 w-3" aria-hidden />
+                                {estimateReadTime(post.contentHtml)}
+                              </span>
+                            </div>
 
-                        <span className="mt-3 text-sm font-bold text-primary1 opacity-0 transition-opacity group-hover:opacity-100">
-                          Read article →
-                        </span>
-                      </Link>
-                    ))}
+                            <span className="mt-3 text-sm font-bold text-primary1 opacity-0 transition-opacity group-hover:opacity-100">
+                              Read article →
+                            </span>
+                          </div>
+                        </Link>
+                      );
+                    })}
                   </div>
                 </div>
               ) : null}

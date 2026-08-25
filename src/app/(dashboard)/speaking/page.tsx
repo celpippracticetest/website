@@ -13,25 +13,34 @@ import { ObjectId } from "bson";
 import { redirect, RedirectType } from "next/navigation";
 import SkillLandingPage from "@/components/skill-landing/SkillLandingPage";
 import { skillPagesContent } from "@/data/skill-pages-content";
+import type { Metadata } from "next";
+import { skillHubPageMetadata } from "@/lib/skillHubPageMetadata";
 
-export const metadata = {
-  title:
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | undefined }>;
+}): Promise<Metadata> {
+  const { selectedPracticeId } = await searchParams;
+  return skillHubPageMetadata(
+    "speaking",
+    undefined,
     "Free CELPIP Speaking Practice Tests & Mock Exams | CELPIPPRACTICETEST",
-  description:
-    "Simulate the real CELPIP Speaking test with timed tasks, AI grading, and expert tips. Track progress, boost fluency, and hit your target score | CELPIPPRACTICETEST.com",
-  keywords: [
-    "celpip speaking practice test",
-    "celpip speaking test",
-    "celpip speaking practice",
-    "celpip practice test speaking",
-    "celpip sample speaking questions",
-    "celpip practice speaking test",
-    "celpip general speaking sample test",
-  ],
-  alternates: {
-    canonical: "https://celpippracticetest.com/speaking",
-  },
-};
+    "Simulate the real CELPIP Speaking test with timed tasks, AI grading, and expert tips. Track progress, boost fluency, and hit your target score | CELPIPPRACTICETEST.com",
+    {
+      selectedPracticeId,
+      keywords: [
+        "celpip speaking practice test",
+        "celpip speaking test",
+        "celpip speaking practice",
+        "celpip practice test speaking",
+        "celpip sample speaking questions",
+        "celpip practice speaking test",
+        "celpip general speaking sample test",
+      ],
+    },
+  );
+}
 interface PracticeTask {
   taskNumber: string;
   name: string;

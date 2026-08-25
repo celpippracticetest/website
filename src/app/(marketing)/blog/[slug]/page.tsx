@@ -9,6 +9,7 @@ import {
   getRelatedPublishedPosts,
   isIndexablePublishedBlogSlug,
 } from "@/lib/blog/public";
+import { getBlogCoverImage } from "@/lib/blog/coverImage";
 import { sanitizeContentHtml } from "@/lib/content-linker-core";
 import { resolveBlogContentHtml } from "@/lib/blog/editorHtml";
 import BlogArticleAnalytics from "@/components/analytics/BlogArticleAnalytics";
@@ -112,9 +113,9 @@ export async function generateMetadata({
     path === null
       ? (post.seo?.canonicalUrl ?? "")
       : new URL(path.startsWith("/") ? path : `/${path}`, baseUrl).toString();
-  const ogImage = post.seo?.ogImageUrl || post.featuredImage?.url;
-  const ogImageAlt =
-    post.seo?.ogImageAlt || post.featuredImage?.alt || post.title;
+  const coverImage = getBlogCoverImage(post);
+  const ogImage = coverImage?.url;
+  const ogImageAlt = coverImage?.alt || post.title;
 
   return {
     title,
@@ -186,9 +187,9 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
   ).replace(/\/$/, "");
   const canonicalUrl =
     post.seo?.canonicalUrl || `${siteBase}/blog/${post.slug}`;
-  const ogImage = post.seo?.ogImageUrl || post.featuredImage?.url;
-  const ogImageAlt =
-    post.seo?.ogImageAlt || post.featuredImage?.alt || post.title;
+  const coverImage = getBlogCoverImage(post);
+  const ogImage = coverImage?.url;
+  const ogImageAlt = coverImage?.alt || post.title;
   const schemaImage = ogImage || `${siteBase}/images/hero.png`;
 
   const blogPostingSchema = {
@@ -314,16 +315,15 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
           ) : null}
         </Box>
 
-        <Box className="mt-6 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-          <Box className="flex min-h-[14rem] w-full flex-col justify-center p-6">
-            <p className="text-xs font-medium uppercase tracking-wide text-blue-600">
-              CELPIP Blog
-            </p>
-            <h2 className="mt-3 text-2xl font-bold leading-tight text-slate-900">
-              {post.title}
-            </h2>
+        {ogImage ? (
+          <Box className="mt-6 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+            <img
+              src={ogImage}
+              alt={ogImageAlt}
+              className="h-auto max-h-[28rem] w-full object-cover"
+            />
           </Box>
-        </Box>
+        ) : null}
 
         <article
           className="article-content prose prose-blue mt-8 max-w-none"
@@ -357,42 +357,53 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
             Related Articles
           </h2>
           <Box className="flex flex-col gap-4">
-            {relatedPosts.map((related) => (
-              <Link
-                key={related.id}
-                href={`/blog/${related.slug}`}
-                className="group block"
-              >
-                <Card className="overflow-hidden border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md">
-                  <Box className="flex flex-col sm:flex-row sm:items-stretch">
-                    <Box className="relative w-full shrink-0 overflow-hidden bg-slate-100 sm:h-[180px] sm:w-80 sm:shrink-0 sm:aspect-auto">
-                      <Box className="flex h-full w-full flex-col justify-center p-5">
-                        <p className="mt-3 line-clamp-2 text-lg font-semibold text-slate-900">
+            {relatedPosts.map((related) => {
+              const relatedCover = getBlogCoverImage(related);
+              return (
+                <Link
+                  key={related.id}
+                  href={`/blog/${related.slug}`}
+                  className="group block"
+                >
+                  <Card className="overflow-hidden border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md">
+                    <Box className="flex flex-col sm:flex-row sm:items-stretch">
+                      <Box className="relative h-48 w-full shrink-0 overflow-hidden bg-slate-100 sm:h-[180px] sm:w-80 sm:shrink-0 sm:aspect-auto">
+                        {relatedCover ? (
+                          <img
+                            src={relatedCover.url}
+                            alt={relatedCover.alt}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <Box className="flex h-full w-full flex-col justify-center p-5">
+                            <p className="mt-3 line-clamp-2 text-lg font-semibold text-slate-900">
+                              {related.title}
+                            </p>
+                          </Box>
+                        )}
+                      </Box>
+                      <CardContent className="flex min-h-0 flex-1 flex-col justify-center overflow-hidden p-5 sm:h-[180px]">
+                        {related.categories.length > 0 && (
+                          <Badge className="mb-2 w-fit bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs">
+                            {related.categories[0]}
+                          </Badge>
+                        )}
+                        <p className="text-lg font-semibold text-slate-900 group-hover:text-blue-700 transition-colors">
                           {related.title}
                         </p>
-                      </Box>
+                        <p className="mt-1 line-clamp-2 text-sm text-slate-600 leading-relaxed">
+                          {related.excerpt || "Read the full article."}
+                        </p>
+                        <span className="mt-3 inline-flex items-center text-sm font-medium text-blue-600 group-hover:underline">
+                          Read article{" "}
+                          <ChevronRight className="ml-0.5 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                        </span>
+                      </CardContent>
                     </Box>
-                    <CardContent className="flex min-h-0 flex-1 flex-col justify-center overflow-hidden p-5 sm:h-[180px]">
-                      {related.categories.length > 0 && (
-                        <Badge className="mb-2 w-fit bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs">
-                          {related.categories[0]}
-                        </Badge>
-                      )}
-                      <p className="text-lg font-semibold text-slate-900 group-hover:text-blue-700 transition-colors">
-                        {related.title}
-                      </p>
-                      <p className="mt-1 line-clamp-2 text-sm text-slate-600 leading-relaxed">
-                        {related.excerpt || "Read the full article."}
-                      </p>
-                      <span className="mt-3 inline-flex items-center text-sm font-medium text-blue-600 group-hover:underline">
-                        Read article{" "}
-                        <ChevronRight className="ml-0.5 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                      </span>
-                    </CardContent>
-                  </Box>
-                </Card>
-              </Link>
-            ))}
+                  </Card>
+                </Link>
+              );
+            })}
           </Box>
         </Box>
       ) : null}

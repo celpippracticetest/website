@@ -15,6 +15,7 @@ import {
   shouldEnforceAccountSharingSignals,
 } from "@/lib/accountSharingMiddleware";
 import { refreshSupabaseSessionFromRequest } from "@/lib/supabase/middleware-session";
+import { NOINDEX_X_ROBOTS_TAG } from "@/lib/searchIndexing";
 
 const isAdminRoute = (req: NextRequest) => req.nextUrl.pathname.startsWith("/cms");
 
@@ -38,6 +39,11 @@ const PRACTICE_HUB_PATHS = new Set([
 /** `/listening/:practiceId/:taskId` — rewritten to query params for hub pages. */
 const PRACTICE_HUB_DEEP_LINK =
   /^\/(listening|reading|speaking|writing)\/([^/]+)\/([^/]+)$/;
+const NOINDEX_PATHS = new Set([
+  "/practice-overview",
+  "/words",
+  "/learning",
+]);
 const REFERRAL_CREATE_COOLDOWN_COOKIE = "referralCodeCreateCooldown";
 const REFERRAL_CREATE_COOLDOWN_SECONDS = 60;
 
@@ -59,6 +65,12 @@ export default async function middleware(req: NextRequest) {
     : null;
 
   const end = (response: NextResponse) => {
+    if (
+      NOINDEX_PATHS.has(req.nextUrl.pathname) ||
+      PRACTICE_HUB_DEEP_LINK.test(req.nextUrl.pathname)
+    ) {
+      response.headers.set("X-Robots-Tag", NOINDEX_X_ROBOTS_TAG);
+    }
     for (const w of supabaseCookieWrites) {
       response.cookies.set(w.name, w.value, w.options);
     }

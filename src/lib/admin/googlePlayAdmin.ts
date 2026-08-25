@@ -116,9 +116,22 @@ export async function googlePlayUserIdsForAuthIds(
   );
 }
 
+function playApiErrorMessage(err: unknown): string {
+  if (err && typeof err === "object") {
+    const data = (err as { response?: { data?: { error?: { message?: string } } } })
+      .response?.data?.error?.message;
+    if (typeof data === "string" && data.trim()) return data.trim();
+  }
+  return err instanceof Error
+    ? err.message
+    : "Google Play could not complete this request.";
+}
+
 function isAlreadyCanceledPlayError(err: unknown): boolean {
-  const msg = err instanceof Error ? err.message : String(err);
-  return /already.?cancel|410|404|not active/i.test(msg);
+  const msg = playApiErrorMessage(err);
+  return /already.?cancel|already.?revok|already.?refund|410|404|not active/i.test(
+    msg
+  );
 }
 
 export async function cancelGooglePlaySubscriptionForAdmin(args: {
@@ -154,9 +167,8 @@ export async function cancelGooglePlaySubscriptionForAdmin(args: {
           continue;
         }
         throw new Error(
-          err instanceof Error
-            ? err.message
-            : "Google Play could not cancel this subscription."
+          playApiErrorMessage(err) ||
+            "Google Play could not cancel this subscription."
         );
       }
     }
@@ -196,5 +208,90 @@ export async function cancelGooglePlaySubscriptionForAdmin(args: {
     message: args.revokeAccess
       ? "Google Play auto-renew was canceled and app access was revoked."
       : "Google Play auto-renew was canceled. The user keeps access until the current period ends.",
+  };
+}
+
+/**
+ * Refunds the latest Play subscription charge and immediately revokes access.
+ * Uses Play `subscriptions.revoke` (refund + terminate). Falls back to
+ * `refund` + `cancel` if revoke is not available for that purchase.
+ */
+export async function refundGooglePlaySubscriptionForAdmin(args: {
+  userId: string;
+}): Promise<{
+  playRefunded: boolean;
+  tokensRefunded: number;
+  message: string;
+}> {
+  const rows = await listGooglePlaySubscriptionsForUser(args.userId);
+  if (rows.length === 0) {
+    throw new Error(
+      "No Google Play purchase token on file for this user. Refund in Play Console Order management instead."
+    );
+  }
+
+  const credentials = getGooglePlayServiceAccountJson();
+  if (!credentials) {
+    throw new Error(
+      "Google Play API is not configured (GOOGLE_PLAY_SERVICE_ACCOUNT_JSON)."
+    );
+  }
+
+  const androidpublisher = buildAndroidPublisherAuth(credentials);
+  let tokensRefunded = 0;
+
+  for (const row of rows) {
+    try {
+      await androidpublisher.purchases.subscriptions.revoke({
+        packageName: row.packageName,
+        subscriptionId: row.subscriptionId,
+        token: row.purchaseToken,
+      });
+      tokensRefunded += 1;
+    } catch (revokeErr) {
+      if (isAlreadyCanceledPlayError(revokeErr)) {
+        tokensRefunded += 1;
+        continue;
+      }
+      try {
+        await androidpublisher.purchases.subscriptions.refund({
+          packageName: row.packageName,
+          subscriptionId: row.subscriptionId,
+          token: row.purchaseToken,
+        });
+        try {
+          await androidpublisher.purchases.subscriptions.cancel({
+            packageName: row.packageName,
+            subscriptionId: row.subscriptionId,
+            token: row.purchaseToken,
+          });
+        } catch (cancelErr) {
+          if (!isAlreadyCanceledPlayError(cancelErr)) {
+            // Refund succeeded; cancel is best-effort.
+          }
+        }
+        tokensRefunded += 1;
+      } catch (refundErr) {
+        throw new Error(playApiErrorMessage(refundErr) || playApiErrorMessage(revokeErr));
+      }
+    }
+  }
+
+  const metadataUserId =
+    rows[0]?.supabaseUserId ||
+    (await resolveSupabaseAuthUserId(args.userId)) ||
+    args.userId;
+
+  await syncUserPlanPublicMetadata(metadataUserId, {
+    plan: "free",
+    planSource: "google_play",
+    planCancelled: true,
+  });
+
+  return {
+    playRefunded: tokensRefunded > 0,
+    tokensRefunded,
+    message:
+      "Google Play charge was refunded and app access was revoked. The buyer should see the refund in Play Store.",
   };
 }

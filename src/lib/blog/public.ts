@@ -6,6 +6,10 @@ import { BlogRepository } from "@/repositories/blog.repo";
 /** Typo / retired CMS slugs → permanent redirect targets. */
 const LEGACY_BLOG_SLUG_REDIRECTS: Record<string, string> = {
   "celpip-leauage": "/blog/complete-guide-celpip-test-booking-results-clb",
+  "celpip-general-vs-ls-comparison": "/blog/celpip-ls-vs-general",
+  "10-common-celpip-mistakes-that-cost-you-points-and-how-to-fix-them":
+    "/blog/most-common-celpip-mistakes",
+  "celpip-vs-ielts-format-fees-scoring": "/blog/celpip-vs-ieltes",
 };
 
 const NON_INDEXABLE_LEGACY_BLOG_SLUGS = new Set(Object.keys(LEGACY_BLOG_SLUG_REDIRECTS));

@@ -14,6 +14,8 @@ import { ObjectId } from "bson";
 import { redirect, RedirectType } from "next/navigation";
 import SkillLandingPage from "@/components/skill-landing/SkillLandingPage";
 import { skillPagesContent } from "@/data/skill-pages-content";
+import type { Metadata } from "next";
+import { skillHubPageMetadata } from "@/lib/skillHubPageMetadata";
 
 interface PracticeTask {
   taskNumber: string;
@@ -24,30 +26,37 @@ interface PracticeSection {
   route: string;
 }
 
-export const metadata = {
-  title:
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | undefined }>;
+}): Promise<Metadata> {
+  const { selectedPracticeId } = await searchParams;
+  return skillHubPageMetadata(
+    "listening",
+    undefined,
     "Free CELPIP Listening Practice Tests & Mock Exams | CELPIPPRACTICETEST",
-  description:
-    "Prepare for CELPIP Listening with authentic recordings, adaptive quizzes, and analytics. Improve accuracy, note‑taking, and exam‑day confidence | CELPIPPRACTICETEST.com",
-  keywords: [
-    "celpip listening practice test",
-    "celpip listening test",
-    "celpip listening practice",
-    "celpip listening sample test",
-    "celpip listening samples",
-    "celpip listening test practice",
-    "celpip listening mock test",
-    "celpip mock test listening",
-    "celpip general listening test",
-    "celpip general listening practice test",
-    "celpip listening practice test with answers",
-    "celpip listening practice with answers",
-    "celpip audio sample",
-  ],
-  alternates: {
-    canonical: "https://celpippracticetest.com/listening",
-  },
-};
+    "Prepare for CELPIP Listening with authentic recordings, adaptive quizzes, and analytics. Improve accuracy, note-taking, and exam-day confidence | CELPIPPRACTICETEST.com",
+    {
+      selectedPracticeId,
+      keywords: [
+        "celpip listening practice test",
+        "celpip listening test",
+        "celpip listening practice",
+        "celpip listening sample test",
+        "celpip listening samples",
+        "celpip listening test practice",
+        "celpip listening mock test",
+        "celpip mock test listening",
+        "celpip general listening test",
+        "celpip general listening practice test",
+        "celpip listening practice test with answers",
+        "celpip listening practice with answers",
+        "celpip audio sample",
+      ],
+    },
+  );
+}
 
 const DashboardApp = async ({
   searchParams,

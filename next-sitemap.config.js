@@ -5,7 +5,19 @@ module.exports = {
   generateRobotsTxt: true,
   changefreq: "daily",
   priority: 0.7,
-  exclude: ["/auth/*", "/cms/*", "/referral", "/referral/*"],
+  exclude: [
+    "/auth/*",
+    "/cms/*",
+    "/referral",
+    "/referral/*",
+    "/practice-overview",
+    "/words",
+    "/learning",
+    "/speaking/*",
+    "/reading/*",
+    "/writing/*",
+    "/listening/*",
+  ],
   robotsTxtOptions: {
     additionalSitemaps: [
       "https://blog.celpippracticetest.com/sitemap_index.xml",

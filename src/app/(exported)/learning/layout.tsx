@@ -2,19 +2,9 @@ import LayoutLearningClient from "@/components/dashboard-new/LayoutLearningClien
 import IntercomLoader from "@/components/IntercomLoader";
 import { currentUser } from "@/lib/auth/web-auth-session";
 import { shouldShowOnboardingSurvey } from "@/lib/onboardingSurveyVisibility";
-import { Metadata } from "next";
+import { pageSeo } from "@/lib/seo/pageSeo";
 
-export async function generateMetadata(): Promise<Metadata> {
-  const appBaseUrl = process.env.APP_BASE_URL || "";
-  const isPreview = appBaseUrl.includes("vercel.app");
-  return {
-    title: "Dashboard",
-    robots: {
-      index: !isPreview,
-      follow: !isPreview,
-    },
-  };
-}
+export const metadata = pageSeo("/learning");
 
 export default async function RootLayout({
   children,

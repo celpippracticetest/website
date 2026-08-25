@@ -1,6 +1,7 @@
 import documentsClient from "@/lib/appDocumentsClient";
 import { BlogWriteSchema } from "@/models/blog.model";
 import { BlogRepository } from "@/repositories/blog.repo";
+import { revalidateBlogPages } from "@/lib/blog/revalidate";
 import { ObjectId } from "bson";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -51,11 +52,17 @@ export async function PATCH(
     }
 
     const repo = new BlogRepository(documentsClient);
+    const current = await repo.findBlogById(id);
     const updated = await repo.updateBlog(id, parser.data);
 
     if (!updated) {
       return NextResponse.json({ message: "Blog post not found." }, { status: 404 });
     }
+
+    if (current?.slug && current.slug !== updated.slug) {
+      revalidateBlogPages(current.slug);
+    }
+    revalidateBlogPages(updated.slug);
 
     return NextResponse.json(updated, { status: 200 });
   } catch (error) {
@@ -75,7 +82,9 @@ export async function DELETE(
     }
 
     const repo = new BlogRepository(documentsClient);
+    const current = await repo.findBlogById(id);
     await repo.deleteBlog(id);
+    revalidateBlogPages(current?.slug);
 
     return NextResponse.json({ message: "Blog post deleted." }, { status: 200 });
   } catch (error) {
