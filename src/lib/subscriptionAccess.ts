@@ -2,6 +2,14 @@ export function normalizePlan(plan: string | null | undefined) {
   return (plan || "").trim().toLowerCase();
 }
 
+/** True when `publicMetadata.planSource` (or similar) is a Google Play purchase. */
+export function planSourceIndicatesGooglePlay(source: unknown): boolean {
+  return String(source ?? "")
+    .trim()
+    .toLowerCase()
+    .startsWith("google_play");
+}
+
 /**
  * Heuristic on Stripe/CMS **product titles** (not user `publicMetadata.plan`).
  * Used when inferring display/upgrades from plan names.

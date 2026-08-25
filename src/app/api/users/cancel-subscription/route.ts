@@ -8,6 +8,13 @@ import {
 } from "@/lib/resolveStripeCustomerId";
 import { matchUsersCollectionByWebUserIds } from "@/lib/users/userDocumentIdentity";
 import { sendGa4Events } from "@/lib/ga4MeasurementProtocol";
+import {
+  cancelGooglePlaySubscriptionForAdmin,
+  listGooglePlaySubscriptionsForUser,
+  planSourceIsGooglePlay,
+  readPlanSource,
+} from "@/lib/admin/googlePlayAdmin";
+import { captureException } from "@/lib/sentry-logger";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 function normalizeDate(value: unknown): Date | null {
@@ -45,6 +52,123 @@ export async function POST(req: NextRequest) {
 
     const authAdmin = await appUserAdmin();
     const user = await authAdmin.users.getUser(userId);
+    const publicMeta = (user.publicMetadata || {}) as Record<string, unknown>;
+    const playSubs = await listGooglePlaySubscriptionsForUser(userId);
+    const isGooglePlay =
+      playSubs.length > 0 || planSourceIsGooglePlay(readPlanSource(publicMeta));
+
+    if (isGooglePlay) {
+      const playResult = await cancelGooglePlaySubscriptionForAdmin({
+        userId,
+        revokeAccess: false,
+      });
+
+      const documentsClient = await clientPromise;
+      const db = documentsClient.db();
+      const usersCollection = db.collection("users");
+      const userActivityCollection = db.collection("useractivities");
+
+      const latestStartEvent = await userActivityCollection.findOne(
+        {
+          userId,
+          eventType: "subscription_created",
+        },
+        {
+          sort: { timestampUtc: -1 },
+          projection: { timestampUtc: 1 },
+        }
+      );
+
+      const now = new Date();
+      const subscriptionStartDate =
+        normalizeDate(latestStartEvent?.timestampUtc) ||
+        normalizeDate(publicMeta.purchaseDate);
+      const subscriptionDurationDays = subscriptionStartDate
+        ? Math.max(
+            1,
+            Math.ceil(
+              (now.getTime() - subscriptionStartDate.getTime()) /
+                (1000 * 60 * 60 * 24)
+            )
+          )
+        : 0;
+
+      await authAdmin.users.updateUserMetadata(userId, {
+        publicMetadata: {
+          planCancelled: true,
+          subscriptionCancelledAt: now.toISOString(),
+          subscriptionDurationDays,
+        },
+      });
+
+      await usersCollection.updateOne(
+        matchUsersCollectionByWebUserIds(userId),
+        {
+          $set: {
+            subscriptionStartDate: subscriptionStartDate ?? null,
+            subscriptionEndDate: now,
+            subscriptionDurationDays,
+            updatedAt: now,
+          },
+        }
+      );
+
+      await db.collection("cancellation_flow_events").insertOne({
+        userId,
+        flowId,
+        eventName: "subscription_cancelled_success",
+        step: "confirm",
+        reason: reason || null,
+        metadata: {
+          provider: "google_play",
+          ...(reasonText ? { reasonText } : {}),
+        },
+        createdAt: now,
+      });
+
+      const plan = publicMeta.planType || publicMeta.plan || undefined;
+      const gaClientId = `uid.${userId.replace(/[^A-Za-z0-9._-]/g, "").slice(0, 64) || "unknown"}`;
+      const events: { name: string; params?: Record<string, unknown> }[] = [];
+      if (reason) {
+        events.push({
+          name: "cancel_reason_submit",
+          params: {
+            reason,
+            reason_text: reasonText || undefined,
+            plan: typeof plan === "string" ? plan : undefined,
+            flow_id: flowId || undefined,
+            provider: "google_play",
+          },
+        });
+      }
+      events.push({
+        name: "subscription_cancel",
+        params: {
+          plan: typeof plan === "string" ? plan : undefined,
+          days_subscribed: subscriptionDurationDays,
+          will_expire_at:
+            typeof publicMeta.planExpiresAt === "string"
+              ? publicMeta.planExpiresAt
+              : typeof publicMeta.planRenewsAt === "string"
+                ? publicMeta.planRenewsAt
+                : undefined,
+          flow_id: flowId || undefined,
+          cancellation_reason: reason || "user_cancelled",
+          provider: "google_play",
+        },
+      });
+      void sendGa4Events({
+        clientId: gaClientId,
+        userId,
+        events,
+      });
+
+      return NextResponse.json({
+        success: true,
+        provider: "google_play",
+        message: playResult.message,
+      });
+    }
 
     const customerId = await resolveStripeCustomerId(userId, {
       stripeCustomerIdFromPrivate: user.privateMetadata?.stripeCustomerId as
@@ -182,12 +306,16 @@ export async function POST(req: NextRequest) {
       events,
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, provider: "stripe" });
   } catch (error) {
     console.error("Error canceling subscription:", error);
-    return NextResponse.json(
-      { error: "Failed to cancel subscription" },
-      { status: 500 }
-    );
+    captureException(error, {
+      component: "user_cancel_subscription",
+      action: "post",
+      userId,
+    });
+    const message =
+      error instanceof Error ? error.message : "Failed to cancel subscription";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

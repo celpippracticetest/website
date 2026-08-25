@@ -5,6 +5,15 @@ import { appUserAdmin } from "@/lib/auth/server-auth";
 import documentsClient from "@/lib/appDocumentsClient";
 import { redirect } from "next/navigation";
 import Stripe from "stripe";
+import {
+  listGooglePlaySubscriptionsForUser,
+  planSourceIsGooglePlay,
+  readPlanSource,
+} from "@/lib/admin/googlePlayAdmin";
+import {
+  formatPlanLabel,
+  hasPaidPracticeAccess,
+} from "@/lib/subscriptionAccess";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -19,14 +28,53 @@ export default async function UserProfilePage() {
   let prevCheckout = null;
   let subscriptionData = null;
   let user = null;
+  let billingProvider: "stripe" | "google_play" | null = null;
+  let googlePlayCanCancel = false;
 
   try {
     const userRepo = new CheckoutRepository(documentsClient);
     prevCheckout = await userRepo.findLatestCheckoutByUserId(userId);
 
-    // Get user's Stripe customer ID
-    const client = await (await appUserAdmin())();
+    const client = await appUserAdmin();
     user = await client.users.getUser(userId);
+    const publicMeta = (user.publicMetadata || {}) as Record<string, unknown>;
+    const playSubs = await listGooglePlaySubscriptionsForUser(userId);
+    const isGooglePlay =
+      playSubs.length > 0 || planSourceIsGooglePlay(readPlanSource(publicMeta));
+
+    if (isGooglePlay) {
+      billingProvider = "google_play";
+      const planCancelled = Boolean(publicMeta.planCancelled);
+      googlePlayCanCancel =
+        !planCancelled &&
+        (playSubs.length > 0 ||
+          hasPaidPracticeAccess(
+            typeof publicMeta.plan === "string" ? publicMeta.plan : null,
+          ));
+      const stillHasPlayAccess =
+        googlePlayCanCancel ||
+        hasPaidPracticeAccess(
+          typeof publicMeta.plan === "string" ? publicMeta.plan : null,
+        );
+      const planLabel = hasPaidPracticeAccess(
+        typeof publicMeta.plan === "string" ? publicMeta.plan : null,
+      )
+        ? formatPlanLabel(
+            typeof publicMeta.plan === "string" ? publicMeta.plan : null,
+            typeof publicMeta.planType === "string"
+              ? publicMeta.planType
+              : null,
+          )
+        : "Plus";
+      if (stillHasPlayAccess) {
+        subscriptionData = {
+          planName: planLabel,
+          cancelAtPeriodEnd: planCancelled,
+          billingProvider: "google_play",
+        };
+      }
+    }
+
     let customerId = user.privateMetadata?.stripeCustomerId as
       | string
       | undefined;
@@ -37,8 +85,7 @@ export default async function UserProfilePage() {
       customerId,
     });
 
-    let subscriptionData = null;
-    if (customerId) {
+    if (!isGooglePlay && customerId) {
       try {
         // First try to get active or trialing subscriptions
         const subscriptions = await stripe.subscriptions.list({
@@ -156,6 +203,7 @@ export default async function UserProfilePage() {
             planName: subscription.items.data[0]?.price?.product?.name,
           };
           console.log("Debug - Subscription data:", subscriptionData);
+          billingProvider = "stripe";
         } else {
           // If no active subscription, check for recent successful payments
           console.log(
@@ -194,13 +242,14 @@ export default async function UserProfilePage() {
                 planName: latestCharge.description || "One-time Payment",
               };
               console.log("Debug - One-time payment data:", subscriptionData);
+              billingProvider = "stripe";
             }
           }
         }
       } catch (stripeError) {
         console.error("Error fetching subscription data:", stripeError);
       }
-    } else {
+    } else if (!isGooglePlay) {
       // Try to find customer by email if no customerId in metadata
       const userEmail = user.emailAddresses?.[0]?.emailAddress;
       if (userEmail) {
@@ -315,6 +364,7 @@ export default async function UserProfilePage() {
                 "Debug - Active subscription found:",
                 subscriptionData,
               );
+              billingProvider = "stripe";
             } else {
               // Check for recent payments
               const charges = await stripe.charges.list({
@@ -342,6 +392,7 @@ export default async function UserProfilePage() {
                     "Debug - One-time payment found:",
                     subscriptionData,
                   );
+                  billingProvider = "stripe";
                 }
               }
             }
@@ -352,8 +403,8 @@ export default async function UserProfilePage() {
       }
     }
 
-    // Sync metadata if needed
-    if (subscriptionData) {
+    // Sync metadata if needed (Stripe only — do not overwrite Google Play plan)
+    if (subscriptionData && billingProvider !== "google_play") {
       const shouldBePlan = "plus";
       if (user.publicMetadata.plan !== shouldBePlan) {
         console.log(
@@ -385,6 +436,8 @@ export default async function UserProfilePage() {
       user={JSON.parse(JSON.stringify(user))}
       prevCheckout={prevCheckout}
       subscriptionData={subscriptionData}
+      billingProvider={billingProvider}
+      googlePlayCanCancel={googlePlayCanCancel}
     />
   );
 }

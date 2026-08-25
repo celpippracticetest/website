@@ -64,6 +64,7 @@ function bridgeUserFromSupabase(u: SupabaseAuthUser) {
     plan,
     purchaseDate,
     planType: app.planType ?? meta.planType,
+    planSource: app.planSource ?? meta.planSource,
     planCancelled: app.planCancelled ?? meta.planCancelled,
     planRenewsAt: app.planRenewsAt ?? meta.planRenewsAt,
     planExpiresAt: app.planExpiresAt ?? meta.planExpiresAt,

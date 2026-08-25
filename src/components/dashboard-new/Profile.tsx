@@ -18,10 +18,25 @@ import SvgCloseCircle from "@/components/icons/CloseCircle";
 import Link from "next/link";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
-import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
+import {
+  hasPaidPracticeAccess,
+  planSourceIndicatesGooglePlay,
+} from "@/lib/subscriptionAccess";
 import { trackKpi } from "@/lib/analytics";
 
-export default function Profile({ prevCheckout, subscriptionData }: any) {
+type ProfileBillingProvider = "stripe" | "google_play" | null;
+
+export default function Profile({
+  prevCheckout,
+  subscriptionData,
+  billingProvider = null,
+  googlePlayCanCancel = false,
+}: {
+  prevCheckout?: any;
+  subscriptionData?: any;
+  billingProvider?: ProfileBillingProvider;
+  googlePlayCanCancel?: boolean;
+}) {
   const { user, isLoaded, isSignedIn, reloadUser } = useHybridWebUser();
   const [planNameDisplay, setPlanNameDisplay] = useState<string>("");
   const [isPlanLoaded, setIsPlanLoaded] = useState<boolean>(false);
@@ -51,10 +66,12 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
         setPlanNameDisplay("Premium Plan");
       } else if (user?.publicMetadata?.plan === "pro") {
         setPlanNameDisplay("Pro Plan");
+      } else if (billingProvider === "google_play") {
+        setPlanNameDisplay("Plus");
       }
       setIsPlanLoaded(true);
     }
-  }, [prevCheckout, subscriptionData, user]);
+  }, [prevCheckout, subscriptionData, user, billingProvider]);
 
   const [showSetPasswordModal, setShowSetPasswordModal] = useState(false);
   const [password, setPassword] = useState("");
@@ -96,9 +113,49 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
 
   const [confirmEmailId, setConfirmEmailId] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showCancelPlayConfirm, setShowCancelPlayConfirm] = useState(false);
   const [loadingPortal, setLoadingPortal] = useState(false);
+  const [cancelingPlay, setCancelingPlay] = useState(false);
+
+  const isGooglePlaySubscriber =
+    billingProvider === "google_play" ||
+    planSourceIndicatesGooglePlay(user?.publicMetadata?.planSource);
+  const playAlreadyCancelled =
+    user?.publicMetadata?.planCancelled === true ||
+    subscriptionData?.cancelAtPeriodEnd === true;
+  const canCancelGooglePlay =
+    isGooglePlaySubscriber &&
+    !playAlreadyCancelled &&
+    (googlePlayCanCancel ||
+      hasPaidPracticeAccess(user?.publicMetadata?.plan) ||
+      Boolean(subscriptionData));
+  const hasPremiumAccount =
+    hasPaidPracticeAccess(user?.publicMetadata?.plan) ||
+    Boolean(subscriptionData);
+
+  const daysSubscribed = (() => {
+    const raw = user?.publicMetadata?.purchaseDate;
+    if (!raw) return undefined;
+    const start = new Date(String(raw)).getTime();
+    if (!Number.isFinite(start)) return undefined;
+    return Math.max(0, Math.ceil((Date.now() - start) / 86_400_000));
+  })();
 
   const handleManageSubscription = async () => {
+    if (isGooglePlaySubscriber) {
+      if (!canCancelGooglePlay) return;
+      trackKpi.cancelFlowStart({
+        plan:
+          planNameDisplay ||
+          (typeof user?.publicMetadata?.plan === "string"
+            ? user.publicMetadata.plan
+            : undefined),
+        daysSubscribed,
+      });
+      setShowCancelPlayConfirm(true);
+      return;
+    }
+
     try {
       setLoadingPortal(true);
       trackKpi.cancelFlowStart({
@@ -107,13 +164,7 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
           (typeof user?.publicMetadata?.plan === "string"
             ? user.publicMetadata.plan
             : undefined),
-        daysSubscribed: (() => {
-          const raw = user?.publicMetadata?.purchaseDate;
-          if (!raw) return undefined;
-          const start = new Date(String(raw)).getTime();
-          if (!Number.isFinite(start)) return undefined;
-          return Math.max(0, Math.ceil((Date.now() - start) / 86_400_000));
-        })(),
+        daysSubscribed,
       });
       const response = await fetch("/api/stripe/create-portal-session", {
         method: "POST",
@@ -138,6 +189,45 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
       setTimeout(() => setShowToast(false), 3000);
     } finally {
       setLoadingPortal(false);
+    }
+  };
+
+  const handleCancelGooglePlay = async () => {
+    try {
+      setCancelingPlay(true);
+      const response = await fetch("/api/users/cancel-subscription", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(
+          data.error || "Failed to cancel Google Play subscription",
+        );
+      }
+      setShowCancelPlayConfirm(false);
+      setToastType("success");
+      setToastMessage(
+        typeof data.message === "string" && data.message.trim()
+          ? data.message
+          : "Google Play auto-renew was canceled. You'll keep access until the current period ends.",
+      );
+      setShowToast(true);
+      await reloadUser();
+      router.refresh();
+      setTimeout(() => setShowToast(false), 4000);
+    } catch (error) {
+      setToastType("error");
+      setToastMessage(
+        error instanceof Error
+          ? error.message
+          : "Failed to cancel Google Play subscription",
+      );
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } finally {
+      setCancelingPlay(false);
     }
   };
 
@@ -375,28 +465,44 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
                 Premium Account
               </span>
 
-              {(hasPaidPracticeAccess(user?.publicMetadata?.plan) ||
-                subscriptionData) && (
+              {hasPremiumAccount && (
                 <span className="text-[14px] font-semibold text-[#F27059]">
-                  {isPlanLoaded ? planNameDisplay : "Loading..."}
+                  {isPlanLoaded
+                    ? planNameDisplay || (isGooglePlaySubscriber ? "Plus" : "")
+                    : "Loading..."}
                 </span>
               )}
             </div>
             <div>
-              {hasPaidPracticeAccess(user?.publicMetadata?.plan) ||
-              subscriptionData ? (
+              {hasPremiumAccount ? (
                 <div className="flex gap-[8px] screen744:!gap-[16px] items-center flex-row-reverse justify-start flex-wrap">
-                  <button
-                    onClick={handleManageSubscription}
-                    disabled={loadingPortal}
-                    className={` ${
-                      user.publicMetadata.planCancelled == true
-                        ? "text-gray"
-                        : "text-[#EE4266]"
-                    } cursor-pointer text-[#EE4266] text-[14px] font-normal w-[150px] text-center disabled:opacity-50`}
-                  >
-                    {loadingPortal ? "Loading..." : "Manage Subscription"}
-                  </button>
+                  {isGooglePlaySubscriber && playAlreadyCancelled ? (
+                    <span className="text-[#76808F] text-[14px] font-normal w-[180px] text-center">
+                      Cancels at period end
+                    </span>
+                  ) : (
+                    <button
+                      onClick={handleManageSubscription}
+                      disabled={
+                        loadingPortal ||
+                        cancelingPlay ||
+                        (isGooglePlaySubscriber && !canCancelGooglePlay)
+                      }
+                      className={` ${
+                        user.publicMetadata.planCancelled == true
+                          ? "text-gray"
+                          : "text-[#EE4266]"
+                      } cursor-pointer text-[#EE4266] text-[14px] font-normal min-w-[150px] px-[8px] text-center disabled:opacity-50`}
+                    >
+                      {isGooglePlaySubscriber
+                        ? cancelingPlay
+                          ? "Canceling..."
+                          : "Cancel Subscription"
+                        : loadingPortal
+                          ? "Loading..."
+                          : "Manage Subscription"}
+                    </button>
+                  )}
                 </div>
               ) : (
                 <span className="text-green-700">Free</span>
@@ -615,7 +721,37 @@ export default function Profile({ prevCheckout, subscriptionData }: any) {
           </div>
         </div>
       )}
-      {/* Cancel Subscription Modal Removed */}
+      {showCancelPlayConfirm && (
+        <div className="fixed inset-0 bg-[#17161680] flex justify-center items-center z-[9999]">
+          <div className="bg-white flex items-center flex-col rounded-[24px] w-full max-w-[429px] pt-[24px] pb-[16px] px-[24px] text-center mx-[16px]">
+            <SvgCloseCircle />
+            <div className="text-[#EF7300] text-[18px] font-medium pt-[16px]">
+              Cancel Subscription
+            </div>
+            <div className="text-[#979EA8] text-[14px] font-normal pt-[16px]">
+              Your Google Play subscription will stop auto-renewing. You&apos;ll
+              keep Plus until the current period ends.
+            </div>
+            <div className="h-[2px] bg-[#E6E6E6] pt-[16px]"></div>
+            <div className="flex w-full gap-[8px] justify-around mt-[16px]">
+              <button
+                onClick={() => setShowCancelPlayConfirm(false)}
+                disabled={cancelingPlay}
+                className="w-full cursor-pointer max-w-[186px] text-[#76808F] h-[40px] rounded-[24px] border border-[#76808F] disabled:opacity-50"
+              >
+                Keep Plus
+              </button>
+              <button
+                onClick={() => void handleCancelGooglePlay()}
+                disabled={cancelingPlay}
+                className="w-full cursor-pointer max-w-[186px] rounded-[24px] h-[40px] bg-[#EE4266] text-white disabled:opacity-50"
+              >
+                {cancelingPlay ? "Canceling..." : "Cancel Subscription"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Set Password Modal */}
       {showSetPasswordModal && (
         <SetPasswordModal

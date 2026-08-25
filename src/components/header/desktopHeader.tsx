@@ -232,20 +232,6 @@ const DesktopHeader = (props: {
             >
               Profile
             </a>
-            <button
-              onClick={() => {
-                if (typeof window !== "undefined" && (window as any).$crisp) {
-                  (window as any).$crisp.push(["do", "chat:show"]);
-                  (window as any).$crisp.push(["do", "chat:open"]);
-                }
-              }}
-              className="block px-4 py-2 text-[14px] text-gray-700 w-full text-left cursor-pointer"
-              role="menuitem"
-              tabIndex={-1}
-              id="menu-item-0"
-            >
-              Support
-            </button>
             {user &&
               user.publicMetadata.roles &&
               user.publicMetadata.roles.includes("admin") && (
