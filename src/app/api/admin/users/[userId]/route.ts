@@ -11,6 +11,7 @@ import {
 import { findUserProfileForAdminLookup } from "@/lib/users/userProfilesPg";
 import { getSql } from "@/lib/pg/pool";
 import { isLikelySupabaseAuthUserId } from "@/lib/auth/supabase-mobile-user-bridge";
+import { resolveAdminBillingSource } from "@/lib/admin/adminBillingSource";
 
 function asString(v: unknown): string | null {
   if (v == null) return null;
@@ -120,6 +121,22 @@ export async function GET(
     const purchaseDate = asString(meta.purchaseDate);
     const planRenewsAt = asString(meta.planRenewsAt);
     const planExpiresAt = asString(meta.planExpiresAt);
+    const planSource = asString(meta.planSource);
+
+    const emails = [
+      asString(profile?.email),
+      asString(authUser?.email),
+    ].filter((e): e is string => Boolean(e));
+
+    const billing = await resolveAdminBillingSource({
+      userId: resolvedParams.userId,
+      supabaseAuthUserId: authUser?.id || profile?.supabase_auth_user_id,
+      emails,
+      stripeCustomerIdHint:
+        profile?.stripe_customer_id || asString(meta.stripeCustomerId),
+      publicMetadata: meta,
+      paidPlan: hasPaidPracticeAccess(plan),
+    });
 
     let subscriptionStatus: "active" | "unsubscribed" | "never" = "never";
     if (hasPaidPracticeAccess(plan)) {
@@ -143,16 +160,19 @@ export async function GET(
       plan,
       planType,
       planCancelled,
+      planSource: planSource || billing.provider,
+      billingProvider: billing.provider,
+      billingLabel: billing.label,
+      googlePlaySubscriptionActive: billing.googlePlaySubscriptionActive,
+      googlePlayCanCancel: billing.googlePlayCanCancel,
+      stripeSubscriptionActive: billing.stripeSubscriptionActive,
       planRenewsAt,
       planExpiresAt,
       purchaseDate,
       purchaseAmount: Number(meta.purchaseAmount ?? 0) || 0,
       purchaseCurrency: asString(meta.purchaseCurrency) || "CAD",
       totalSpend: Number(meta.totalSpend ?? 0) || 0,
-      stripeCustomerId:
-        profile?.stripe_customer_id ||
-        asString(meta.stripeCustomerId) ||
-        null,
+      stripeCustomerId: billing.stripeCustomerId,
       subscriptionStatus,
       createdAt: profile?.created_at || authUser?.created_at || null,
       updatedAt:

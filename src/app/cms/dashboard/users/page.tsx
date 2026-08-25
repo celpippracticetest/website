@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Search, Download, Eye, RotateCw, CreditCard } from "lucide-react";
+import { Search, Download, Eye, RotateCw, CreditCard, Ban } from "lucide-react";
 import {
   hasPaidPracticeAccess,
   formatPlanLabel,
@@ -35,6 +35,8 @@ interface User {
   planExpiresAt?: string | null;
   subscriptionStatus?: "active" | "canceling" | "unsubscribed" | "never";
   stripeSubscriptionActive?: boolean;
+  planSource?: string | null;
+  googlePlaySubscriptionActive?: boolean;
 }
 
 interface PlanOption {
@@ -98,6 +100,47 @@ function resolvePlanSelectValue(user: User, plans: PlanOption[]): string {
   return CURRENT_PAID_VALUE;
 }
 
+function isGooglePlayUser(user: User): boolean {
+  if (user.googlePlaySubscriptionActive) return true;
+  return String(user.planSource || "")
+    .trim()
+    .toLowerCase()
+    .startsWith("google_play");
+}
+
+function billingBadges(user: User): { label: string; className: string }[] {
+  const badges: { label: string; className: string }[] = [];
+  if (user.stripeSubscriptionActive) {
+    badges.push({
+      label: "Stripe",
+      className: "bg-indigo-100 text-indigo-800",
+    });
+  }
+  if (isGooglePlayUser(user)) {
+    badges.push({
+      label: "Google Play",
+      className: "bg-emerald-100 text-emerald-800",
+    });
+  }
+  const source = String(user.planSource || "").toLowerCase();
+  if (source.startsWith("apple")) {
+    badges.push({
+      label: "Apple",
+      className: "bg-slate-200 text-slate-800",
+    });
+  }
+  if (
+    badges.length === 0 &&
+    (hasPaidPracticeAccess(user.plan) || user.stripeSubscriptionActive)
+  ) {
+    badges.push({
+      label: "App",
+      className: "bg-purple-100 text-purple-800",
+    });
+  }
+  return badges;
+}
+
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -123,6 +166,9 @@ export default function UsersPage() {
     null,
   );
   const [planUpdateError, setPlanUpdateError] = useState<string | null>(null);
+  const [cancelingPlayUserId, setCancelingPlayUserId] = useState<string | null>(
+    null,
+  );
 
   const fetchPlans = useCallback(async () => {
     try {
@@ -302,6 +348,38 @@ export default function UsersPage() {
     }
   };
 
+  const handleCancelGooglePlay = async (user: User) => {
+    const ok = window.confirm(
+      `Cancel Google Play for ${user.email || user.userId}?\n\nThis stops auto-renew in Play. The user keeps Plus until the current period ends.`,
+    );
+    if (!ok) return;
+    setPlanUpdateError(null);
+    setCancelingPlayUserId(user.userId);
+    try {
+      const response = await fetch(
+        `/api/admin/users/${encodeURIComponent(user.userId)}/google-play/cancel`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ revokeAccess: false }),
+        },
+      );
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to cancel Google Play");
+      }
+      await fetchUsers();
+    } catch (error) {
+      setPlanUpdateError(
+        error instanceof Error
+          ? error.message
+          : "Failed to cancel Google Play subscription",
+      );
+    } finally {
+      setCancelingPlayUserId(null);
+    }
+  };
+
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return "Never";
     const d = new Date(dateString);
@@ -379,6 +457,18 @@ export default function UsersPage() {
             <span className="h-2.5 w-2.5 rounded-sm border border-gray-300 bg-white" />
             Free
           </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="rounded-full bg-indigo-100 px-1.5 py-0.5 text-[10px] font-medium text-indigo-800">
+              Stripe
+            </span>
+            Billed in Stripe
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-800">
+              Google Play
+            </span>
+            Billed in Play
+          </span>
         </div>
       </div>
 
@@ -411,7 +501,8 @@ export default function UsersPage() {
             >
               <option value="all">All statuses</option>
               <option value="never">Free</option>
-              <option value="active">Stripe active</option>
+              <option value="active">Stripe</option>
+              <option value="google_play">Google Play</option>
               <option value="app_paid">App paid access</option>
               <option value="canceled">Canceled</option>
             </select>
@@ -483,6 +574,9 @@ export default function UsersPage() {
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Plan
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Billing
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Practice / Exams
@@ -564,6 +658,22 @@ export default function UsersPage() {
                           ))}
                         </select>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex flex-wrap gap-1">
+                          {billingBadges(user).length > 0 ? (
+                            billingBadges(user).map((badge) => (
+                              <span
+                                key={badge.label}
+                                className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${badge.className}`}
+                              >
+                                {badge.label}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-xs text-gray-400">—</span>
+                          )}
+                        </div>
+                      </td>
 
                       {/* Practice / Exams */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -640,6 +750,24 @@ export default function UsersPage() {
                           >
                             <CreditCard className="w-4 h-4" />
                           </button>
+                          {isGooglePlayUser(user) &&
+                          hasPaidPracticeAccess(user.plan) &&
+                          !user.planCancelled ? (
+                            <button
+                              onClick={() => handleCancelGooglePlay(user)}
+                              disabled={cancelingPlayUserId === user.userId}
+                              className="text-red-600 cursor-pointer hover:text-red-900 disabled:opacity-50"
+                              title="Cancel Google Play subscription"
+                            >
+                              <Ban
+                                className={`w-4 h-4 ${
+                                  cancelingPlayUserId === user.userId
+                                    ? "animate-spin"
+                                    : ""
+                                }`}
+                              />
+                            </button>
+                          ) : null}
                           <button
                             onClick={() => exportUserData(user.userId)}
                             className="text-green-600 cursor-pointer hover:text-green-900"

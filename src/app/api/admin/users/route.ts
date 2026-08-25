@@ -118,6 +118,19 @@ export async function GET(request: NextRequest) {
           planCancelled: { $ne: true },
         },
       });
+    } else if (
+      subscriptionStatus === "google_play" ||
+      subscriptionStatus === "play"
+    ) {
+      subscriptionFilter.push({
+        $match: {
+          plan: { $in: ["plus", "premium", "pro", "enterprise"] },
+          $or: [
+            { planSource: { $regex: "^google_play", $options: "i" } },
+            { "publicMetadata.planSource": { $regex: "^google_play", $options: "i" } },
+          ],
+        },
+      });
     } else if (subscriptionStatus === "app_paid") {
       subscriptionFilter.push({
         $match: {
@@ -652,6 +665,8 @@ function formatAdminUserResponse(user: Record<string, any>) {
     gclid: user.gclid || null,
     subscriptionStatus: subscriptionStatusOut,
     stripeSubscriptionActive: Boolean(user.stripeSubscriptionActive),
+    planSource: typeof user.planSource === "string" ? user.planSource : null,
+    googlePlaySubscriptionActive: Boolean(user.googlePlaySubscriptionActive),
     subscriptionDurationDays,
     subscriptionStartDate: subscriptionStartDate
       ? subscriptionStartDate.toISOString()

@@ -77,9 +77,34 @@ interface UserProfile {
   purchaseCurrency: string;
   totalSpend: number;
   stripeCustomerId: string | null;
+  stripeSubscriptionActive?: boolean;
+  planSource: string | null;
+  billingProvider?: string | null;
+  billingLabel?: string | null;
+  googlePlaySubscriptionActive: boolean;
+  googlePlayCanCancel: boolean;
   subscriptionStatus: "active" | "unsubscribed" | "never";
   createdAt: string;
   updatedAt: string;
+}
+
+function billingBadgeClass(provider: string | null | undefined): string {
+  switch (provider) {
+    case "stripe":
+      return "bg-indigo-100 text-indigo-800";
+    case "google_play":
+      return "bg-emerald-100 text-emerald-800";
+    case "apple":
+      return "bg-slate-200 text-slate-800";
+    case "paypal":
+      return "bg-sky-100 text-sky-800";
+    case "admin":
+      return "bg-amber-100 text-amber-800";
+    case "none":
+      return "bg-gray-100 text-gray-700";
+    default:
+      return "bg-orange-100 text-orange-800";
+  }
 }
 
 export default function UserDetailPage() {
@@ -118,6 +143,8 @@ export default function UserDetailPage() {
   const [hasScore, setHasScore] = useState("");
   const [search, setSearch] = useState("");
   const [planModalOpen, setPlanModalOpen] = useState(false);
+  const [cancelingPlay, setCancelingPlay] = useState(false);
+  const [playCancelError, setPlayCancelError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -415,6 +442,79 @@ export default function UserDetailPage() {
               >
                 Change plan…
               </button>
+              {(profile.googlePlayCanCancel ||
+                profile.billingProvider === "google_play") &&
+              hasPaidPracticeAccess(profile.plan) &&
+              !profile.planCancelled ? (
+                <button
+                  type="button"
+                  disabled={cancelingPlay}
+                  onClick={async () => {
+                    const ok = window.confirm(
+                      "Cancel Google Play auto-renew? The user keeps Plus until the current period ends.",
+                    );
+                    if (!ok) return;
+                    setPlayCancelError(null);
+                    setCancelingPlay(true);
+                    try {
+                      const response = await fetch(
+                        `/api/admin/users/${encodeURIComponent(userId)}/google-play/cancel`,
+                        {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ revokeAccess: false }),
+                        },
+                      );
+                      const data = await response.json().catch(() => ({}));
+                      if (!response.ok) {
+                        throw new Error(
+                          data.error || "Failed to cancel Google Play",
+                        );
+                      }
+                      const refreshed = await fetch(
+                        `/api/admin/users/${encodeURIComponent(userId)}`,
+                      );
+                      if (refreshed.ok) {
+                        setProfile(await refreshed.json());
+                      }
+                    } catch (err) {
+                      setPlayCancelError(
+                        err instanceof Error
+                          ? err.message
+                          : "Failed to cancel Google Play",
+                      );
+                    } finally {
+                      setCancelingPlay(false);
+                    }
+                  }}
+                  className="text-xs font-medium text-red-600 hover:text-red-800 disabled:opacity-50"
+                >
+                  {cancelingPlay ? "Canceling Play…" : "Cancel Google Play"}
+                </button>
+              ) : null}
+              {playCancelError ? (
+                <span className="text-xs text-red-600">{playCancelError}</span>
+              ) : null}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium uppercase text-gray-500">
+                Billing
+              </span>
+              <span
+                className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${billingBadgeClass(
+                  profile.billingProvider,
+                )}`}
+              >
+                {profile.billingLabel ||
+                  (profile.googlePlaySubscriptionActive
+                    ? "Google Play"
+                    : profile.stripeSubscriptionActive ||
+                        profile.stripeCustomerId
+                      ? "Stripe"
+                      : hasPaidPracticeAccess(profile.plan)
+                        ? "Unknown (not Stripe or Play)"
+                        : "None")}
+              </span>
             </div>
             <div>
               <span className="text-xs font-medium uppercase text-gray-500">

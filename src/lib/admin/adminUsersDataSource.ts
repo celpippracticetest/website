@@ -10,6 +10,11 @@ import {
   loadUserActivityMetricsByUserId,
 } from "@/lib/userActivity/userActivitiesPg";
 import { getLiveStripeActiveSubscriberKeys } from "@/lib/admin/liveStripeActiveSubscribers";
+import {
+  googlePlayUserIdsForAuthIds,
+  planSourceIsGooglePlay,
+  readPlanSource,
+} from "@/lib/admin/googlePlayAdmin";
 
 /** Keep paid plan tokens as stored; everything else → free for admin list. */
 function normalizeAdminListPlan(planRaw: unknown): string {
@@ -35,6 +40,13 @@ export function normalizeAdminUsersPageLimit(raw: string | null): number {
   const n = parseInt(raw ?? "", 10);
   if (Number.isFinite(n) && n >= 1) return Math.min(ADMIN_USERS_PAGE_SIZE_MAX, n);
   return defaultAdminUsersPageLimit();
+}
+
+export async function googlePlaySubscriptionsTableExists(sql: Sql): Promise<boolean> {
+  const rows = await sql<{ exists: boolean }[]>`
+    SELECT to_regclass('public.google_play_subscriptions') IS NOT NULL AS exists
+  `;
+  return Boolean(rows[0]?.exists);
 }
 
 export async function userProfilesTableExists(sql: Sql): Promise<boolean> {
@@ -374,6 +386,25 @@ export async function listAdminUsersFromUserProfiles(
     // App entitlement paid (comps, PayPal, stale plus, etc.) — not Stripe Dashboard.
     subFilter = sql`AND lower(trim(coalesce(c.plan, ''))) IN ('plus', 'premium', 'pro', 'enterprise')
       AND coalesce(c.public_metadata->>'planCancelled', 'false') <> 'true'`;
+  } else if (
+    subscriptionStatus === "google_play" ||
+    subscriptionStatus === "play"
+  ) {
+    const hasGps = await googlePlaySubscriptionsTableExists(sql);
+    if (hasGps) {
+      subFilter = sql`AND lower(trim(coalesce(c.plan, ''))) IN ('plus', 'premium', 'pro', 'enterprise')
+        AND (
+          lower(trim(coalesce(c.public_metadata->>'planSource', ''))) LIKE 'google_play%'
+          OR EXISTS (
+            SELECT 1
+            FROM public.google_play_subscriptions gps
+            WHERE gps.supabase_user_id::text = c.supabase_auth_user_id
+          )
+        )`;
+    } else {
+      subFilter = sql`AND lower(trim(coalesce(c.plan, ''))) IN ('plus', 'premium', 'pro', 'enterprise')
+        AND lower(trim(coalesce(c.public_metadata->>'planSource', ''))) LIKE 'google_play%'`;
+    }
   } else if (subscriptionStatus === "never" || subscriptionStatus === "free") {
     subFilter = sql`AND lower(trim(coalesce(c.plan, ''))) NOT IN ('plus', 'premium', 'pro', 'enterprise')
       AND (c.public_metadata->>'purchaseDate') IS NULL
@@ -606,6 +637,15 @@ export async function listAdminUsersFromUserProfiles(
     );
   }
 
+  const liveStripe = await getLiveStripeActiveSubscriberKeys().catch(() => ({
+    customerIds: [] as string[],
+    userIds: [] as string[],
+    activeCount: 0,
+    trialingCount: 0,
+  }));
+  const stripeCustomerIds = new Set(liveStripe.customerIds);
+  const stripeUserIds = new Set(liveStripe.userIds);
+
   const rows = dataRows.map((r) => {
     const meta = asRecord(r.public_metadata);
     const plan = normalizeAdminListPlan(r.plan ?? meta.plan ?? "free");
@@ -613,10 +653,13 @@ export async function listAdminUsersFromUserProfiles(
       [r.stable_id, r.supabase_auth_user_id, r.legacy_clerk_user_id, r.profile_id],
       activityByUserId
     );
-    const stripeActiveFilter =
-      subscriptionStatus === "active" ||
-      subscriptionStatus === "stripe_active" ||
-      subscriptionStatus === "plans";
+    const planSource = readPlanSource(meta);
+    const stripeSubscriptionActive = Boolean(
+      (r.stripe_customer_id && stripeCustomerIds.has(r.stripe_customer_id)) ||
+        (r.supabase_auth_user_id && stripeUserIds.has(r.supabase_auth_user_id)) ||
+        (r.legacy_clerk_user_id && stripeUserIds.has(r.legacy_clerk_user_id)) ||
+        stripeUserIds.has(r.stable_id)
+    );
     return {
       _id: r.stable_id,
       email: r.email ?? null,
@@ -651,13 +694,31 @@ export async function listAdminUsersFromUserProfiles(
       publicMetadataPlanExpiresAt: meta.planExpiresAt ?? null,
       publicMetadataPurchaseDate: meta.purchaseDate ?? null,
       stripeCustomerId: r.stripe_customer_id ?? null,
-      stripeSubscriptionActive: stripeActiveFilter,
+      stripeSubscriptionActive,
+      planSource,
+      supabaseAuthUserId: r.supabase_auth_user_id ?? null,
+      googlePlaySubscriptionActive: planSourceIsGooglePlay(planSource),
       subscriptionStartDate: null,
       subscriptionEndDate: null,
       subscriptionDurationDays: null,
       subscriptionHistory: [] as { type: string; date: unknown }[],
     };
   });
+
+  const playIds = await googlePlayUserIdsForAuthIds(
+    rows
+      .map((row) =>
+        typeof row.supabaseAuthUserId === "string" ? row.supabaseAuthUserId : ""
+      )
+      .filter(Boolean)
+  );
+  for (const row of rows) {
+    const uid =
+      typeof row.supabaseAuthUserId === "string" ? row.supabaseAuthUserId : "";
+    if (uid && playIds.has(uid)) {
+      row.googlePlaySubscriptionActive = true;
+    }
+  }
 
   return { rows, totalCount };
 }
@@ -725,6 +786,15 @@ export async function listAdminUsersFromUsersDocuments(
   } else if (subscriptionStatus === "app_paid") {
     subFilter = sql`AND lower(trim(coalesce(d.body->>'plan', ''))) IN ('plus', 'premium', 'pro', 'enterprise')
       AND coalesce(d.body#>>'{publicMetadata,planCancelled}', 'false') <> 'true'`;
+  } else if (
+    subscriptionStatus === "google_play" ||
+    subscriptionStatus === "play"
+  ) {
+    subFilter = sql`AND lower(trim(coalesce(d.body->>'plan', ''))) IN ('plus', 'premium', 'pro', 'enterprise')
+      AND (
+        lower(trim(coalesce(d.body#>>'{publicMetadata,planSource}', ''))) LIKE 'google_play%'
+        OR lower(trim(coalesce(d.body->>'planSource', ''))) LIKE 'google_play%'
+      )`;
   } else if (subscriptionStatus === "never" || subscriptionStatus === "free") {
     subFilter = sql`AND lower(trim(coalesce(d.body->>'plan', ''))) NOT IN ('plus', 'premium', 'pro', 'enterprise')
       AND (d.body#>>'{publicMetadata,purchaseDate}') IS NULL
@@ -821,6 +891,11 @@ export async function listAdminUsersFromUsersDocuments(
       planExpiresAt: meta.planExpiresAt ?? null,
       publicMetadataPlanExpiresAt: meta.planExpiresAt ?? null,
       publicMetadataPurchaseDate: meta.purchaseDate ?? null,
+      planSource: readPlanSource(meta) || readPlanSource(b),
+      supabaseAuthUserId: supabaseUserId || null,
+      googlePlaySubscriptionActive: planSourceIsGooglePlay(
+        readPlanSource(meta) || readPlanSource(b)
+      ),
       subscriptionStartDate: b.subscriptionStartDate ?? null,
       subscriptionEndDate: b.subscriptionEndDate ?? null,
       subscriptionDurationDays: b.subscriptionDurationDays ?? null,
@@ -887,6 +962,21 @@ export async function listAdminUsersFromUsersDocuments(
       userAgents: activity.userAgents,
     };
   });
+
+  const playIds = await googlePlayUserIdsForAuthIds(
+    rows
+      .map((row) =>
+        typeof row.supabaseAuthUserId === "string" ? row.supabaseAuthUserId : ""
+      )
+      .filter(Boolean)
+  );
+  for (const row of rows) {
+    const uid =
+      typeof row.supabaseAuthUserId === "string" ? row.supabaseAuthUserId : "";
+    if (uid && playIds.has(uid)) {
+      row.googlePlaySubscriptionActive = true;
+    }
+  }
 
   return { rows, totalCount };
 }
