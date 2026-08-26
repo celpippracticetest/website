@@ -5,7 +5,7 @@ import {
   sitemapXmlResponse,
 } from "@/lib/sitemap";
 
-export const revalidate = false;
+export const revalidate = 3600;
 
 export function GET() {
   return sitemapXmlResponse(

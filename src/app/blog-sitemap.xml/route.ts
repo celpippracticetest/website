@@ -1,12 +1,11 @@
 import { getPublishedBlogSlugs } from "@/lib/blog/public";
-import { PUBLIC_PAGE_REVALIDATE_SECONDS } from "@/lib/publicPageCache";
 import {
   absoluteSitemapUrl,
   buildUrlSetXml,
   sitemapXmlResponse,
 } from "@/lib/sitemap";
 
-export const revalidate = PUBLIC_PAGE_REVALIDATE_SECONDS;
+export const revalidate = 3600;
 
 export async function GET() {
   const posts = await getPublishedBlogSlugs();
