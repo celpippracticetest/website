@@ -626,7 +626,7 @@ export const config = {
     // Skip Next.js internals and non-image static assets. Do not skip raster/SVG image
     // extensions: a missing public file (e.g. /volume.png) would render through the App
     // Router and still hit this middleware.
-    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|ttf|woff2?|csv|docx?|xlsx?|zip|webmanifest|manifest)).*)",
+    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|xml|ttf|woff2?|csv|docx?|xlsx?|zip|webmanifest|manifest)).*)",
     "/api/users/webhook",
     // Always run for API routes
     "/(api|trpc)(.*)",

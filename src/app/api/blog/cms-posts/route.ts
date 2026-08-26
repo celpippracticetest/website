@@ -1,6 +1,7 @@
 import documentsClient from "@/lib/appDocumentsClient";
 import { BlogWriteSchema } from "@/models/blog.model";
 import { BlogRepository } from "@/repositories/blog.repo";
+import { revalidateBlogPages } from "@/lib/blog/revalidate";
 import { NextRequest, NextResponse } from "next/server";
 
 type LinkedInPublishResult = {
@@ -92,6 +93,7 @@ export async function POST(req: NextRequest) {
 
     const repo = new BlogRepository(documentsClient);
     const blog = await repo.createBlog(parser.data);
+    revalidateBlogPages(blog.slug);
     const shouldPublishToLinkedIn = publishToLinkedIn && blog.status === "published";
     const linkedinResult = shouldPublishToLinkedIn
       ? await publishBlogToLinkedIn({
