@@ -43,10 +43,10 @@ export const PAGE_SEO_REGISTRY: Record<string, PageSeoItem> = {
   },
   "/about": {
     path: "/about",
-    title: "About CELPIPguide | CELPIP Practice Test Platform",
+    title: "About CELPIP Practice Test | Prep Platform",
     description:
-      "Learn about CELPIPguide.ca — independent CELPIP prep with mock exams, AI feedback, and study tools for PR, citizenship, and licensing goals.",
-    keywords: ["about celpipguide", "celpip prep platform", "celpip practice test"],
+      "Learn about CELPIP Practice Test — independent CELPIP prep with mock exams, AI feedback, and study tools for PR, citizenship, and licensing goals.",
+    keywords: ["about celpip practice test", "celpip prep platform", "celpip practice test"],
   },
   "/privacy-policy": {
     path: "/privacy-policy",

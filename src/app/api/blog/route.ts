@@ -13,7 +13,7 @@ type LinkedInPublishResult = {
 const APP_BASE_URL =
   process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
   process.env.APP_BASE_URL?.replace(/\/$/, "") ||
-  "https://celpipguide.ca";
+  "https://celpippracticetest.com";
 
 async function publishBlogToLinkedIn(input: {
   title: string;

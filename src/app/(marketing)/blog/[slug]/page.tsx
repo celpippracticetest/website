@@ -23,6 +23,10 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import ChevronRight from "@mui/icons-material/ChevronRight";
 import { normalizeWikiSlug } from "@/lib/wiki/slug";
+import {
+  publicSiteOrigin,
+  resolveBlogCanonicalUrl,
+} from "@/lib/seo/publicSite";
 
 /** Keep in sync with `PUBLIC_PAGE_REVALIDATE_SECONDS` in `@/lib/publicPageCache`. */
 export const revalidate = 3600;
@@ -88,9 +92,6 @@ export async function generateMetadata({
     };
   }
 
-  const baseUrl = new URL(
-    process.env.APP_BASE_URL || "https://celpipguide.ca",
-  ).toString();
   const fallbackDescription =
     post.excerpt ||
     stripHtml(resolveBlogContentHtml(post.contentHtml, post.contentJson)).slice(
@@ -105,14 +106,7 @@ export async function generateMetadata({
     post.seo?.metaDescription ||
     fallbackDescription;
   const shouldIndex = isIndexablePublishedBlogSlug(post.slug);
-  const canonicalPath = `/blog/${post.slug}`;
-  const path = post.seo?.canonicalUrl?.startsWith("http")
-    ? null
-    : post.seo?.canonicalUrl || canonicalPath;
-  const canonical =
-    path === null
-      ? (post.seo?.canonicalUrl ?? "")
-      : new URL(path.startsWith("/") ? path : `/${path}`, baseUrl).toString();
+  const canonical = resolveBlogCanonicalUrl(post.slug, post.seo?.canonicalUrl);
   const coverImage = getBlogCoverImage(post);
   const ogImage = coverImage?.url;
   const ogImageAlt = coverImage?.alt || post.title;
@@ -182,11 +176,11 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
     post.tags,
     3,
   );
-  const siteBase = (
-    process.env.APP_BASE_URL || "https://celpipguide.ca"
-  ).replace(/\/$/, "");
-  const canonicalUrl =
-    post.seo?.canonicalUrl || `${siteBase}/blog/${post.slug}`;
+  const siteBase = publicSiteOrigin();
+  const canonicalUrl = resolveBlogCanonicalUrl(
+    post.slug,
+    post.seo?.canonicalUrl,
+  );
   const coverImage = getBlogCoverImage(post);
   const ogImage = coverImage?.url;
   const ogImageAlt = coverImage?.alt || post.title;
@@ -228,13 +222,13 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
         "@type": "ListItem",
         position: 1,
         name: "Home",
-        item: "https://celpipguide.ca/",
+        item: `${siteBase}/`,
       },
       {
         "@type": "ListItem",
         position: 2,
         name: "Blog",
-        item: "https://celpipguide.ca/blog",
+        item: `${siteBase}/blog`,
       },
       {
         "@type": "ListItem",

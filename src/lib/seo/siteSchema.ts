@@ -2,8 +2,9 @@ import type { SkillPageContent } from "@/data/skill-pages-content";
 import { EXAM_OVERVIEW_FAQS } from "@/data/exam-overview-faqs";
 import { HOMEPAGE_TESTIMONIALS } from "@/data/homepage-testimonials";
 import type { TExamSchemaDto } from "@/models/exam.model";
+import { publicSiteOrigin } from "@/lib/seo/publicSite";
 
-export const SITE_NAME = "CELPIP Guide";
+export const SITE_NAME = "CELPIP Practice Test";
 
 export const SITE_SOCIAL_PROFILES = [
   "https://www.linkedin.com/company/celpippracticetest",
@@ -11,26 +12,8 @@ export const SITE_SOCIAL_PROFILES = [
   "https://www.instagram.com/celpippracticetest/",
 ] as const;
 
-const DEFAULT_APP_BASE_URL = "https://celpipguide.ca";
-
-function normalizeBaseUrl(raw: string | undefined): string {
-  const input = (raw ?? DEFAULT_APP_BASE_URL).trim().replace(/^['"]|['"]$/g, "");
-  if (!input) return DEFAULT_APP_BASE_URL;
-
-  try {
-    return new URL(input).toString().replace(/\/$/, "");
-  } catch {
-    if (/^https?:\/\//i.test(input)) return DEFAULT_APP_BASE_URL;
-    const hostPart = input.split("/")[0];
-    if (/^(localhost|127\.0\.0\.1)(:\d+)?$/i.test(hostPart)) {
-      return `http://${input}`.replace(/\/$/, "");
-    }
-    return `https://${input}`.replace(/\/$/, "");
-  }
-}
-
 export function buildRootLayoutJsonLd(baseUrlRaw?: string) {
-  const baseUrl = normalizeBaseUrl(baseUrlRaw);
+  const baseUrl = publicSiteOrigin(baseUrlRaw);
 
   return {
     "@context": "https://schema.org",
@@ -47,7 +30,7 @@ export function buildRootLayoutJsonLd(baseUrlRaw?: string) {
           {
             "@type": "ContactPoint",
             contactType: "customer support",
-            email: "support@celpipguide.ca",
+            email: "support@celpippracticetest.com",
             availableLanguage: ["English"],
           },
         ],
@@ -82,7 +65,7 @@ export function buildRootLayoutJsonLd(baseUrlRaw?: string) {
 }
 
 export function buildHomepageProductJsonLd(baseUrlRaw?: string) {
-  const baseUrl = normalizeBaseUrl(baseUrlRaw);
+  const baseUrl = publicSiteOrigin(baseUrlRaw);
   const reviewCount = HOMEPAGE_TESTIMONIALS.length;
 
   // Google requires aggregateRating when multiple Review objects are present.
@@ -192,7 +175,7 @@ export function buildExamOverviewStructuredData(
   exams: TExamSchemaDto[],
   baseUrlRaw?: string,
 ) {
-  const baseUrl = normalizeBaseUrl(baseUrlRaw);
+  const baseUrl = publicSiteOrigin(baseUrlRaw);
   const examOverviewUrl = `${baseUrl}/exam`;
 
   return {

@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   description:
     "Pick the CELPIP Premium plan that fits you — weekly, monthly, or quarterly. 60 mock exams, 3,000+ practices, instant AI feedback. Cancel anytime.",
   alternates: {
-    canonical: "https://celpipguide.ca/pricing",
+    canonical: "https://celpippracticetest.com/pricing",
   },
 };
 

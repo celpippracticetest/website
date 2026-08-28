@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
 import { TBlogSchemaDto, TBlogWriteInput } from "@/models/blog.model";
+import { resolveBlogCanonicalUrl } from "@/lib/seo/publicSite";
 import TiptapBlogEditor from "./TiptapBlogEditor";
 
 const blogFaqItemSchema = z.object({
@@ -134,7 +135,7 @@ function getInitialJson(value?: unknown): JSONContent | null {
 const BLOG_BASE_URL =
   process.env.NEXT_PUBLIC_APP_URL ||
   process.env.APP_BASE_URL ||
-  "https://celpipguide.ca";
+  "https://celpippracticetest.com";
 const BLOG_JSON_SAMPLE = JSON.stringify(
   {
     title: "CELPIP Reading Tips to Increase Your Score Fast",
@@ -146,7 +147,7 @@ const BLOG_JSON_SAMPLE = JSON.stringify(
     categories: ["Reading", "Study Plan"],
     tags: ["celpip reading", "time management", "score improvement"],
     featuredImage: {
-      url: "https://celpipguide.ca/images/blog/reading-tips-cover.jpg",
+      url: "https://celpippracticetest.com/images/blog/reading-tips-cover.jpg",
       alt: "Student preparing for CELPIP reading section",
     },
     seo: {
@@ -154,8 +155,9 @@ const BLOG_JSON_SAMPLE = JSON.stringify(
       metaDescription:
         "Use these proven CELPIP reading tips to improve speed, avoid common mistakes, and increase your score.",
       canonicalUrl:
-        "https://celpipguide.ca/blog/celpip-reading-tips-increase-score-fast",
-      ogImageUrl: "https://celpipguide.ca/images/blog/reading-tips-cover.jpg",
+        "https://celpippracticetest.com/blog/celpip-reading-tips-increase-score-fast",
+      ogImageUrl:
+        "https://celpippracticetest.com/images/blog/reading-tips-cover.jpg",
       ogImageAlt: "CELPIP reading preparation desk setup",
       keywords: ["CELPIP reading tips", "CELPIP score", "CELPIP preparation"],
     },
@@ -860,9 +862,10 @@ export default function BlogPostForm({
       seo: {
         metaTitle: values.metaTitle?.trim() || undefined,
         metaDescription: values.metaDescription?.trim() || undefined,
-        canonicalUrl:
-          values.canonicalUrl?.trim() ||
-          `${BLOG_BASE_URL}/blog/${slugify(values.slug)}`,
+        canonicalUrl: resolveBlogCanonicalUrl(
+          slugify(values.slug),
+          values.canonicalUrl,
+        ),
         ogImageUrl:
           values.ogImageUrl?.trim() ||
           values.featuredImageUrl?.trim() ||
@@ -1494,7 +1497,7 @@ export default function BlogPostForm({
                     <FormLabel>Canonical URL (optional override)</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="https://celpipguide.ca/blog/..."
+                        placeholder="https://celpippracticetest.com/blog/..."
                         {...field}
                       />
                     </FormControl>

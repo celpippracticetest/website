@@ -9,7 +9,7 @@ function slugify(value: string): string {
     .replace(/^-|-$/g, "");
 }
 
-const SYSTEM_PROMPT = `You are a blog SEO editor for CELPIP Practice Test (celpipguide.ca).
+const SYSTEM_PROMPT = `You are a blog SEO editor for CELPIP Practice Test (celpippracticetest.com).
 You will receive existing blog form values and an "SEO advice" instruction list.
 Your task: update ONLY what is necessary to satisfy the advice, then output a single JSON object.
 
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
-        "HTTP-Referer": "https://celpipguide.ca",
+        "HTTP-Referer": "https://celpippracticetest.com",
         "X-Title": "CELPIP Practice Test",
         "Content-Type": "application/json",
       },

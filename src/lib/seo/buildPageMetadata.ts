@@ -3,13 +3,13 @@ import {
   getIndexingRobotsDirective,
   NOINDEX_ROBOTS,
 } from "@/lib/searchIndexing";
+import { publicSiteOrigin } from "@/lib/seo/publicSite";
 import type { PageSeoItem } from "@/lib/seo/types";
 
 const DEFAULT_SITE_NAME = "CELPIP Practice Test";
-const DEFAULT_BASE_URL = "https://celpipguide.ca";
 
 function siteRoot(): string {
-  return (process.env.APP_BASE_URL || DEFAULT_BASE_URL).replace(/\/$/, "");
+  return publicSiteOrigin();
 }
 
 function canonicalUrl(path: string): string {

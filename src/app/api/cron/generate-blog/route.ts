@@ -2,7 +2,7 @@ import documentsClient from "@/lib/appDocumentsClient";
 import { BlogRepository } from "@/repositories/blog.repo";
 import { NextRequest, NextResponse } from "next/server";
 
-const SYSTEM_PROMPT = `You are an expert, certified CELPIP instructor and SEO content writer for CELPIP Practice Test (celpipguide.ca). Your audience consists of ESL (English as a Second Language) test-takers preparing for the CELPIP exam to achieve their Canadian PR or citizenship.
+const SYSTEM_PROMPT = `You are an expert, certified CELPIP instructor and SEO content writer for CELPIP Practice Test (celpippracticetest.com). Your audience consists of ESL (English as a Second Language) test-takers preparing for the CELPIP exam to achieve their Canadian PR or citizenship.
 Given a user prompt containing recent forum discussions or news, you must output a single JSON object that fills the entire blog create form.
 Output ONLY valid JSON, no markdown, no code fences, no explanation.
 JSON schema (all string lengths are limits; stay under them):
@@ -111,7 +111,7 @@ export async function GET(req: NextRequest) {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
-        "HTTP-Referer": "https://celpipguide.ca",
+        "HTTP-Referer": "https://celpippracticetest.com",
         "X-Title": "CELPIP Practice Test",
         "Content-Type": "application/json",
       },
@@ -218,7 +218,7 @@ export async function GET(req: NextRequest) {
       const authorUrn = process.env.LINKEDIN_AUTHOR_URN;
 
       if (accessToken && authorUrn) {
-        const blogUrl = `https://celpipguide.ca/blog/${blog.slug}`;
+        const blogUrl = `https://celpippracticetest.com/blog/${blog.slug}`;
         const shareCommentary = `${blog.title}\n\n${(blog.excerpt ?? "").trim()}`.trim().slice(0, 1200);
 
         try {

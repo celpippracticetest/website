@@ -5,6 +5,7 @@ import { normalizeWikiSlug, normalizeWikiSlugStorage } from "@/lib/wiki/slug";
 import { BlogSchema, BlogSchemaDto, BlogSeoSchema, TBlogSchemaDto, TBlogStatus, TBlogWriteInput } from "@/models/blog.model";
 import postgres from "postgres";
 import { blogJsonToHtml } from "@/lib/blog/editorHtml";
+import { sanitizeBlogSeoCanonical } from "@/lib/seo/publicSite";
 
 const BLOG_SELECT_SQL =
   "mongo_id, title, slug, excerpt, content_html, content_json, status, author_name, categories, tags, featured_image, faq, ai_snippet, seo, published_at, created_at, updated_at";
@@ -215,7 +216,10 @@ export class BlogRepository {
       dto.status === "published" ? (dto.publishedAt != null ? new Date(dto.publishedAt) : now) : null;
     const categories = dto.categories.map((item) => item.trim()).filter(Boolean);
     const tags = dto.tags.map((item) => item.trim()).filter(Boolean);
-    const seo = BlogSeoSchema.parse({ keywords: [], ...dto.seo });
+    const seo = sanitizeBlogSeoCanonical(
+      slug,
+      BlogSeoSchema.parse({ keywords: [], ...dto.seo }),
+    );
     const faq = dto.faq ?? [];
     const aiSnippet = dto.aiSnippet ?? { question: "", answer: "" };
 
@@ -491,8 +495,11 @@ export class BlogRepository {
     const aiSnippet = dto.aiSnippet !== undefined ? dto.aiSnippet : current.aiSnippet;
     const seo =
       dto.seo !== undefined
-        ? BlogSeoSchema.parse({ ...current.seo, ...dto.seo })
-        : current.seo;
+        ? sanitizeBlogSeoCanonical(
+            nextSlug,
+            BlogSeoSchema.parse({ ...current.seo, ...dto.seo }),
+          )
+        : sanitizeBlogSeoCanonical(nextSlug, current.seo);
 
     const rows = await sql<BlogRow[]>`
       UPDATE public.blogs

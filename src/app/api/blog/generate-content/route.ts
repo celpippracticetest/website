@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const SYSTEM_PROMPT = `You are an expert, certified CELPIP instructor and SEO content writer for CELPIP Practice Test (celpipguide.ca). Your audience consists of ESL (English as a Second Language) test-takers preparing for the CELPIP exam to achieve their Canadian PR or citizenship.
+const SYSTEM_PROMPT = `You are an expert, certified CELPIP instructor and SEO content writer for CELPIP Practice Test (celpippracticetest.com). Your audience consists of ESL (English as a Second Language) test-takers preparing for the CELPIP exam to achieve their Canadian PR or citizenship.
 Given a user prompt, you must output a single JSON object that fills the entire blog create form.
 Output ONLY valid JSON, no markdown, no code fences, no explanation.
 JSON schema (all string lengths are limits; stay under them):
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
         method: "POST",
         headers: {
           Authorization: `Bearer ${apiKey}`,
-          "HTTP-Referer": "https://celpipguide.ca",
+          "HTTP-Referer": "https://celpippracticetest.com",
           "X-Title": "CELPIP Practice Test",
           "Content-Type": "application/json",
         },

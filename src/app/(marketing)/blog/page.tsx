@@ -3,34 +3,13 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { getPublishedBlogPosts } from "@/lib/blog/public";
 import BlogListAnalytics from "@/components/analytics/BlogListAnalytics";
 import BlogIndexContent from "@/components/pages/blog/BlogIndexContent";
+import { publicSiteOrigin } from "@/lib/seo/publicSite";
 
 /** Keep in sync with `PUBLIC_PAGE_REVALIDATE_SECONDS` in `@/lib/publicPageCache`. */
 export const revalidate = 3600;
 
-const DEFAULT_APP_BASE_URL = "https://celpipguide.ca";
-
-function normalizeAppBaseUrl(raw: string | undefined): string {
-  const input = (raw ?? "").trim().replace(/^['"]|['"]$/g, "");
-  if (!input) return DEFAULT_APP_BASE_URL;
-
-  try {
-    return new URL(input).toString();
-  } catch {
-    // continue
-  }
-
-  if (/^https?:\/\//i.test(input)) return DEFAULT_APP_BASE_URL;
-
-  const hostPart = input.split("/")[0];
-  if (/^(localhost|127\.0\.0\.1)(:\d+)?$/i.test(hostPart)) {
-    return `http://${input}`;
-  }
-
-  return `https://${input}`;
-}
-
-const BASE_URL = normalizeAppBaseUrl(process.env.APP_BASE_URL);
-const BLOG_URL = new URL("/blog", BASE_URL).toString();
+const BASE_URL = publicSiteOrigin();
+const BLOG_URL = `${BASE_URL}/blog`;
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -88,7 +67,7 @@ export default async function BlogListingPage() {
       "@type": "ListItem",
       position: index + 1,
       name: post.title,
-      url: `https://celpipguide.ca/blog/${post.slug}`,
+      url: `${BASE_URL}/blog/${post.slug}`,
     })),
   };
 
