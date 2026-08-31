@@ -23,6 +23,8 @@ const APP_METADATA_PUBLIC_KEYS = new Set([
   "planCancelled",
   "planRenewsAt",
   "planExpiresAt",
+  "planOverrideSource",
+  "planOverrideAt",
   "targetCLB",
   "roles",
   "stripeCustomerId",

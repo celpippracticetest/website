@@ -42,35 +42,33 @@ export default function Profile({
   const [isPlanLoaded, setIsPlanLoaded] = useState<boolean>(false);
 
   useEffect(() => {
-    // Priority: Use subscription data if available, otherwise fallback to checkout data
+    const paid = hasPaidPracticeAccess(
+      typeof user?.publicMetadata?.plan === "string"
+        ? user.publicMetadata.plan
+        : null,
+    );
+    if (!paid) {
+      setPlanNameDisplay("");
+      setIsPlanLoaded(true);
+      return;
+    }
+
     if (subscriptionData?.planName) {
       setPlanNameDisplay(subscriptionData.planName);
-      setIsPlanLoaded(true);
-    } else if (
-      subscriptionData &&
-      subscriptionData.currentPeriodStart &&
-      subscriptionData.currentPeriodEnd
-    ) {
-      setPlanNameDisplay(subscriptionData.planName || "Premium Plan");
-      setIsPlanLoaded(true);
-    } else if (prevCheckout && prevCheckout.createdAt) {
-      // Fallback to checkout data for one-time purchases
-      const description = prevCheckout.lineItems?.[0]?.description;
-      setPlanNameDisplay(description || "Premium Plan");
-      setIsPlanLoaded(true);
+    } else if (user?.publicMetadata?.plan === "plus") {
+      setPlanNameDisplay("Plus");
+    } else if (user?.publicMetadata?.plan === "premium") {
+      setPlanNameDisplay("Plus");
+    } else if (user?.publicMetadata?.plan === "pro") {
+      setPlanNameDisplay("Plus");
+    } else if (billingProvider === "google_play") {
+      setPlanNameDisplay("Plus");
+    } else if (prevCheckout?.lineItems?.[0]?.description) {
+      setPlanNameDisplay(prevCheckout.lineItems[0].description);
     } else {
-      // Fallback based on metadata if no data found but user is marked as premium
-      if (user?.publicMetadata?.plan === "plus") {
-        setPlanNameDisplay("Plus");
-      } else if (user?.publicMetadata?.plan === "premium") {
-        setPlanNameDisplay("Premium Plan");
-      } else if (user?.publicMetadata?.plan === "pro") {
-        setPlanNameDisplay("Pro Plan");
-      } else if (billingProvider === "google_play") {
-        setPlanNameDisplay("Plus");
-      }
-      setIsPlanLoaded(true);
+      setPlanNameDisplay("Plus");
     }
+    setIsPlanLoaded(true);
   }, [prevCheckout, subscriptionData, user, billingProvider]);
 
   const [showSetPasswordModal, setShowSetPasswordModal] = useState(false);
@@ -129,9 +127,7 @@ export default function Profile({
     (googlePlayCanCancel ||
       hasPaidPracticeAccess(user?.publicMetadata?.plan) ||
       Boolean(subscriptionData));
-  const hasPremiumAccount =
-    hasPaidPracticeAccess(user?.publicMetadata?.plan) ||
-    Boolean(subscriptionData);
+  const hasPremiumAccount = hasPaidPracticeAccess(user?.publicMetadata?.plan);
 
   const daysSubscribed = (() => {
     const raw = user?.publicMetadata?.purchaseDate;

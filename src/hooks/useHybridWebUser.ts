@@ -68,6 +68,8 @@ function bridgeUserFromSupabase(u: SupabaseAuthUser) {
     planCancelled: app.planCancelled ?? meta.planCancelled,
     planRenewsAt: app.planRenewsAt ?? meta.planRenewsAt,
     planExpiresAt: app.planExpiresAt ?? meta.planExpiresAt,
+    planOverrideSource: app.planOverrideSource ?? meta.planOverrideSource,
+    planOverrideAt: app.planOverrideAt ?? meta.planOverrideAt,
     targetCLB: app.targetCLB ?? meta.targetCLB ?? meta.targetClb,
     ...(purchasedMockExamIds !== undefined ? { purchasedMockExamIds } : {}),
   };
