@@ -1,0 +1,86 @@
+Priority,KPI Name,Metric Type,Formula / Description,Primary Data Source
+P0,Activation Rate (7-day),Activation,Percentage of new registrations that complete at least one full practice test within 7 days of sign-up. (Activated users / New sign-ups in cohort).,GA4 + App DB
+P0,Time to First Value,Activation,"Median hours from sign_up to first practice_test_complete. The shorter this is, the higher every downstream conversion rate becomes.",GA4 + App DB
+P0,Onboarding Completion Rate,Activation,"Percentage of new users who finish the onboarding wizard, plus per-step drop-off rates.",GA4
+P0,Test Date Capture Rate,Activation,Percentage of new users who provide a scheduled exam date. Unlocks days-until-test segmentation across every other metric.,GA4 + App DB
+P0,Diagnostic Completion Rate,Activation,Diagnostic tests completed / diagnostic tests started. Your earliest reliable read on product-experience friction.,GA4
+P0,Tests Completed per Active User (weekly),Engagement,Total practice_test_complete events / weekly active users. Your core usage-depth metric.,GA4 + App DB
+P0,Test Completion Rate by Module,Engagement,"practice_test_complete / practice_test_start, split by Listening, Reading, Writing and Speaking. Expect Speaking and Writing to lag sharply.",GA4
+P0,Test Abandonment Rate & Median Exit Point,Engagement,"Percentage of started tests never submitted, plus the median percent_complete at exit. Clustering at one point signals a bug.",GA4
+P0,Speaking Attempt Rate,Engagement,"Percentage of active users who submit at least one Speaking task, and the microphone-denial rate among those who try.",GA4
+P0,AI Scoring Success Rate,Reliability,ai_score_returned / ai_scoring_requested. Anything below 99% is actively generating refund requests.,App logs / GA4
+P0,AI Scoring Latency (p50 / p95),Reliability,"Median and 95th-percentile time from submission to feedback delivery, by module.",App logs
+P1,AI Feedback Satisfaction,Product Quality,Percentage of positive ratings on ai_feedback_rated. Track across model or prompt changes.,GA4 + App DB
+P0,WAU and WAU/MAU,Engagement,"Weekly active users and the weekly-to-monthly stickiness ratio. Better suited than DAU/MAU to a product used in study bursts, not daily.",GA4
+P1,Engagement by Days-Until-Test Cohort,Engagement,"Sessions and tests completed, bucketed by days remaining before the exam (60+, 30-59, 14-29, 0-13). Reveals your true usage curve.",GA4 + App DB
+P0,Score Improvement Delta,Outcome,Average change in estimated CLB between a user's first and most recent practice test. The only metric that proves your product works.,App DB
+P1,Target Score Achievement Rate,Outcome,"Percentage of engaged users who reach their self-declared target CLB in practice. Powers testimonials, landing-page claims and paid ad creative.",App DB
+P2,Explanation Engagement Rate,Engagement,Percentage of incorrect answers where the user opens the explanation. Strong leading indicator of renewal.,GA4
+P1,Study Plan Adherence,Engagement,Percentage of scheduled study tasks completed on time by users with an active plan.,App DB
+P0,Content-to-Signup Rate,Funnel Growth,"Sign-ups attributed to organic content sessions / organic content sessions, by landing page and content cluster. Connects your SEO work to revenue.",GA4 + GSC
+P0,Paywall View to Purchase Rate,Funnel Growth,"Purchases / paywall_view events. The most honest conversion rate in the business, because the denominator has real intent.",GA4
+P1,Pricing Page to Checkout Rate,Funnel Growth,begin_checkout / view_item_list. Isolates price objection from checkout friction.,GA4
+P0,Checkout Abandonment Rate,Funnel Growth,1 minus (purchase / begin_checkout). Anything above roughly 60% points to a fixable payment-flow problem.,GA4 + Stripe
+P0,Payment Failure Rate,Funnel Growth,"Declined charges / total charge attempts, broken out by decline reason and card country. Often the single largest recoverable leak for a newcomer-heavy audience.",Stripe
+P0,Free-to-Paid Conversion by Days-Until-Test,Funnel Growth,Conversion rate segmented by days remaining before the exam. Expect a sharp spike inside 14 days — this should drive your pricing and email timing.,Billing + App DB
+P1,Time to Purchase,Funnel Growth,Median days from first_visit to purchase. Defines how long your nurture sequence needs to be.,GA4 + Billing
+P1,Signup-to-Paid by Landing Page,Funnel Growth,"Paid conversion rate of users grouped by their original landing page. Identifies which SEO pages bring buyers, not just traffic.",GA4 + Billing
+P1,Discount Penetration & Average Depth,Revenue,"Percentage of purchases using a coupon, and the average discount percentage. Rising values mean you are buying growth with margin.",Stripe
+P0,D1 / D7 / D30 Retention by Cohort,Retention,"Percentage of each sign-up cohort returning on day 1, 7 and 30. The standard retention curve your current list is missing.",GA4 + App DB
+P0,Voluntary vs Involuntary Churn Split,Retention,Cancellations split between user-initiated and payment-failure-driven. Involuntary churn is often 20-40% of the total and is fixable with dunning alone.,Stripe
+P0,Failed Payment Recovery Rate,Retention,Percentage of failed recurring charges recovered through retries and dunning emails within 14 days.,Stripe
+P0,Cancellation Reason Mix,Retention,"Distribution of cancel_reason_submit values. Separates 'exam finished' (natural, expected) from 'too expensive' or 'not useful' (fixable).",GA4 + App DB
+P0,Post-Exam Churn Rate,Retention,Percentage of subscribers who cancel within 14 days of their recorded test date. Structural to test prep — quantify it so you stop mistaking it for product failure.,Billing + App DB
+P1,Reactivation / Win-back Rate,Retention,"Percentage of churned users who resubscribe within 90 days. Often cheaper than net-new acquisition, especially for exam retakers.",Billing
+P0,Net Revenue Retention,Retention,(Starting MRR + expansion - contraction - churn) / starting MRR. The single best summary of subscription health.,Stripe / BI
+P1,Expansion and Contraction MRR,Revenue,"MRR gained from upgrades and lost from downgrades, reported separately from new and churned MRR.",Stripe
+P1,Quick Ratio,Health,(New MRR + expansion MRR) / (churned MRR + contraction MRR). Above 4 is healthy growth; below 1 means you are shrinking.,Stripe / BI
+P0,Refund and Chargeback Rate,Health,Refunds and disputes as a percentage of transactions. Chargebacks above 1% put your payment processing at risk.,Stripe
+P2,Repeat Purchase / Retake Rate,Retention,"Percentage of past subscribers who return for a second exam cycle. Real, underused LTV for a product tied to a repeatable test.",Billing
+P0,AI Cost per Paid User,Unit Economics,"Total AI inference spend / active paid subscribers. Your dominant variable cost, since Writing and Speaking grading scales with usage.",Vendor billing + App DB
+P0,Gross Margin %,Unit Economics,(Revenue - hosting - AI inference - payment fees - content licensing) / revenue.,Finance
+P1,Contribution Margin per Subscriber,Unit Economics,ARPU minus variable cost to serve per subscriber. The number that makes LTV trustworthy.,Finance / BI
+P1,CAC Payback Period,Unit Economics,"Months of contribution margin required to recover CAC. Similar in spirit to your Months to Breakeven, but margin-based rather than revenue-based.",BI
+P1,"Revenue per 1,000 Organic Sessions",Unit Economics,Revenue attributable to organic traffic / organic sessions x 1000. Converts SEO effort into a dollar figure you can compare against paid.,GA4 + Billing
+P1,Blended vs Paid CAC,Efficiency,"Total spend / all new customers, versus paid spend / paid-attributed customers. The gap is the value your organic channel contributes.",Ad platforms + BI
+P0,"Organic Clicks, Impressions, CTR, Position by Cluster",Acquisition,"Search Console metrics grouped by page cluster (score guides, wiki, practice pages, blog). Catches ranking or snippet losses within a day.",Google Search Console
+P0,Striking-Distance Keywords,Acquisition,Count and list of queries ranking in positions 4-15 with meaningful impressions. Your highest-ROI internal-linking and optimisation queue.,Google Search Console
+P1,Brand vs Non-Brand Organic Split,Acquisition,Organic clicks split between branded and unbranded queries. Non-brand growth is the only proof your SEO is compounding.,Google Search Console
+P1,Indexed Pages & Coverage Errors,Technical SEO,Valid indexed pages versus excluded or errored pages. A silent drop here precedes a traffic drop.,Google Search Console
+P2,Assisted Conversions by Channel,Acquisition,Conversions where a channel appeared in the path but was not the last click. Prevents you from cutting a channel that quietly does the persuading.,GA4
+P0,Support Tickets per 100 Active Users,Support,Ticket volume normalised to active users. A spike is usually the fastest signal of a shipped bug.,Helpdesk
+P1,Top Ticket Reasons,Support,"Ranked ticket categories. Recurring themes should convert into product fixes, not more help articles.",Helpdesk
+P1,NPS / CSAT after Score Report,Product Quality,Net promoter or satisfaction score surveyed immediately after a score report is viewed.,Survey tool
+P1,Core Web Vitals on Key Templates,Technical,"LCP, INP and CLS for test-taking pages and top organic landing pages. Affects both rankings and completion rates.",GA4 / CrUX
+P0,Client Error Rate,Technical,"JavaScript exceptions and failed test submissions per 1,000 sessions, segmented by browser and device.",GA4 / error tracker
+P1,Mobile vs Desktop Conversion & Completion Gap,Efficiency,"Difference in sign-up rate, purchase rate and test completion rate between mobile and desktop. A large gap on a mobile-majority audience is expensive.",GA4
+P0,Session,Traffic,Total number of user interactions with your website during a given period.,GA4
+P0,Session by channel,Traffic,"Total number of sessions broken down by the source of traffic (e.g., Organic, Paid, Direct).",GA4
+P1,session by platform,Traffic,"Total number of sessions broken down by the device or operating system used (e.g., Desktop, Mobile, iOS, Android).",GA4
+P0,user (total and by channel),Traffic,"The total count of unique visitors, broken down by the acquisition channel.",GA4
+P2,time on site by platform,Traffic,"Average duration of a user's session, categorized by the platform they are using.",GA4
+P1,dau/mau by platform,Efficiency,"The ratio of daily active users to monthly active users, segmented by platform.",GA4 / BI
+P0,active subscriptions. by type,Subscription/Retention,"The total count of currently active paid subscriptions, categorized by the subscription plan or type.",Billing (Stripe)
+P2,average subscription duration by type,Subscription/Retention,"The average length of time (in months/days) a subscriber stays active, categorized by subscription type.",Billing / BI
+P0,subscription cancelation after one week,Subscription/Retention,The number/percentage of subscriptions that are canceled within the first seven days of the subscription period.,Billing (Stripe)
+P1,subscription renewal by type,Subscription/Retention,"The percentage of active subscribers who renew their subscription after the current term, broken down by subscription plan.",Billing (Stripe)
+P1,subscription renewal by channel,Subscription/Retention,"The percentage of subscribers who renew their subscription, broken down by the original acquisition channel.",Billing + GA4 join
+P0,Monthly Recurring Revenue (MRR),Revenue,Total predictable subscription revenue expected each month.,Billing (Stripe)
+P1,New Visitors,Traffic/Acquisition,The number of unique individuals who visited the site for the first time in the tracking period.,GA4
+P0,New Users (Trial Sign-ups),Acquisition,The number of users who completed the account registration/trial sign-up process.,GA4 + App DB
+P0,New Subscribers,Acquisition/Revenue,The count of customers who made their first paid subscription purchase.,Billing (Stripe)
+P1,Customer Acquisition Cost (CAC),Efficiency,Total sales and marketing spend divided by the number of new customers acquired in that period.,Ad platforms + Billing
+P1,Customer Acquisition Cost (CAC) By Channel,Efficiency,Total sales and marketing spend divided by the number of new customers acquired in that period,Ad platforms + Billing
+P0,Register-to-Paid Conversion Rate,Funnel Growth,Percentage of users who sign up for a free user and convert to a paid subscription.,App DB + Billing
+P1,Subscriber Churn Rate,Retention,Percentage of subscribers who cancel or do not renew their subscription in a given period.,Billing (Stripe)
+P2,Customer Lifetime Value (LTV),Health/Value,Estimated average revenue a customer generates over the entire duration of their subscription.,BI
+P1,LTV:CAC Ratio,Health,The ratio of Lifetime Value to Customer Acquisition Cost.,BI
+P1,LTV:CAC by channel,Retention,Percentage of subscribers who cancel or do not renew their subscription in a given period.,BI
+P1,Average Revenue Per User (ARPU),Revenue,Total MRR divided by the total number of active subscribers.,Billing (Stripe)
+P1,Revenue by Type,Revenue,Total revenue broken down by the customer's subscription or product type.,Billing (Stripe)
+P1,Revenue by Platform,Revenue,Total revenue broken down by the platform,Billing (Stripe)
+P1,Revenue by Channel,Revenue,Total revenue broken down by the acquisition,Billing + GA4 join
+P2,revenue conversion rate by type,Revenue,The rate at which users convert to a paying status,BI
+P2,revenue conversion rate by channel,Revenue,The rate at which users convert to a paying status,BI
+P1,Net revenue,Revenue,Total revenue after deducting all costs associated with sales,Finance
+P2,Months to Breakeven,Viability,The average time it takes to recoup the CAC through recurring revenue.,BI
