@@ -31,22 +31,28 @@ export default function Profile({
   subscriptionData,
   billingProvider = null,
   googlePlayCanCancel = false,
+  serverPlan = null,
+  hasLiveStripeSubscription = false,
 }: {
   prevCheckout?: any;
   subscriptionData?: any;
   billingProvider?: ProfileBillingProvider;
   googlePlayCanCancel?: boolean;
+  /** Auth plan from the server — do not trust a stale browser JWT. */
+  serverPlan?: string | null;
+  hasLiveStripeSubscription?: boolean;
 }) {
   const { user, isLoaded, isSignedIn, reloadUser } = useHybridWebUser();
   const [planNameDisplay, setPlanNameDisplay] = useState<string>("");
   const [isPlanLoaded, setIsPlanLoaded] = useState<boolean>(false);
+  const planForAccess =
+    serverPlan ??
+    (typeof user?.publicMetadata?.plan === "string"
+      ? user.publicMetadata.plan
+      : null);
 
   useEffect(() => {
-    const paid = hasPaidPracticeAccess(
-      typeof user?.publicMetadata?.plan === "string"
-        ? user.publicMetadata.plan
-        : null,
-    );
+    const paid = hasPaidPracticeAccess(planForAccess);
     if (!paid) {
       setPlanNameDisplay("");
       setIsPlanLoaded(true);
@@ -69,7 +75,7 @@ export default function Profile({
       setPlanNameDisplay("Plus");
     }
     setIsPlanLoaded(true);
-  }, [prevCheckout, subscriptionData, user, billingProvider]);
+  }, [prevCheckout, subscriptionData, user, billingProvider, planForAccess]);
 
   const [showSetPasswordModal, setShowSetPasswordModal] = useState(false);
   const [password, setPassword] = useState("");
@@ -124,10 +130,11 @@ export default function Profile({
   const canCancelGooglePlay =
     isGooglePlaySubscriber &&
     !playAlreadyCancelled &&
-    (googlePlayCanCancel ||
-      hasPaidPracticeAccess(user?.publicMetadata?.plan) ||
-      Boolean(subscriptionData));
-  const hasPremiumAccount = hasPaidPracticeAccess(user?.publicMetadata?.plan);
+    (googlePlayCanCancel || hasPaidPracticeAccess(planForAccess));
+  const hasPremiumAccount = hasPaidPracticeAccess(planForAccess);
+  const showManageSubscription = isGooglePlaySubscriber
+    ? canCancelGooglePlay
+    : hasPremiumAccount && hasLiveStripeSubscription;
 
   const daysSubscribed = (() => {
     const raw = user?.publicMetadata?.purchaseDate;
@@ -151,6 +158,8 @@ export default function Profile({
       setShowCancelPlayConfirm(true);
       return;
     }
+
+    if (!hasLiveStripeSubscription) return;
 
     try {
       setLoadingPortal(true);
@@ -476,7 +485,7 @@ export default function Profile({
                     <span className="text-[#76808F] text-[14px] font-normal w-[180px] text-center">
                       Cancels at period end
                     </span>
-                  ) : (
+                  ) : showManageSubscription ? (
                     <button
                       onClick={handleManageSubscription}
                       disabled={
@@ -498,7 +507,7 @@ export default function Profile({
                           ? "Loading..."
                           : "Manage Subscription"}
                     </button>
-                  )}
+                  ) : null}
                 </div>
               ) : (
                 <span className="text-green-700">Free</span>

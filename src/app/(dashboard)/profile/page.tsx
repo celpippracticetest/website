@@ -10,6 +10,7 @@ import {
   planSourceIsGooglePlay,
   readPlanSource,
 } from "@/lib/admin/googlePlayAdmin";
+import { findLiveStripeSubscription } from "@/lib/stripe/liveSubscription";
 import {
   formatPlanLabel,
   hasPaidPracticeAccess,
@@ -36,23 +37,10 @@ function stripeProductName(product: unknown): string | undefined {
   return undefined;
 }
 
-/** Active or trialing only — canceled / unpaid history must not look like a current plan. */
-async function findLiveStripeSubscription(
+async function loadLiveStripeSubscriptionData(
   customerId: string,
 ): Promise<ProfileSubscriptionData | null> {
-  const [active, trialing] = await Promise.all([
-    stripe.subscriptions.list({
-      customer: customerId,
-      status: "active",
-      limit: 1,
-    }),
-    stripe.subscriptions.list({
-      customer: customerId,
-      status: "trialing",
-      limit: 1,
-    }),
-  ]);
-  const summary = active.data[0] ?? trialing.data[0];
+  const summary = await findLiveStripeSubscription(customerId);
   if (!summary) return null;
 
   const subscription = await stripe.subscriptions.retrieve(summary.id, {
@@ -150,7 +138,7 @@ export default async function UserProfilePage() {
         }
 
         for (const customerId of customerIds) {
-          const live = await findLiveStripeSubscription(customerId);
+          const live = await loadLiveStripeSubscriptionData(customerId);
           if (live) {
             subscriptionData = live;
             billingProvider = "stripe";
@@ -172,6 +160,11 @@ export default async function UserProfilePage() {
     redirect("/practice-overview");
   }
 
+  const serverPlan =
+    typeof user.publicMetadata?.plan === "string"
+      ? user.publicMetadata.plan
+      : "free";
+
   return (
     <Profile
       user={JSON.parse(JSON.stringify(user))}
@@ -179,6 +172,10 @@ export default async function UserProfilePage() {
       subscriptionData={subscriptionData}
       billingProvider={billingProvider}
       googlePlayCanCancel={googlePlayCanCancel}
+      serverPlan={serverPlan}
+      hasLiveStripeSubscription={
+        billingProvider === "stripe" && Boolean(subscriptionData)
+      }
     />
   );
 }
