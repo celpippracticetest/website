@@ -3,8 +3,9 @@
 import { useEffect, useRef } from "react";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { trackKpi } from "@/lib/analytics";
-import { setGa4UserId } from "@/lib/ga4Browser";
+import { setGa4UserId, setGa4UserProperties } from "@/lib/ga4Browser";
 import { persistTargetClb, syncKpiUserProperties } from "@/lib/ga4KpiContext";
+import { rememberAppClientPlatform } from "@/lib/appClientPlatform";
 
 const LAST_ACTIVE_KEY = "celpip_last_active_at";
 const REACTIVATION_ONCE_KEY = "celpip_reactivation_fired";
@@ -23,6 +24,9 @@ export default function AuthAnalyticsTracker() {
   const firedReactivation = useRef(false);
 
   useEffect(() => {
+    const platform = rememberAppClientPlatform();
+    setGa4UserProperties({ platform, app_platform: platform });
+
     if (!isLoaded) return;
 
     const w = window as Window & {

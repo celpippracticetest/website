@@ -1,5 +1,6 @@
 import { getAnalyticsPricingModelContext } from "@/lib/analyticsPricingModelContext";
 import { getAnalyticsStyleContext } from "@/lib/analyticsStyleContext";
+import { rememberAppClientPlatform } from "@/lib/appClientPlatform";
 import { setGa4UserProperties } from "@/lib/ga4Browser";
 
 const STORAGE_KEYS = {
@@ -140,6 +141,7 @@ export function syncKpiUserProperties(extra?: {
     writeStorage(STORAGE_KEYS.targetClb, String(extra.targetClb));
   }
 
+  const platform = rememberAppClientPlatform();
   setGa4UserProperties({
     user_plan: extra?.userPlan,
     days_until_test_bucket: kpi.days_until_test_bucket,
@@ -147,6 +149,8 @@ export function syncKpiUserProperties(extra?: {
     has_test_date: kpi.days_until_test_bucket === "unknown" ? "false" : "true",
     style,
     pricing_ab_model: pricing,
+    platform,
+    app_platform: platform,
   });
 }
 

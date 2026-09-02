@@ -2,6 +2,7 @@
 import { track as vercelTrack } from "@vercel/analytics";
 import { getAnalyticsStyleContext } from "@/lib/analyticsStyleContext";
 import { getAnalyticsPricingModelContext } from "@/lib/analyticsPricingModelContext";
+import { rememberAppClientPlatform } from "@/lib/appClientPlatform";
 import { contentGroupFromPath } from "@/lib/contentGroup";
 import { sendGa4Event, updateGa4Consent } from "@/lib/ga4Browser";
 import {
@@ -477,6 +478,7 @@ export function trackEvent(
     const styleContext = getAnalyticsStyleContext();
     const pricingModelContext = getAnalyticsPricingModelContext();
     const kpiContext = getKpiEventContext();
+    const appPlatform = rememberAppClientPlatform();
     const enrichedEvent = enrichContext
       ? {
           ...kpiContext,
@@ -484,6 +486,7 @@ export function trackEvent(
           ...getUserContext(),
           ...(event.style === undefined ? styleContext : {}),
           ...(event.pricing_ab_model === undefined ? pricingModelContext : {}),
+          app_platform: appPlatform,
           timestamp: new Date().toISOString(),
         }
       : event;

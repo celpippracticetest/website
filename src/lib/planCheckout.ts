@@ -146,7 +146,7 @@ export function submitPlanCheckout(args: {
 
 function notifyCelpipNativeIap(action: string): boolean {
   if (typeof navigator === "undefined") return false;
-  if (!/CelpipAppWebView/i.test(navigator.userAgent)) return false;
+  if (!/CELPIPApp\/|CelpipAppWebView/i.test(navigator.userAgent)) return false;
   const native = (
     window as Window & {
       CelpipNativeIap?: { postMessage: (message: string) => void };

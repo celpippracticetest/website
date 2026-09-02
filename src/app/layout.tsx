@@ -300,6 +300,21 @@ export default async function RootLayout({
               function gtag(){dataLayer.push(arguments);}
               window.gtag = gtag;
               gtag('js', new Date());
+              (function () {
+                var ua = navigator.userAgent || '';
+                var flag = window.__CELPIP_APP_PLATFORM;
+                var platform = 'web';
+                if (flag === 'android_app' || flag === 'ios_app' || flag === 'web') {
+                  platform = flag;
+                } else if (/CELPIPApp\\/|CelpipAppWebView/i.test(ua)) {
+                  platform = /iPhone|iPad|iPod/i.test(ua) ? 'ios_app' : 'android_app';
+                }
+                window.__CELPIP_APP_PLATFORM = platform;
+                gtag('set', 'user_properties', {
+                  platform: platform,
+                  app_platform: platform
+                });
+              })();
               gtag('config', '${GA4_MEASUREMENT_ID}', {
                 send_page_view: false
               });

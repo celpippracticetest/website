@@ -233,6 +233,12 @@ const USER_DIMENSIONS = [
     displayName: "Has test date",
     description: "true when the user provided a scheduled exam date.",
   },
+  {
+    parameterName: "app_platform",
+    displayName: "App platform",
+    description:
+      "android_app, ios_app, or web. Native WebView vs public website (GA Platform stays web).",
+  },
   // `style` and `pricing_ab_model` already exist as EVENT dimensions on this property.
 ];
 
