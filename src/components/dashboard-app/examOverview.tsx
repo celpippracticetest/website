@@ -113,8 +113,8 @@ const ExamOverview = ({
             );
             const isComplete = Boolean(
               progress &&
-                progress.totalParts > 0 &&
-                progress.completedParts >= progress.totalParts,
+              progress.totalParts > 0 &&
+              progress.completedParts >= progress.totalParts,
             );
             const startLabel = isComplete
               ? "Review"
@@ -139,7 +139,9 @@ const ExamOverview = ({
                     <div className="w-full max-w-[160px]">
                       <div className="mb-1 flex justify-between text-[11px] text-[#76808F]">
                         <span>
-                          {isComplete ? "Completed" : `${progress?.completedParts}/${progress?.totalParts} parts`}
+                          {isComplete
+                            ? "Completed"
+                            : `${progress?.completedParts}/${progress?.totalParts} parts`}
                         </span>
                         <span>{progress?.completionPercentage}%</span>
                       </div>
@@ -154,53 +156,59 @@ const ExamOverview = ({
                     </div>
                   ) : null}
                   <div className="flex items-center gap-2">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <div className="w-[112px] text-[14px] font-[14px] hover:!bg-[#4A7DFF] hover:!text-white flex items-center justify-center text-[#76808F] h-[40px] bg-[#F3F2F2] rounded-[24px] transition-colors cursor-pointer">
-                          {startLabel}{" "}
-                          {locked ? (
-                            <SvgLock className="h-4 w-4 ml-1" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4 ml-1" />
-                          )}
-                        </div>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent
-                        align="center"
-                        className="w-48 bg-white"
+                    {locked ? (
+                      <button
+                        type="button"
+                        onClick={() => handleStart(exam)}
+                        className="w-[112px] text-[14px] flex items-center justify-center text-[#A0A8B4] h-[40px] bg-[#EDEDED] rounded-[24px] cursor-pointer opacity-70"
                       >
-                        <DropdownMenuItem
-                          onClick={() => handleStart(exam, 1)}
-                          className="cursor-pointer"
+                        Start
+                      </button>
+                    ) : (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <div className="w-[112px] text-[14px] font-[14px] hover:!bg-[#4A7DFF] hover:!text-white flex items-center justify-center text-[#76808F] h-[40px] bg-[#F3F2F2] rounded-[24px] transition-colors cursor-pointer">
+                            {startLabel}{" "}
+                            <ChevronDown className="h-4 w-4 ml-1" />
+                          </div>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          align="center"
+                          className="w-48 bg-white"
                         >
-                          Complete Test
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleStart(exam, 1, "listening")}
-                          className="cursor-pointer"
-                        >
-                          Listening
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleStart(exam, 7, "reading")}
-                          className="cursor-pointer"
-                        >
-                          Reading
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleStart(exam, 11, "writing")}
-                          className="cursor-pointer"
-                        >
-                          Writing
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleStart(exam, 13, "speaking")}
-                          className="cursor-pointer"
-                        >
-                          Speaking
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                          <DropdownMenuItem
+                            onClick={() => handleStart(exam, 1)}
+                            className="cursor-pointer"
+                          >
+                            Complete Test
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleStart(exam, 1, "listening")}
+                            className="cursor-pointer"
+                          >
+                            Listening
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleStart(exam, 7, "reading")}
+                            className="cursor-pointer"
+                          >
+                            Reading
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleStart(exam, 11, "writing")}
+                            className="cursor-pointer"
+                          >
+                            Writing
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleStart(exam, 13, "speaking")}
+                            className="cursor-pointer"
+                          >
+                            Speaking
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                   </div>
                 </div>
               </div>
