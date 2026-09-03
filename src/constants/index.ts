@@ -1,6 +1,6 @@
 const PRACTICE_PARTS = [
  "Problem Solving",
- "A Daily life conversation",
+ "A Daily Life Conversation",
  "Information",
  "News Item",
  "Discussion",
@@ -12,13 +12,13 @@ const PRACTICE_PARTS = [
  "Writing an Email",
  "Survey Questions",
  "Giving Advice",
- "Talking about personal experience",
+ "Talking about Personal Experience",
  "Describing a Scene",
- "Making predictions",
+ "Making Predictions",
  "Comparing and Persuading",
- "Dealing with a difficult situation",
- "Expressing opinions",
- "Describing an unusual situation",
+ "Dealing with a Difficult Situation",
+ "Expressing Opinions",
+ "Describing an Unusual Situation",
 ]
 
 export { PRACTICE_PARTS };

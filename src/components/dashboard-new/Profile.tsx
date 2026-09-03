@@ -104,7 +104,7 @@ export default function Profile({
   const [newEmail, setNewEmail] = useState("");
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
-      router.push("/practice-overview");
+      router.push("/sign-in?redirect_url=/profile");
     }
   }, [isLoaded, isSignedIn, router]);
 
@@ -703,7 +703,7 @@ export default function Profile({
                       setShowToast(true);
                       setTimeout(() => {
                         setShowToast(false);
-                        signOutWebSession();
+                        signOutWebSession(router);
                         localStorage.removeItem("hasClosedExtraDiscountModal");
                         localStorage.removeItem("pendingReferralCode");
                         document.cookie =

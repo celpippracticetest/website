@@ -43,15 +43,13 @@ const ListeningAnswerList = ({
           </div>
           <div className="flex flex-wrap gap-2 text-center lg:text-left text-[14px] text-gray-900 font-regular w-full">
             <div className="min-h-[36px]  justify-center leading-[20px] rounded-[28px] flex items-center px-[16px] bg-[#F0FFFD] text-[#0DAA94] text-[14px] font-medium flex-1 screen744:!flex-initial">
-              Correct:
-              {numberOfCorrect}
+              Correct: {numberOfCorrect}
             </div>
             <div className="min-h-[36px]  justify-center leading-[20px] rounded-[28px] flex items-center px-[16px] bg-[#FFE2E8] text-[#EE4266] text-[14px] font-medium flex-1 screen744:!flex-initial">
               Wrong: {numberOfWrong}
             </div>
             <div className="min-h-[36px]  justify-center w-full screen744:!w-fit leading-[20px] rounded-[28px] flex items-center px-[16px] bg-[#E6E6E6] text-[#212E42] text-[14px] font-medium screen744:!flex-initial">
-              Not answered:
-              {notAnswered}
+              Not answered: {notAnswered}
             </div>
           </div>
         </div>

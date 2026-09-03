@@ -1,15 +1,13 @@
 "use client";
-import { useListeningPracticeCompletion } from "./hooks/useListeningPracticeCompletion";
 import { TPracticeDto } from "@/models/practice.model";
-import { redirect, RedirectType } from "next/navigation";
 import ReadingPracticeView from "./ReadingPracticeView";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import ListeningTaskView from "../listening-practice/ListeningTaskView";
 import { useRouter } from "nextjs-toploader/app";
-import { TListeningAndReadingAnswerDto } from "@/models/answer";
-import { useEffect } from "react";
 import SvgChevronRightForTitle from "@/components/icons/SvgChevronRightForTitle";
 import { usePracticeDeepLinkParams } from "@/hooks/usePracticeDeepLinkParams";
+import { taskPickerPath } from "@/lib/practiceRoutes";
+import { TListeningAndReadingAnswerDto } from "@/models/answer";
 
 interface ReadingPracticeProps {
   allPractices: TPracticeDto[];
@@ -29,13 +27,11 @@ const ReadingPractice = ({
   const router = useRouter();
   const { selectedPracticeId, taskId: selectedTaskId } = usePracticeDeepLinkParams();
 
-  useEffect(() => {
-    if (!selectedPracticeId && !selectedTaskId) {
-      router.push("/practice-overview");
-    }
-  }, [selectedPracticeId, selectedTaskId, router]);
-
   const handleBackToPracticeList = () => {
+    if (task.id) {
+      router.push(taskPickerPath("reading", task.id));
+      return;
+    }
     router.push("/practice-overview");
   };
 
@@ -54,7 +50,7 @@ const ReadingPractice = ({
         <div
           className="cursor-pointer"
           onClick={() => {
-            router.push("/reading");
+            router.push(taskPickerPath("reading", task.id));
           }}
         >
           Reading

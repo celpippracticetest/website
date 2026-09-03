@@ -15,13 +15,21 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown } from "lucide-react";
-import Link from "next/link";
 import {
   createMockExamAttemptId,
+  readRememberedMockExamAttemptId,
   rememberMockExamAttemptId,
 } from "@/lib/mockExamAttemptId";
+import type { ExamProgressSummary } from "@/lib/examOverviewProgress";
+import SvgLock from "../icons/Lock";
 
-const ExamOverview = ({ exams }: { exams: TExamSchemaDto[] }) => {
+const ExamOverview = ({
+  exams,
+  progressByExamId = {},
+}: {
+  exams: TExamSchemaDto[];
+  progressByExamId?: Record<string, ExamProgressSummary>;
+}) => {
   const router = useRouter();
   const { user, isLoaded, isSignedIn } = useHybridWebUser();
   const plan = user?.publicMetadata?.plan as string | undefined;
@@ -71,7 +79,12 @@ const ExamOverview = ({ exams }: { exams: TExamSchemaDto[] }) => {
       return;
     }
     setSelectedExam(exam.name);
-    const attemptId = createMockExamAttemptId();
+    const remembered = readRememberedMockExamAttemptId(exam.id);
+    const progress = progressByExamId[exam.id];
+    const attemptId =
+      remembered && progress && progress.completedParts > 0
+        ? remembered
+        : createMockExamAttemptId();
     rememberMockExamAttemptId(exam.id, attemptId);
     const query = section
       ? `?section=${section}&attemptId=${attemptId}`
@@ -93,20 +106,63 @@ const ExamOverview = ({ exams }: { exams: TExamSchemaDto[] }) => {
       <div className="w-full  flex flex-col gap-4">
         <div className="flex flex-wrap w-full gap-[16px] pb-[10px]">
           {exams.map((exam: TExamSchemaDto, i: number) => {
+            const locked = isLoaded && isSignedIn && !canAccessExam(exam.id);
+            const progress = progressByExamId[exam.id];
+            const hasProgress = Boolean(
+              progress && progress.completedParts > 0,
+            );
+            const isComplete = Boolean(
+              progress &&
+                progress.totalParts > 0 &&
+                progress.completedParts >= progress.totalParts,
+            );
+            const startLabel = isComplete
+              ? "Review"
+              : hasProgress
+                ? "Resume"
+                : "Start";
             return (
               <div
                 key={i}
-                className="flex grow basis-0 min-w-[calc(50%-8px)] screen744:min-w-[calc(25%-12px)] max-w-full screen744:max-w-[calc(25%-12px)] rounded-[12px] h-[124px] bg-white overflow-hidden cursor-pointer items-center justify-center flex-col hover:shadow-md transition-shadow"
+                className="flex grow basis-0 min-w-[calc(50%-8px)] screen744:min-w-[calc(25%-12px)] max-w-full screen744:max-w-[calc(25%-12px)] rounded-[12px] min-h-[124px] py-3 bg-white overflow-hidden cursor-pointer items-center justify-center flex-col hover:shadow-md transition-shadow"
               >
-                <div className="flex items-center gap-[16px] justify-center flex-col w-full px-2">
+                <div className="flex items-center gap-[12px] justify-center flex-col w-full px-2">
                   <p className=" text-[#37465C]  font-medium text-center w-full">
                     {exam.name}
                   </p>
+                  {locked ? (
+                    <div className="flex items-center gap-1 rounded-full bg-[#F1E9FE] px-3 py-1 text-[12px] font-semibold text-[#7C3AED]">
+                      <SvgLock />
+                      Premium
+                    </div>
+                  ) : hasProgress ? (
+                    <div className="w-full max-w-[160px]">
+                      <div className="mb-1 flex justify-between text-[11px] text-[#76808F]">
+                        <span>
+                          {isComplete ? "Completed" : `${progress?.completedParts}/${progress?.totalParts} parts`}
+                        </span>
+                        <span>{progress?.completionPercentage}%</span>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-[#E6E6E6]">
+                        <div
+                          className="h-1.5 rounded-full bg-[#4A7DFF]"
+                          style={{
+                            width: `${Math.min(100, progress?.completionPercentage ?? 0)}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ) : null}
                   <div className="flex items-center gap-2">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <div className="w-[112px] text-[14px] font-[14px] hover:!bg-[#4A7DFF] hover:!text-white flex items-center justify-center text-[#76808F] h-[40px] bg-[#F3F2F2] rounded-[24px] transition-colors cursor-pointer">
-                          Start <ChevronDown className="h-4 w-4 ml-1" />
+                          {startLabel}{" "}
+                          {locked ? (
+                            <SvgLock className="h-4 w-4 ml-1" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4 ml-1" />
+                          )}
                         </div>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent

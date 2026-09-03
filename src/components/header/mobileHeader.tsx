@@ -271,7 +271,7 @@ const MobileHeader = (props: {
               )}
 
             <button
-              onClick={() => signOutWebSession()}
+              onClick={() => signOutWebSession(router)}
               className="block px-4 py-2 text-[14px] text-gray-700 cursor-pointer"
               role="menuitem"
               tabIndex={-1}

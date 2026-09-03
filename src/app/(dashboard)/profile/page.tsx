@@ -63,7 +63,7 @@ export default async function UserProfilePage() {
   const userId = hybridUser?.userId;
 
   if (!userId) {
-    redirect("/practice-overview");
+    redirect("/sign-in?redirect_url=/profile");
   }
 
   let prevCheckout = null;
@@ -157,7 +157,7 @@ export default async function UserProfilePage() {
   }
 
   if (!user) {
-    redirect("/practice-overview");
+    redirect("/sign-in?redirect_url=/profile");
   }
 
   const serverPlan =

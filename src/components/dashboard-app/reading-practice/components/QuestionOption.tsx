@@ -1,7 +1,6 @@
 import SvgCheckCircle from "@/components/icons/CheckCircle";
 import SvgCircle from "@/components/icons/Circle";
 import { cn } from "@/lib/utils";
-import { Circle, CircleCheck } from "lucide-react";
 
 interface QuestionOptionProps {
   option: {
@@ -25,17 +24,28 @@ const QuestionOption = ({
 }: QuestionOptionProps) => {
   const isUserSelection = isSelected;
   const isWrongSelection = showResults && isUserSelection && !isCorrect;
+  const inputId = `question-${questionId}-option-${option.id}`;
 
   return (
-    <div
+    <label
+      htmlFor={inputId}
       className={cn(
-        " cursor-pointer min-h-[36px] pb-[10px] pl-[4px] flex items-center text-[14px] text-[#212E42] rounded-[8px] leading-[20px]",
+        "cursor-pointer min-h-[36px] pb-[10px] pl-[4px] flex items-center text-[14px] text-[#212E42] rounded-[8px] leading-[20px]",
         isSelected ? "bg-[#F2F6FF]" : "",
         showResults && isCorrect ? "border-green-400 bg-white" : "",
-        isWrongSelection ? "border-red-400 bg-white" : ""
+        isWrongSelection ? "border-red-400 bg-white" : "",
       )}
-      onClick={onClick}
     >
+      <input
+        id={inputId}
+        type="radio"
+        name={`question-${questionId}`}
+        value={option.id}
+        checked={isSelected}
+        disabled={showResults}
+        onChange={onClick}
+        className="sr-only"
+      />
       <div className="flex items-center rounded-md transition-all ">
         {!showResults && isSelected && (
           <SvgCheckCircle className=" shrink-0 mr-2" />
@@ -51,7 +61,7 @@ const QuestionOption = ({
           {option.text}
         </div>
       </div>
-    </div>
+    </label>
   );
 };
 

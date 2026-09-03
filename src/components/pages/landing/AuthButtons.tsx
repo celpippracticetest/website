@@ -7,9 +7,11 @@ import { trackCTAClick } from "@/lib/analytics";
 import Link from "next/link";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const AuthButtons = () => {
+  const router = useRouter();
   const { isSignedIn, user, isLoaded } = useHybridWebUser();
   const [isUserDropDownOpen, setUserDropDownOpen] = useState(false);
   const roles = (user?.publicMetadata as Record<string, unknown> | undefined)?.[
@@ -90,7 +92,7 @@ const AuthButtons = () => {
                 <button
                   onClick={() => {
                     localStorage.removeItem("hasClosedExtraDiscountModal");
-                    signOutWebSession();
+                    signOutWebSession(router);
                   }}
                   className="cursor-pointer block px-4 py-2 text-[14px] text-gray-700 w-full text-left"
                 >

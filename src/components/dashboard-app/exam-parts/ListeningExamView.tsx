@@ -23,6 +23,14 @@ import ContinueExamModal from "@/components/modal/ContinueExamModal";
 import ExamHeader from "./components/ExamHeader";
 import { useEnsureMockExamAttemptId } from "@/hooks/useEnsureMockExamAttemptId";
 import { mockExamPartHref } from "@/lib/mockExamAttemptId";
+import InvalidMockAttempt from "./InvalidMockAttempt";
+import { useUnsavedWorkGuard } from "@/hooks/useUnsavedWorkGuard";
+import {
+  inProgressKey,
+  readInProgress,
+  writeInProgress,
+  type ObjectiveInProgress,
+} from "@/lib/inProgressSession";
 
 interface ListeningExamViewProps {
   practice: TPracticeDto;
@@ -48,7 +56,9 @@ const ListeningExamView = ({
   const { user, isLoaded } = useHybridWebUser();
   const searchParams = useSearchParams();
   const section = searchParams.get("section");
-  const attemptId = useEnsureMockExamAttemptId(practice.taskId);
+  const { attemptId, isInvalidAttempt } = useEnsureMockExamAttemptId(
+    practice.taskId,
+  );
 
   const [page, setPage] = useState("description");
   const [passageIndex, setPassageIndex] = useState(0);
@@ -60,6 +70,15 @@ const ListeningExamView = ({
     Record<string, string>
   >({});
   const [time, setTime] = useState(1620);
+  const listeningTimerTime = 1620;
+  const progressKey = inProgressKey([
+    "mock",
+    practice.taskId,
+    attemptId,
+    partId,
+  ]);
+  const restoredRef = useRef(false);
+  const [sessionHydrated, setSessionHydrated] = useState(false);
 
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
@@ -81,6 +100,49 @@ const ListeningExamView = ({
       }
     };
   }, [page, time]);
+
+  useEffect(() => {
+    if (!attemptId || restoredRef.current) return;
+    restoredRef.current = true;
+    const saved = readInProgress<ObjectiveInProgress>(progressKey);
+    if (!saved) {
+      setSessionHydrated(true);
+      return;
+    }
+    if (
+      saved.page === "question" ||
+      (saved.selectedAnswers && Object.keys(saved.selectedAnswers).length > 0) ||
+      (typeof saved.time === "number" && saved.time < listeningTimerTime)
+    ) {
+      setPage("question");
+    }
+    if (
+      typeof saved.time === "number" &&
+      saved.time > 0 &&
+      saved.time <= listeningTimerTime
+    ) {
+      setTime(saved.time);
+    }
+    if (saved.selectedAnswers) {
+      setSelectedAnswers(saved.selectedAnswers);
+    }
+    setSessionHydrated(true);
+  }, [attemptId, progressKey, listeningTimerTime]);
+
+  useEffect(() => {
+    if (!attemptId || !sessionHydrated || page === "answer") return;
+    writeInProgress(progressKey, {
+      page,
+      time,
+      selectedAnswers,
+    } satisfies ObjectiveInProgress);
+  }, [attemptId, page, time, selectedAnswers, progressKey, sessionHydrated]);
+
+  useUnsavedWorkGuard(
+    page === "question" &&
+      (Object.keys(selectedAnswers).length > 0 || time < listeningTimerTime),
+  );
+
   useEffect(() => {
     // Log mock exam started when component mounts
     if (user && practice.taskId && attemptId) {
@@ -233,6 +295,9 @@ const ListeningExamView = ({
     const slice = PRACTICE_PARTS.slice(range.start, range.end);
     return slice.map((title, i) => ({ title, index: range.start + i + 1 }));
   };
+  if (isInvalidAttempt) {
+    return <InvalidMockAttempt />;
+  }
   return (
     <>
       <ExamHeader

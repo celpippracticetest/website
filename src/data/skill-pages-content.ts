@@ -99,12 +99,12 @@ export const skillPagesContent: Record<string, SkillPageContent> = {
             {
                 id: "1",
                 title: "Task #1",
-                description: "Problem solving",
+                description: "Problem Solving",
             },
             {
                 id: "2",
                 title: "Task #2",
-                description: "a daily life conversation",
+                description: "A Daily Life Conversation",
             },
             {
                 id: "3",

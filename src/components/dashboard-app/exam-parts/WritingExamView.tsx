@@ -25,6 +25,15 @@ import ExamHeader from "./components/ExamHeader";
 import Link from "next/link";
 import { useEnsureMockExamAttemptId } from "@/hooks/useEnsureMockExamAttemptId";
 import { mockExamPartHref, mockExamResultsHref } from "@/lib/mockExamAttemptId";
+import InvalidMockAttempt from "./InvalidMockAttempt";
+import { useUnsavedWorkGuard } from "@/hooks/useUnsavedWorkGuard";
+import {
+  clearInProgress,
+  inProgressKey,
+  readInProgress,
+  writeInProgress,
+  type ObjectiveInProgress,
+} from "@/lib/inProgressSession";
 
 interface WritingExamViewProps {
   practice: TPracticeDto;
@@ -46,15 +55,26 @@ const WritingExamView = ({
   const router = useRouter();
   const searchParams = useSearchParams();
   const section = searchParams.get("section");
-  const attemptId = useEnsureMockExamAttemptId(practice.taskId);
+  const { attemptId, isInvalidAttempt } = useEnsureMockExamAttemptId(
+    practice.taskId,
+  );
+  const writingTimerTime = 1620;
   const [page, setPage] = useState(partId == 11 ? "description" : "question");
   const [passageIndex] = useState(0);
-  const [time, setTime] = useState(1620);
+  const [time, setTime] = useState(writingTimerTime);
   const [wordCount, setWordCount] = useState(0);
   const [progressBar, setProgressBar] = useState(0);
   const [isSubmit, setIsSubmit] = useState(false);
   const [text, setText] = useState("");
   const [tryToSubmit, setTryToSubmit] = useState(false);
+  const progressKey = inProgressKey([
+    "mock",
+    practice.taskId,
+    attemptId,
+    partId,
+  ]);
+  const restoredRef = useRef(false);
+  const [sessionHydrated, setSessionHydrated] = useState(false);
 
   const [showLoginModal, setShowLoginModal] = useState(false);
   const { user, isLoaded, isSignedIn } = useHybridWebUser();
@@ -86,6 +106,55 @@ const WritingExamView = ({
       }
     };
   }, [page, time]);
+
+  useEffect(() => {
+    if (!attemptId || restoredRef.current) return;
+    restoredRef.current = true;
+    const saved = readInProgress<ObjectiveInProgress>(progressKey);
+    if (!saved) {
+      setSessionHydrated(true);
+      return;
+    }
+    if (
+      saved.page === "question" ||
+      (saved.text && saved.text.trim().length > 0) ||
+      (typeof saved.time === "number" && saved.time < writingTimerTime)
+    ) {
+      setPage("question");
+    }
+    if (
+      typeof saved.time === "number" &&
+      saved.time > 0 &&
+      saved.time <= writingTimerTime
+    ) {
+      setTime(saved.time);
+    }
+    if (saved.text) {
+      setText(saved.text);
+      const wc = saved.text.trim().split(/\s+/).filter(Boolean).length;
+      setWordCount(wc);
+    }
+    setSessionHydrated(true);
+  }, [attemptId, progressKey, writingTimerTime]);
+
+  useEffect(() => {
+    if (!attemptId || !sessionHydrated || isSubmit) return;
+    writeInProgress(progressKey, {
+      page,
+      time,
+      selectedAnswers: {},
+      text,
+    } satisfies ObjectiveInProgress);
+  }, [attemptId, page, time, text, isSubmit, progressKey, sessionHydrated]);
+
+  useEffect(() => {
+    if (isSubmit) clearInProgress(progressKey);
+  }, [isSubmit, progressKey]);
+
+  useUnsavedWorkGuard(
+    page === "question" && !isSubmit && (text.trim().length > 0 || time < writingTimerTime),
+  );
+
   useEffect(() => {
     // Log mock exam started when component mounts
     if (user && practice.taskId && attemptId) {
@@ -226,6 +295,10 @@ const WritingExamView = ({
     const slice = PRACTICE_PARTS.slice(range.start, range.end);
     return slice.map((title, i) => ({ title, index: range.start + i + 1 }));
   };
+
+  if (isInvalidAttempt) {
+    return <InvalidMockAttempt />;
+  }
 
   return (
     <div className=" mx-auto w-full h-full  p-2  transition-all duration-300 flex gap-5">
@@ -391,7 +464,6 @@ const WritingExamView = ({
                           <Button
                             variant="outline"
                             className="flex mt-[32px] gap-[8px] text-white items-center text-[14px] font-normal justify-center cursor-pointer rounded-[24px] bg-[#4A7DFF]"
-                            aria-label="Next testimonial"
                             onClick={() => {
                               if (freeUser) {
                                 setShowModal(true);

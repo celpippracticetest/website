@@ -27,6 +27,15 @@ function metadataRolesIncludeAdmin(
   return Array.isArray(roles) && roles.some((r) => r === "admin");
 }
 const isProfileRoute = (req: NextRequest) => req.nextUrl.pathname.startsWith("/profile");
+
+function signInUrlWithReturn(req: NextRequest) {
+  const signIn = new URL("/sign-in", req.url);
+  const returnTo = `${req.nextUrl.pathname}${req.nextUrl.search}`;
+  if (returnTo && returnTo !== "/sign-in") {
+    signIn.searchParams.set("redirect_url", returnTo);
+  }
+  return signIn;
+}
 const isReferralRoute = (req: NextRequest) => req.nextUrl.pathname.startsWith("/referral");
 const isPlansRoute = (req: NextRequest) => req.nextUrl.pathname.startsWith("/plans");
 
@@ -67,6 +76,8 @@ export default async function middleware(req: NextRequest) {
   const end = (response: NextResponse) => {
     if (
       NOINDEX_PATHS.has(req.nextUrl.pathname) ||
+      req.nextUrl.pathname === "/wiki" ||
+      req.nextUrl.pathname.startsWith("/wiki/") ||
       PRACTICE_HUB_DEEP_LINK.test(req.nextUrl.pathname)
     ) {
       response.headers.set("X-Robots-Tag", NOINDEX_X_ROBOTS_TAG);
@@ -89,6 +100,12 @@ export default async function middleware(req: NextRequest) {
   }
 
   const practiceHubDeepLink = req.nextUrl.pathname.match(PRACTICE_HUB_DEEP_LINK);
+  if (practiceHubDeepLink && !hasWebAuth) {
+    return end(NextResponse.redirect(signInUrlWithReturn(req)));
+  }
+  if (req.nextUrl.pathname === "/practice-overview" && !hasWebAuth) {
+    return end(NextResponse.redirect(signInUrlWithReturn(req)));
+  }
   if (practiceHubDeepLink) {
     const [, skill, practiceId, taskId] = practiceHubDeepLink;
     const url = req.nextUrl.clone();
@@ -250,8 +267,7 @@ export default async function middleware(req: NextRequest) {
 
   if (isProfileRoute(req)) {
     if (!hasWebAuth) {
-      const dashboard = new URL("/practice-overview", req.url);
-      return end(NextResponse.redirect(dashboard));
+      return end(NextResponse.redirect(signInUrlWithReturn(req)));
     }
     // All authenticated users can access their profile regardless of plan
   }

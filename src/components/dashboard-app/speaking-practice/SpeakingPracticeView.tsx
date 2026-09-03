@@ -561,7 +561,6 @@ const SpeakingPracticeView = ({
                         <Button
                           variant="outline"
                           className="flex mt-[32px] gap-[8px] text-white items-center text-[14px] font-normal justify-center cursor-pointer rounded-[24px] bg-[#4A7DFF]"
-                          aria-label="Next testimonial"
                           onClick={() => {
                             if (freeUser) {
                               setShowModal(true);
@@ -821,7 +820,6 @@ const SpeakingPracticeView = ({
                         <Button
                           variant="outline"
                           className="flex mt-[32px] gap-[8px] text-white items-center text-[14px] font-normal justify-center cursor-pointer rounded-[24px] bg-[#4A7DFF]"
-                          aria-label="Next testimonial"
                           onClick={() => {
                             if (freeUser) {
                               setShowModal(true);

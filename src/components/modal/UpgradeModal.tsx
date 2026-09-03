@@ -60,10 +60,10 @@ const UpgradeModal = (params: any) => {
           src="/images/plan-sale-modal.png"
         />
         <div className="flex w-full justify-center pt-[16px] text-[16px] screen744:!text-[20px] font-semibold">
-          Summer Flash Sale!
+          Upgrade to Plus
         </div>
         <div className="flex w-full justify-center h-[48px] mt-[24px] text-[24px] screen744:!text-[38px] font-bold">
-          Up to 80% Off All Plans!{" "}
+          Save up to 60% on Quarterly
         </div>
         <div className="flex w-full gap-[12px] flex-col-reverse screen744:!flex-row screen744:!justify-center screen744:!flex-wrap">
           {plans.map((item, index) => (
@@ -71,7 +71,9 @@ const UpgradeModal = (params: any) => {
               key={item._id || index}
               id={index}
               title={item.title}
-              type={item.type}
+              type={
+                /3\s*months/i.test(item.type || "") ? "Quarterly" : item.type
+              }
               oldPrice={item.oldPrice}
               price={item.price}
               buttonTitle={item.buttonTitle}

@@ -65,20 +65,12 @@ export default function Success() {
               Back to dashboard
             </span>
           </div>
-          <div
-            onClick={() => {
-              if (freeUser || proUser) {
-                setShowModal(true);
-                return;
-              } else if (noUser) {
-                setShowLoginModal(true);
-                return;
-              }
-            }}
-            className="flex items-center cursor-pointer justify-center mt-[40px] font-normal bg-[#4A7DFF] text-white text-[14px] h-[40px] rounded-[24px] px-[24px] py-[12px]"
+          <Link
+            href="/pricing"
+            className="flex items-center justify-center mt-[40px] font-normal bg-[#4A7DFF] text-white text-[14px] h-[40px] rounded-[24px] px-[24px] py-[12px]"
           >
             Try again
-          </div>
+          </Link>
         </div>
       </div>
     </main>

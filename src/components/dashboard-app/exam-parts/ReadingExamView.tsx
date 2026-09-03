@@ -29,6 +29,15 @@ import Link from "next/link";
 import { useEnsureMockExamAttemptId } from "@/hooks/useEnsureMockExamAttemptId";
 import { mockExamPartHref } from "@/lib/mockExamAttemptId";
 import { formatPracticeHtml } from "@/lib/formatPracticeHtml";
+import InvalidMockAttempt from "./InvalidMockAttempt";
+import { useUnsavedWorkGuard } from "@/hooks/useUnsavedWorkGuard";
+import {
+  clearInProgress,
+  inProgressKey,
+  readInProgress,
+  writeInProgress,
+  type ObjectiveInProgress,
+} from "@/lib/inProgressSession";
 
 interface ReadingExamViewProps {
   practice: TPracticeDto;
@@ -51,7 +60,9 @@ const ReadingExamView = ({
   const router = useRouter();
   const searchParams = useSearchParams();
   const section = searchParams.get("section");
-  const attemptId = useEnsureMockExamAttemptId(practice.taskId);
+  const { attemptId, isInvalidAttempt } = useEnsureMockExamAttemptId(
+    practice.taskId,
+  );
 
   const [showLoginModal, setShowLoginModal] = useState(false);
   const { user, isLoaded, isSignedIn } = useHybridWebUser();
@@ -65,6 +76,14 @@ const ReadingExamView = ({
     Record<string, string>
   >({});
   const [time, setTime] = useState(timerTime);
+  const progressKey = inProgressKey([
+    "mock",
+    practice.taskId,
+    attemptId,
+    partId,
+  ]);
+  const restoredRef = useRef(false);
+  const [sessionHydrated, setSessionHydrated] = useState(false);
   const setPremiumPlanModalState = useStore(
     (state) => state.setPremiumPlanModalState,
   );
@@ -88,6 +107,49 @@ const ReadingExamView = ({
       }
     };
   }, [page, time]);
+
+  useEffect(() => {
+    if (!attemptId || restoredRef.current) return;
+    restoredRef.current = true;
+    const saved = readInProgress<ObjectiveInProgress>(progressKey);
+    if (!saved) {
+      setSessionHydrated(true);
+      return;
+    }
+    if (
+      saved.page === "question" ||
+      (saved.selectedAnswers && Object.keys(saved.selectedAnswers).length > 0) ||
+      (typeof saved.time === "number" && saved.time < timerTime)
+    ) {
+      setPage("question");
+    }
+    if (typeof saved.time === "number" && saved.time > 0 && saved.time <= timerTime) {
+      setTime(saved.time);
+    }
+    if (saved.selectedAnswers) {
+      setSelectedAnswers(saved.selectedAnswers);
+    }
+    setSessionHydrated(true);
+  }, [attemptId, progressKey, timerTime]);
+
+  useEffect(() => {
+    if (!attemptId || !sessionHydrated || page === "answer") return;
+    writeInProgress(progressKey, {
+      page,
+      time,
+      selectedAnswers,
+    } satisfies ObjectiveInProgress);
+  }, [attemptId, page, time, selectedAnswers, progressKey, sessionHydrated]);
+
+  useEffect(() => {
+    if (page === "answer") clearInProgress(progressKey);
+  }, [page, progressKey]);
+
+  useUnsavedWorkGuard(
+    page === "question" &&
+      (Object.keys(selectedAnswers).length > 0 || time < timerTime),
+  );
+
   useEffect(() => {
     // Log mock exam started when component mounts
     if (user && practice.taskId && attemptId) {
@@ -232,6 +294,10 @@ const ReadingExamView = ({
     return slice.map((title, i) => ({ title, index: range.start + i + 1 }));
   };
 
+  if (isInvalidAttempt) {
+    return <InvalidMockAttempt />;
+  }
+
   return (
     <div className="w-full p-2  transition-all duration-300 flex gap-5">
       {freeUser ? (
@@ -362,7 +428,7 @@ const ReadingExamView = ({
                       of the screen.
                     </li>
                     <li>
-                      Select the most appropriate answer for each question..
+                      Select the most appropriate answer for each question.
                     </li>
                   </ul>
                 </div>
@@ -413,7 +479,6 @@ const ReadingExamView = ({
                           <Button
                             variant="outline"
                             className="flex mt-[32px] gap-[8px] text-white items-center text-[14px] font-normal justify-center cursor-pointer rounded-[24px] bg-[#4A7DFF]"
-                            aria-label="Next testimonial"
                             onClick={() => {
                               if (freeUser) {
                                 setShowModal(true);
@@ -497,7 +562,9 @@ const ReadingExamView = ({
                                           <Popover.Portal>
                                             <Popover.Content
                                               className="PopoverContent rounded-md border bg-popover text-popover-foreground shadow-md outline-none  w-80 p-2"
-                                              sideOffset={5}
+                                              side="bottom"
+                                              avoidCollisions={false}
+                                              sideOffset={8}
                                             >
                                               <div className="flex flex-col">
                                                 <p className="text-[14px] font-medium mb-2"></p>

@@ -24,6 +24,7 @@ import { PRACTICE_PARTS } from "@/constants";
 import ExamHeader from "./components/ExamHeader";
 import Link from "next/link";
 import { useEnsureMockExamAttemptId } from "@/hooks/useEnsureMockExamAttemptId";
+import InvalidMockAttempt from "./InvalidMockAttempt";
 import { mockExamPartHref, mockExamResultsHref } from "@/lib/mockExamAttemptId";
 
 interface SpeakingExamViewProps {
@@ -41,7 +42,9 @@ const SpeakingExamView = ({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const section = searchParams.get("section");
-  const attemptId = useEnsureMockExamAttemptId(practice.taskId);
+  const { attemptId, isInvalidAttempt } = useEnsureMockExamAttemptId(
+    practice.taskId,
+  );
   const [sendingResult] = useState(false);
   const [passageIndex, setPassageIndex] = useState(0);
 
@@ -337,6 +340,10 @@ const SpeakingExamView = ({
     return slice.map((title, i) => ({ title, index: range.start + i + 1 }));
   };
 
+  if (isInvalidAttempt) {
+    return <InvalidMockAttempt />;
+  }
+
   return (
     <div className="h-full mx-auto w-full  transition-all duration-300 flex gap-5">
       {freeUser ? (
@@ -605,7 +612,6 @@ const SpeakingExamView = ({
                           <Button
                             variant="outline"
                             className="flex mt-[32px] gap-[8px] text-white items-center text-[14px] font-normal justify-center cursor-pointer rounded-[24px] bg-[#4A7DFF]"
-                            aria-label="Next testimonial"
                             onClick={() => {
                               if (freeUser) {
                                 setShowModal(true);

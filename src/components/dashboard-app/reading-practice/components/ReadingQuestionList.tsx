@@ -23,7 +23,7 @@ const ReadingQuestionList = ({
       <p className="text-[14px] text-[#212e42]  font-semibold mb-3">
         {question.id}.{question.question}
       </p>
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1" role="radiogroup" aria-label={`Question ${question.id}`}>
         {question.choices.map((option) => (
           <QuestionOption
             key={option.id}

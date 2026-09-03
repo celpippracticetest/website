@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import PricingPageClient from "@/components/pages/pricing/PricingPageClient";
+import AuthButtons from "@/components/pages/landing/AuthButtons";
 import type { PricingAbLayout } from "@/lib/pricingAbTest";
 import type { SerializedPlan } from "@/types/pricing";
 
@@ -35,18 +36,7 @@ export default function PricingPageShell({
             />
           </Link>
           <div className="flex items-center gap-3">
-            <Link
-              href="/sign-in"
-              className="text-[14px] font-medium text-[#37465C] hover:text-[#316BFF]"
-            >
-              Sign in
-            </Link>
-            <Link
-              href="/sign-up"
-              className="rounded-full bg-[#316BFF] px-4 py-2 text-[14px] font-medium text-white"
-            >
-              Sign up free
-            </Link>
+            <AuthButtons />
           </div>
         </div>
       </header>

@@ -51,14 +51,6 @@ export function buildRootLayoutJsonLd(baseUrlRaw?: string) {
         name: SITE_NAME,
         url: baseUrl,
         publisher: { "@id": `${baseUrl}/#organization` },
-        potentialAction: {
-          "@type": "SearchAction",
-          target: {
-            "@type": "EntryPoint",
-            urlTemplate: `${baseUrl}/wiki?q={search_term_string}`,
-          },
-          "query-input": "required name=search_term_string",
-        },
       },
     ],
   };

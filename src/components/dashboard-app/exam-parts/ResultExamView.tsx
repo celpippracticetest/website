@@ -344,7 +344,7 @@ const ResultExamView = ({
             <div className=" bg-white">
               <div className="flex justify-between bg-white items-center">
                 <div className="flex items-center bg-white">
-                  Overal Score:{" "}
+                  Overall Score:{" "}
                   <span
                     className={`opacity-80 font-black text-4xl ${
                       listeningAverage < 4
@@ -376,7 +376,7 @@ const ResultExamView = ({
             <div className=" bg-white">
               <div className="flex justify-between bg-white items-center">
                 <div className="flex items-center bg-white">
-                  Overal Score:{" "}
+                  Overall Score:{" "}
                   <span
                     className={`opacity-80 font-black text-4xl ${
                       readingAverage < 4
@@ -408,7 +408,7 @@ const ResultExamView = ({
             <div className=" bg-white">
               <div className="flex justify-between bg-white items-center">
                 <div className="flex items-center bg-white">
-                  Overal Score:{" "}
+                  Overall Score:{" "}
                   <span
                     className={`opacity-80 font-black text-4xl ${
                       writingAverage < 4
@@ -439,7 +439,7 @@ const ResultExamView = ({
             <div className=" bg-white">
               <div className="flex justify-between bg-white items-center">
                 <div className="flex items-center bg-white">
-                  Overal Score:{" "}
+                  Overall Score:{" "}
                   <span
                     className={`opacity-80 font-black text-4xl ${
                       speakingAverage < 4

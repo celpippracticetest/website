@@ -32,6 +32,7 @@ import {
   retakeTask,
   submitObjectivePracticeAnswers,
 } from "@/lib/objectivePracticeSubmit";
+import { useUnsavedWorkGuard } from "@/hooks/useUnsavedWorkGuard";
 import { usePracticeSessionAnalytics } from "@/hooks/usePracticeSessionAnalytics";
 import { useTimerExpiredAnalytics } from "@/hooks/useTimerExpiredAnalytics";
 
@@ -116,6 +117,10 @@ const ListeningPracticeView = ({
         : 0,
     getLastQuestionIndex: () => questionIndexInPractice,
   });
+  useUnsavedWorkGuard(
+    (page === "problem" || page === "question") &&
+      Object.keys(selectedAnswers).length > 0,
+  );
 
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
@@ -509,7 +514,6 @@ const ListeningPracticeView = ({
                             }}
                             variant="outline"
                             className="cursor-pointer max-w-[119px] rounded-[24px] text-[14px] bg-[#4A7DFF]  items-center justify-center  font-normal text-white  h-[40px]  mt-[32px]"
-                            aria-label="Next testimonial"
                           >
                             Start again
                           </Button>
@@ -520,7 +524,6 @@ const ListeningPracticeView = ({
                             }}
                             variant="outline"
                             className="cursor-pointer text-[#76808F]  max-w-[115px] rounded-[24px] text-[14px]  items-center justify-center  font-normal  h-[40px]  mt-[32px]"
-                            aria-label="Next testimonial"
                           >
                             See Result
                           </Button>
@@ -534,7 +537,6 @@ const ListeningPracticeView = ({
                         }}
                         variant="outline"
                         className="cursor-pointer rounded-[24px] text-[14px] bg-[#4A7DFF] inline-flex items-center justify-center  font-normal text-white  h-[40px] w-[96px] mt-[32px]"
-                        aria-label="Next testimonial"
                       >
                         Next
                         <SvgArrowRight />
@@ -545,7 +547,6 @@ const ListeningPracticeView = ({
                   <Button
                     variant="outline"
                     className="flex mt-[32px] gap-[8px] text-white items-center text-[14px] font-normal justify-center cursor-pointer rounded-[24px] bg-[#4A7DFF]"
-                    aria-label="Next testimonial"
                     onClick={() => {
                       if (freeUser) {
                         setShowModal(true);

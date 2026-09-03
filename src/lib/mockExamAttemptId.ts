@@ -13,6 +13,14 @@ export function sanitizeMockExamAttemptIdParam(
   return t;
 }
 
+/** Client-generated ids look like `att_<timestamp>_<random>`. */
+export function isWellFormedMockExamAttemptId(
+  raw: string | null | undefined,
+): boolean {
+  const t = sanitizeMockExamAttemptIdParam(raw);
+  return Boolean(t && /^att_\d+_[a-z0-9]+$/i.test(t));
+}
+
 const attemptStorageKey = (examId: string) => `mockExamAttempt:${examId}`;
 
 /** Keep the active attempt when users leave results / switch parts without query params. */

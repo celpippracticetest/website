@@ -10,6 +10,7 @@ import SvgListeningPart from "../icons/ListeningPart";
 import SvgReadingPart from "../icons/ReadingPart";
 import SvgWritingPart from "../icons/WritingPart";
 import SvgSpeakingPart from "../icons/SpeakingPart";
+import { displayPracticeTaskName } from "@/lib/displayPracticeTaskName";
 
 interface PracticeSection {
   title: string;
@@ -205,7 +206,7 @@ const PracticeOverview = ({
                   </div>
 
                   <h3 className="text-[#212E42] font-bold text-[18px] leading-snug">
-                    {task.name}
+                    {displayPracticeTaskName(task.name)}
                   </h3>
                 </div>
               ))}
@@ -300,7 +301,7 @@ const PracticeOverview = ({
 
                           {/* Task Name */}
                           <h3 className="text-[#212E42] font-bold text-[18px] screen1280:text-[22px] leading-tight mb-6">
-                            {task.name}
+                            {displayPracticeTaskName(task.name)}
                           </h3>
 
                           {/* Action Link */}

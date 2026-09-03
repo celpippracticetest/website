@@ -85,6 +85,7 @@ export const PAGE_SEO_REGISTRY: Record<string, PageSeoItem> = {
     description:
       "Browse CELPIP wiki articles: exam format, scoring, task types, and study resources in one searchable knowledge base.",
     keywords: ["celpip wiki", "celpip guide", "celpip glossary"],
+    indexability: "noindex",
   },
   "/landing/express-entry": {
     path: "/landing/express-entry",

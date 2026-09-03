@@ -85,7 +85,7 @@ const PlanCard = ({
               {oldPrice && (
                 <>
                   <span className="relative text-text3 text-[12px] screen1280:!text-[15px]   font-medium">
-                    $ {oldPrice}
+                    ${oldPrice}
                     <span
                       className={`-left-1 w-[60px] screen1280:!w-[72px] screen1290:!w-[101px] absolute top-[11px]  screen1280:!top-[13px]  h-[2px] bg-error1 -translate-y-1/2`}
                     ></span>
@@ -98,7 +98,7 @@ const PlanCard = ({
             </>
           )}
           <span className="text-black font-bold text-[16px] ">
-            $ {price}
+            ${price}
             {type == "Free" && (
               <span className="text-gray font-normal text-[20px]">
                 {" "}

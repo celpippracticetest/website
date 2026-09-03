@@ -41,6 +41,15 @@ import {
   submitObjectivePracticeAnswers,
 } from "@/lib/objectivePracticeSubmit";
 import { formatPracticeHtml } from "@/lib/formatPracticeHtml";
+import { useUnsavedWorkGuard } from "@/hooks/useUnsavedWorkGuard";
+import {
+  clearInProgress,
+  inProgressKey,
+  readInProgress,
+  writeInProgress,
+  type ObjectiveInProgress,
+} from "@/lib/inProgressSession";
+import { taskPickerPath } from "@/lib/practiceRoutes";
 
 interface ReadingPracticeViewProps {
   practice: TPracticeDto;
@@ -81,6 +90,10 @@ const ReadingPracticeView = ({
     Record<string, string>
   >({});
   const [time, setTime] = useState(timerTime);
+  const progressKey = inProgressKey(["practice", selectedPracticeId]);
+  const restoredRef = useRef(false);
+  const alreadyCompletedRef = useRef(false);
+  const [sessionHydrated, setSessionHydrated] = useState(false);
   const setPremiumPlanModalState = useStore(
     (state) => state.setPremiumPlanModalState,
   );
@@ -125,13 +138,43 @@ const ReadingPracticeView = ({
   }, [page, time]);
 
   useEffect(() => {
+    if (!sessionHydrated || page !== "question" || !selectedPracticeId) return;
+    writeInProgress(progressKey, {
+      page,
+      time,
+      selectedAnswers,
+    } satisfies ObjectiveInProgress);
+  }, [
+    page,
+    time,
+    selectedAnswers,
+    progressKey,
+    selectedPracticeId,
+    sessionHydrated,
+  ]);
+
+  useEffect(() => {
+    if (page === "answer") clearInProgress(progressKey);
+  }, [page, progressKey]);
+
+  useUnsavedWorkGuard(
+    page === "question" && Object.keys(selectedAnswers).length > 0,
+  );
+
+  useEffect(() => {
     setQuestionIndexInPractice(0);
     setPassageIndex(0);
     setQuestionIndex(0);
     completedRef.current = false;
+    restoredRef.current = false;
+    alreadyCompletedRef.current = false;
+    setSessionHydrated(false);
 
     const fetchPreviousAnswers = async () => {
-      if (!user || !selectedPracticeId) return;
+      if (!user || !selectedPracticeId) {
+        setSessionHydrated(true);
+        return;
+      }
       try {
         const response = await fetch(
           `/api/answers?practiceId=${selectedPracticeId}&userId=${user.id}&type=${practice.type}`,
@@ -140,17 +183,34 @@ const ReadingPracticeView = ({
           const data = await response.json();
           if (data.answers) {
             setSelectedAnswers(data.answers);
-            setPage("answer");
+            alreadyCompletedRef.current = true;
+            setPage("instructions");
             trackKpi.practiceTestResume({ testId: selectedPracticeId });
+            setSessionHydrated(true);
             return;
           }
         }
+        const saved = readInProgress<ObjectiveInProgress>(progressKey);
+        if (saved) {
+          if (saved.selectedAnswers) setSelectedAnswers(saved.selectedAnswers);
+          if (typeof saved.time === "number" && saved.time > 0) {
+            setTime(saved.time);
+          } else {
+            setTime(timerTime);
+          }
+          setPage("question");
+          setSessionHydrated(true);
+          return;
+        }
         setSelectedAnswers({});
+        setTime(timerTime);
         setPage("question");
+        setSessionHydrated(true);
       } catch (error) {
         console.error("Error fetching previous answers:", error);
         setSelectedAnswers({});
         setPage("question");
+        setSessionHydrated(true);
       }
     };
 
@@ -165,7 +225,7 @@ const ReadingPracticeView = ({
     // would otherwise re-fetch and clear in-progress selections.
   }, [selectedPracticeId, user?.id]);
   useEffect(() => {
-    if (page === "answer" && user?.id) {
+    if (page === "answer" && user?.id && !alreadyCompletedRef.current) {
       const submitAnswers = async () => {
         try {
           const response = await fetch("/api/answers", {
@@ -291,7 +351,7 @@ const ReadingPracticeView = ({
                 <StatBadge count={practiceCount} label="answered today" />
               </div>
             </div>
-            {page !== "answer" && shouldShowPractice && (
+            {page === "question" && shouldShowPractice && (
               <div className="flex justify-between">
                 <ObjectivePracticeSubmitButtons
                   onSubmitAndNext={handleSubmitAndNext}
@@ -325,6 +385,10 @@ const ReadingPracticeView = ({
                             selectedTaskId,
                           ),
                         );
+                      } else if (selectedTaskId) {
+                        router.push(taskPickerPath("reading", selectedTaskId));
+                      } else {
+                        onBackClick();
                       }
                       setTime(timerTime);
                     }}
@@ -401,6 +465,49 @@ const ReadingPracticeView = ({
             )}
           </div>
           <div className="flex flex-col h-full overflow-hidden w-full">
+            {page == "instructions" && (
+              <div className="px-[24px] py-[16px] w-full">
+                <div className="text-[#212E42] font-normal prose max-w-none text-[14px] marker:text-blue-600">
+                  {practice?.instructions?.map(
+                    (instruction: string, index: number) => (
+                      <p key={index} className="mb-0 mt-0">
+                        {instruction}
+                      </p>
+                    ),
+                  )}
+                </div>
+                <div className="flex flex-col gap-[16px] mt-[23px]">
+                  <span className="flex justify-center items-center max-w-[342px] bg-[#F2F6FF] px-[16px] h-auto min-h-[44px] leading-[28px] rounded-[8px] text-[#5786FF] text-[16px] font-medium">
+                    You’ve already completed this exercise
+                  </span>
+                  <div className="flex gap-[10px]">
+                    <Button
+                      onClick={() => {
+                        alreadyCompletedRef.current = false;
+                        setSelectedAnswers({});
+                        setTime(timerTime);
+                        clearInProgress(progressKey);
+                        setPage("question");
+                      }}
+                      variant="outline"
+                      className="cursor-pointer max-w-[119px] rounded-[24px] text-[14px] bg-[#4A7DFF] items-center justify-center font-normal text-white h-[40px] mt-[32px]"
+                    >
+                      Start again
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        alreadyCompletedRef.current = true;
+                        setPage("answer");
+                      }}
+                      variant="outline"
+                      className="cursor-pointer text-[#76808F] max-w-[115px] rounded-[24px] text-[14px] items-center justify-center font-normal h-[40px] mt-[32px]"
+                    >
+                      See Result
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
             {page == "question" && (
               <div className="h-full overflow-hidden ">
                 <div className="grid lg:grid-cols-2 grid-cols-1 h-full w-full">
@@ -446,7 +553,6 @@ const ReadingPracticeView = ({
                           <Button
                             variant="outline"
                             className="flex mt-[32px] gap-[8px] text-white items-center text-[14px] font-normal justify-center cursor-pointer rounded-[24px] bg-[#4A7DFF]"
-                            aria-label="Next testimonial"
                             onClick={() => {
                               if (freeUser) {
                                 setShowModal(true);
@@ -527,7 +633,9 @@ const ReadingPracticeView = ({
                                         <Popover.Portal>
                                           <Popover.Content
                                             className="PopoverContent z-20 rounded-md border bg-popover text-popover-foreground shadow-md outline-none  w-80 p-2"
-                                            sideOffset={5}
+                                            side="bottom"
+                                            avoidCollisions={false}
+                                            sideOffset={8}
                                           >
                                             <div className="flex flex-col">
                                               <p className="text-[14px] font-medium mb-2"></p>

@@ -2,6 +2,12 @@
 User-agent: *
 Allow: /
 
+Disallow: /reading?taskId=
+Disallow: /writing?taskId=
+Disallow: /listening?taskId=
+Disallow: /speaking?taskId=
+Disallow: /wiki
+
 # Host
 Host: https://celpippracticetest.com
 

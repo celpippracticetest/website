@@ -473,7 +473,7 @@ const LayoutClient = ({ children, showSurvey }: any) => {
                       Refer a friend, Earn rewards{" "}
                     </span>
                     <span className="h-[36px] text-left mt-0 screen744:!mt-[8px] screen1280:!mt-0 font-normal text-white max-w-[111px] text-[11px]  screen744:!text-[10px]  screen1280:!text-[11px] leading-[18px]">
-                      Get %20 for each successful payments{" "}
+                      Get 20% for each successful payment{" "}
                     </span>
                   </div>
                 </div>
