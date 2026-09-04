@@ -20,6 +20,7 @@ type NpsStore = {
   userId: string | null;
 
   setUserId: (userId: string | null) => void;
+  hydrateSubmittedFromServer: () => void;
   armMockLeave: (contextLabel: string) => void;
   disarmMockLeave: () => void;
   open: (opts: {
@@ -45,6 +46,25 @@ export const useNpsStore = create<NpsStore>((set, get) => ({
   userId: null,
 
   setUserId: (userId) => set({ userId }),
+
+  hydrateSubmittedFromServer: () => {
+    const { userId } = get();
+    if (!userId || typeof window === "undefined") return;
+    if (!shouldPromptNps(userId)) return;
+
+    void fetch("/api/nps")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((body: { submitted?: boolean } | null) => {
+        if (!body?.submitted) return;
+        markNpsSubmitted(userId);
+        if (get().isOpen) {
+          set({ isOpen: false, trigger: null, pendingHref: null });
+        }
+      })
+      .catch(() => {
+        /* ignore — localStorage remains the fallback */
+      });
+  },
 
   armMockLeave: (contextLabel) =>
     set({ mockLeaveArmed: true, mockContextLabel: contextLabel }),

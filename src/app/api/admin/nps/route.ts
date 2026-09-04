@@ -3,7 +3,12 @@ import documentsClient from "@/lib/appDocumentsClient";
 import { appUserAdmin } from "@/lib/auth/server-auth";
 import { ensureCmsAdmin } from "@/lib/cms/ensure-admin";
 import { readinessLabel } from "@/lib/nps";
-import { NpsRepository, type TNpsResponse } from "@/repositories/nps.repo";
+import {
+  latestNpsPerUser,
+  npsCreatedAtMs,
+  NpsRepository,
+  type TNpsResponse,
+} from "@/repositories/nps.repo";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -99,11 +104,11 @@ export async function GET(req: Request) {
 
     const repo = new NpsRepository(documentsClient);
     const filter = trigger ? { trigger } : {};
-    const [rows, total, allForStats] = await Promise.all([
-      repo.getAllPaginated(page, limit, filter),
-      repo.count(filter),
-      repo.getAll(filter),
-    ]);
+    const allRaw = await repo.getAll(filter);
+    const unique = latestNpsPerUser(allRaw);
+    const total = unique.length;
+    const rows = unique.slice((page - 1) * limit, page * limit);
+    const allForStats = unique;
 
     const authAdmin = await appUserAdmin();
     const data = await Promise.all(
@@ -127,10 +132,10 @@ export async function GET(req: Request) {
           ...rest,
           name,
           email,
-          createdAt:
-            rest.createdAt instanceof Date
-              ? rest.createdAt.toISOString()
-              : rest.createdAt,
+          createdAt: (() => {
+            const ms = npsCreatedAtMs(rest.createdAt);
+            return ms ? new Date(ms).toISOString() : rest.createdAt;
+          })(),
         };
       }),
     );

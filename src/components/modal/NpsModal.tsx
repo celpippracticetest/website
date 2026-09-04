@@ -67,8 +67,9 @@ export default function NpsModal() {
   const handleSubmit = async () => {
     if (score == null || submitting) return;
     setSubmitting(true);
+    completeSubmit();
     try {
-      await fetch("/api/nps", {
+      const res = await fetch("/api/nps", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -79,15 +80,19 @@ export default function NpsModal() {
           contextLabel,
         }),
       });
-      trackKpi.npsResponse({
-        score,
-        surveyTrigger: trigger ?? undefined,
-        comment: reason.trim() || undefined,
-      });
+      const body = (await res.json().catch(() => ({}))) as {
+        duplicate?: boolean;
+      };
+      if (!body.duplicate) {
+        trackKpi.npsResponse({
+          score,
+          surveyTrigger: trigger ?? undefined,
+          comment: reason.trim() || undefined,
+        });
+      }
     } catch (err) {
       console.error("[nps] submit failed", err);
     } finally {
-      completeSubmit();
       setSubmitting(false);
       setStep("thanks");
     }
@@ -155,7 +160,7 @@ export default function NpsModal() {
               CELPIP?
             </h2>
 
-            <div className="flex justify-between gap-1 screen744:!gap-1.5">
+            <div className="flex flex-nowrap justify-between gap-1 screen744:!gap-1.5">
               {Array.from({ length: 11 }, (_, i) => (
                 <button
                   key={i}

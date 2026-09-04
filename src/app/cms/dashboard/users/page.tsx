@@ -560,6 +560,8 @@ export default function UsersPage() {
                 Last Activity (practice/mock/login)
               </option>
               <option value="totalTokens">Tokens</option>
+              <option value="uniqueIpAddressesCount">IP count</option>
+              <option value="uniqueUserAgentsCount">Device count</option>
             </select>
             <select
               value={sortOrder}

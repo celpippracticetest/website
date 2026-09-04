@@ -48,7 +48,7 @@ export async function POST(req: Request) {
       ? body.contextLabel.trim().slice(0, 200)
       : null;
 
-  await new NpsRepository(documentsClient).create({
+  const created = await new NpsRepository(documentsClient).createIfNew({
     userId: user.id,
     score,
     readiness: readiness as "not_really" | "somewhat" | "a_lot_more" | null,
@@ -58,5 +58,17 @@ export async function POST(req: Request) {
     createdAt: new Date(),
   });
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, duplicate: !created });
+}
+
+export async function GET() {
+  const user = await currentUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const existing = await new NpsRepository(documentsClient).findLatestByUserId(
+    user.id,
+  );
+  return NextResponse.json({ submitted: Boolean(existing) });
 }

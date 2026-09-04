@@ -12,6 +12,48 @@ export type TNpsResponse = {
   createdAt: Date;
 };
 
+export function npsCreatedAtMs(createdAt: unknown): number {
+  if (createdAt instanceof Date) return createdAt.getTime();
+  if (typeof createdAt === "string") {
+    const t = Date.parse(createdAt);
+    return Number.isFinite(t) ? t : 0;
+  }
+  if (createdAt && typeof createdAt === "object") {
+    const raw = (createdAt as { $date?: unknown }).$date;
+    if (typeof raw === "string") {
+      const t = Date.parse(raw);
+      return Number.isFinite(t) ? t : 0;
+    }
+    if (raw instanceof Date) return raw.getTime();
+  }
+  return 0;
+}
+
+/** Keep the newest response per user (NPS should be one score per person). */
+export function latestNpsPerUser<T extends { userId: string; createdAt: unknown }>(
+  rows: T[],
+): T[] {
+  const best = new Map<string, T>();
+  for (const row of rows) {
+    const prev = best.get(row.userId);
+    if (!prev || npsCreatedAtMs(row.createdAt) > npsCreatedAtMs(prev.createdAt)) {
+      best.set(row.userId, row);
+    }
+  }
+  return [...best.values()].sort(
+    (a, b) => npsCreatedAtMs(b.createdAt) - npsCreatedAtMs(a.createdAt),
+  );
+}
+
+function isDuplicateKeyError(err: unknown): boolean {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    "code" in err &&
+    (err as { code?: unknown }).code === 11000
+  );
+}
+
 export class NpsRepository {
   private readonly db: Db;
 
@@ -23,8 +65,33 @@ export class NpsRepository {
     return this.db.collection<TNpsResponse>("nps_responses");
   }
 
+  async findLatestByUserId(userId: string): Promise<TNpsResponse | null> {
+    const rows = await this.getCollection().find({ userId }).toArray();
+    return latestNpsPerUser(rows)[0] ?? null;
+  }
+
+  /**
+   * One NPS row per user. Existing responses are left unchanged.
+   * Returns false when this user already submitted.
+   */
+  async createIfNew(data: TNpsResponse): Promise<boolean> {
+    const existing = await this.findLatestByUserId(data.userId);
+    if (existing) return false;
+
+    try {
+      await this.getCollection().insertOne({
+        ...data,
+        _id: `nps_${data.userId}`,
+      } as TNpsResponse & { _id: string });
+      return true;
+    } catch (err) {
+      if (isDuplicateKeyError(err)) return false;
+      throw err;
+    }
+  }
+
   async create(data: TNpsResponse) {
-    await this.getCollection().insertOne(data);
+    await this.createIfNew(data);
   }
 
   async findByUserId(userId: string): Promise<TNpsResponse[]> {

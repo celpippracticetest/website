@@ -19,11 +19,22 @@ const ADMIN_USERS_SORT_FIELDS = new Set([
   "riskScore",
   "plan",
   "totalSpend",
+  "uniqueIpAddressesCount",
+  "uniqueUserAgentsCount",
 ]);
+
+const ADMIN_USERS_SORT_ALIASES: Record<string, string> = {
+  uniqueIpAddresses: "uniqueIpAddressesCount",
+  ipCount: "uniqueIpAddressesCount",
+  uniqueUserAgents: "uniqueUserAgentsCount",
+  deviceCount: "uniqueUserAgentsCount",
+  devices: "uniqueUserAgentsCount",
+};
 
 function normalizeAdminSortBy(raw: string | null): string {
   const v = (raw || "lastActivity").trim();
-  return ADMIN_USERS_SORT_FIELDS.has(v) ? v : "lastActivity";
+  const mapped = ADMIN_USERS_SORT_ALIASES[v] || v;
+  return ADMIN_USERS_SORT_FIELDS.has(mapped) ? mapped : "lastActivity";
 }
 
 function toDate(value: unknown): Date | null {

@@ -191,7 +191,7 @@ function mergeActivityMetrics(
   return merged;
 }
 
-type AdminUsersSortMetricMode = "none" | "lastActivity";
+type AdminUsersSortMetricMode = "none" | "lastActivity" | "fingerprints";
 
 /**
  * Default CMS sort is lastActivity. Joining/aggregating `user_activities`
@@ -199,9 +199,60 @@ type AdminUsersSortMetricMode = "none" | "lastActivity";
  * `user_activity_reminders.last_engaged_at` is maintained on engagement events
  * and is the cheap source of truth for list ordering; page rows still get full
  * activity metrics after LIMIT.
+ *
+ * IP / device sorts still need a `user_activities` distinct-count rollup, so
+ * that path only runs when those sort fields are selected.
  */
 function adminUsersSortMetricMode(sortBy: string): AdminUsersSortMetricMode {
-  return sortBy === "lastActivity" ? "lastActivity" : "none";
+  if (sortBy === "lastActivity") return "lastActivity";
+  if (
+    sortBy === "uniqueIpAddressesCount" ||
+    sortBy === "uniqueUserAgentsCount"
+  ) {
+    return "fingerprints";
+  }
+  return "none";
+}
+
+const ACTIVITY_FINGERPRINT_COUNTS_SQL = `
+  SELECT
+    user_id,
+    COUNT(DISTINCT NULLIF(TRIM(ip_address), ''))::int AS unique_ips,
+    COUNT(DISTINCT NULLIF(TRIM(user_agent), ''))::int AS unique_uas
+  FROM public.user_activities
+  GROUP BY user_id
+`;
+
+function fingerprintJoinSelectSql(): string {
+  return `
+            GREATEST(
+              COALESCE(af_stable.unique_ips, 0),
+              COALESCE(af_auth.unique_ips, 0),
+              COALESCE(af_legacy.unique_ips, 0),
+              COALESCE(af_profile.unique_ips, 0)
+            ) AS sort_unique_ips,
+            GREATEST(
+              COALESCE(af_stable.unique_uas, 0),
+              COALESCE(af_auth.unique_uas, 0),
+              COALESCE(af_legacy.unique_uas, 0),
+              COALESCE(af_profile.unique_uas, 0)
+            ) AS sort_unique_uas
+  `;
+}
+
+function fingerprintJoinFromSql(): string {
+  return `
+          LEFT JOIN activity_fingerprints af_stable ON af_stable.user_id = f.stable_id
+          LEFT JOIN activity_fingerprints af_auth
+            ON f.supabase_auth_user_id IS NOT NULL
+           AND af_auth.user_id = f.supabase_auth_user_id
+          LEFT JOIN activity_fingerprints af_legacy
+            ON NULLIF(TRIM(f.legacy_clerk_user_id), '') IS NOT NULL
+           AND af_legacy.user_id = f.legacy_clerk_user_id
+          LEFT JOIN activity_fingerprints af_profile
+            ON f.profile_id IS NOT NULL
+           AND af_profile.user_id = f.profile_id
+  `;
 }
 
 function orderByCombinedSql(
@@ -212,6 +263,11 @@ function orderByCombinedSql(
   const dir = sortOrder === "asc" ? "ASC" : "DESC";
   if (sortMetricMode === "lastActivity") {
     return `sort_last_activity ${dir} NULLS LAST, stable_id`;
+  }
+  if (sortMetricMode === "fingerprints") {
+    const col =
+      sortBy === "uniqueUserAgentsCount" ? "sort_unique_uas" : "sort_unique_ips";
+    return `${col} ${dir} NULLS LAST, stable_id`;
   }
 
   switch (sortBy) {
@@ -554,6 +610,76 @@ export async function listAdminUsersFromUserProfiles(
           LIMIT ${limit}
           OFFSET ${offset}
         `
+      : sortMetricMode === "fingerprints"
+      ? await sql<ProfileListRow[]>`
+          WITH combined AS (
+            ${sql.unsafe(COMBINED_ADMIN_USERS_SQL)}
+          ),
+          filtered AS (
+            SELECT
+              c.stable_id,
+              c.supabase_auth_user_id,
+              c.legacy_clerk_user_id,
+              c.profile_id,
+              c.email,
+              c.first_name,
+              c.last_name,
+              c.plan,
+              c.plan_type,
+              c.public_metadata,
+              c.stripe_customer_id,
+              c.created_at,
+              c.updated_at
+            FROM combined c
+            WHERE 1 = 1
+            ${subFilter}
+            ${searchFilter}
+          ),
+          deduped AS (
+            SELECT DISTINCT ON (stable_id)
+              stable_id,
+              supabase_auth_user_id,
+              legacy_clerk_user_id,
+              profile_id,
+              email,
+              first_name,
+              last_name,
+              plan,
+              plan_type,
+              public_metadata,
+              stripe_customer_id,
+              created_at,
+              updated_at
+            FROM filtered
+            ORDER BY
+              stable_id,
+              (supabase_auth_user_id IS NOT NULL) DESC,
+              updated_at DESC NULLS LAST
+          ),
+          activity_fingerprints AS (
+            ${sql.unsafe(ACTIVITY_FINGERPRINT_COUNTS_SQL)}
+          )
+          SELECT
+            f.stable_id,
+            f.supabase_auth_user_id,
+            f.legacy_clerk_user_id,
+            f.profile_id,
+            f.email,
+            f.first_name,
+            f.last_name,
+            f.plan,
+            f.plan_type,
+            f.public_metadata,
+            f.stripe_customer_id,
+            f.created_at,
+            f.updated_at,
+            ${sql.unsafe(fingerprintJoinSelectSql())}
+          FROM deduped f
+          ${sql.unsafe(fingerprintJoinFromSql())}
+          ORDER BY ${sql.unsafe(order)}
+          LIMIT ${limit}
+          OFFSET ${offset}
+        `
       : await sql<ProfileListRow[]>`
           WITH combined AS (
             ${sql.unsafe(COMBINED_ADMIN_USERS_SQL)}
@@ -741,6 +867,10 @@ function orderByUsersDocSql(sortBy: string, sortOrder: "asc" | "desc"): string {
         "NULLIF(TRIM(COALESCE(d.body#>>'{publicMetadata,totalSpend}', '')), '')::numeric";
       return `${spend} ${dir} NULLS LAST, d.mongo_id`;
     }
+    case "uniqueIpAddressesCount":
+      return `sort_unique_ips ${dir} NULLS LAST, d.mongo_id`;
+    case "uniqueUserAgentsCount":
+      return `sort_unique_uas ${dir} NULLS LAST, d.mongo_id`;
     case "totalTokens":
     case "totalActivities":
     case "riskScore":
@@ -843,7 +973,48 @@ export async function listAdminUsersFromUsersDocuments(
   `;
   const totalCount = countRows[0]?.c ?? 0;
 
-  const dataRows = await sql<UsersDocRow[]>`
+  const fingerprintSort =
+    sortBy === "uniqueIpAddressesCount" || sortBy === "uniqueUserAgentsCount";
+  const dataRows = fingerprintSort
+    ? await sql<UsersDocRow[]>`
+        WITH activity_fingerprints AS (
+          ${sql.unsafe(ACTIVITY_FINGERPRINT_COUNTS_SQL)}
+        )
+        SELECT
+          d.mongo_id,
+          d.body::jsonb AS body,
+          d.updated_at,
+          GREATEST(
+            COALESCE(af_mongo.unique_ips, 0),
+            COALESCE(af_supabase.unique_ips, 0),
+            COALESCE(af_clerk.unique_ips, 0),
+            COALESCE(af_sub.unique_ips, 0)
+          ) AS sort_unique_ips,
+          GREATEST(
+            COALESCE(af_mongo.unique_uas, 0),
+            COALESCE(af_supabase.unique_uas, 0),
+            COALESCE(af_clerk.unique_uas, 0),
+            COALESCE(af_sub.unique_uas, 0)
+          ) AS sort_unique_uas
+        FROM app_documents d
+        LEFT JOIN activity_fingerprints af_mongo ON af_mongo.user_id = d.mongo_id
+        LEFT JOIN activity_fingerprints af_supabase
+          ON NULLIF(TRIM(COALESCE(d.body->>'supabaseUserId', '')), '') IS NOT NULL
+         AND af_supabase.user_id = NULLIF(TRIM(d.body->>'supabaseUserId'), '')
+        LEFT JOIN activity_fingerprints af_clerk
+          ON NULLIF(TRIM(COALESCE(d.body->>'clerkUserId', '')), '') IS NOT NULL
+         AND af_clerk.user_id = NULLIF(TRIM(d.body->>'clerkUserId'), '')
+        LEFT JOIN activity_fingerprints af_sub
+          ON NULLIF(TRIM(COALESCE(d.body->>'sub', '')), '') IS NOT NULL
+         AND af_sub.user_id = NULLIF(TRIM(d.body->>'sub'), '')
+        WHERE d.collection = ${usersKey}
+        ${subFilter}
+        ${searchFilter}
+        ORDER BY ${sql.unsafe(order)}
+        LIMIT ${limit}
+        OFFSET ${offset}
+      `
+    : await sql<UsersDocRow[]>`
     SELECT d.mongo_id, d.body::jsonb AS body, d.updated_at
     FROM app_documents d
     WHERE d.collection = ${usersKey}

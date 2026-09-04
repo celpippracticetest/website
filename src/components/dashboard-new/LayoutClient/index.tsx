@@ -255,7 +255,9 @@ const LayoutClient = ({
   }, [showSurvey]);
 
   useEffect(() => {
-    useNpsStore.getState().setUserId(user?.id ?? null);
+    const store = useNpsStore.getState();
+    store.setUserId(user?.id ?? null);
+    if (user?.id) store.hydrateSubmittedFromServer();
   }, [user?.id]);
 
   useEffect(() => {
