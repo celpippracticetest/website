@@ -39,3 +39,53 @@ export function clearInProgress(key: string | null | undefined) {
     /* ignore */
   }
 }
+
+const FRESH_ATTEMPT_PREFIX = "freshPracticeAttempt:";
+
+export function freshPracticeAttemptKey(
+  skill: string,
+  taskId: string | null | undefined,
+) {
+  return FRESH_ATTEMPT_PREFIX + [skill, taskId].filter(Boolean).join(":");
+}
+
+/** Skip restoring submitted answers until the task attempt is finished. */
+export function beginFreshPracticeAttempt(
+  skill: string,
+  taskId: string | null | undefined,
+  practiceIds: string[] = [],
+) {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(freshPracticeAttemptKey(skill, taskId), "1");
+    for (const id of practiceIds) {
+      clearInProgress(inProgressKey(["practice", id]));
+    }
+  } catch {
+    /* private mode / quota */
+  }
+}
+
+export function isFreshPracticeAttempt(
+  skill: string,
+  taskId: string | null | undefined,
+) {
+  if (typeof window === "undefined") return false;
+  try {
+    return sessionStorage.getItem(freshPracticeAttemptKey(skill, taskId)) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function endFreshPracticeAttempt(
+  skill: string,
+  taskId: string | null | undefined,
+) {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.removeItem(freshPracticeAttemptKey(skill, taskId));
+  } catch {
+    /* ignore */
+  }
+}

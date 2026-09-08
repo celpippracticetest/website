@@ -43,8 +43,11 @@ import {
 import { formatPracticeHtml } from "@/lib/formatPracticeHtml";
 import { useUnsavedWorkGuard } from "@/hooks/useUnsavedWorkGuard";
 import {
+  beginFreshPracticeAttempt,
   clearInProgress,
+  endFreshPracticeAttempt,
   inProgressKey,
+  isFreshPracticeAttempt,
   readInProgress,
   writeInProgress,
   type ObjectiveInProgress,
@@ -161,6 +164,22 @@ const ReadingPracticeView = ({
     page === "question" && Object.keys(selectedAnswers).length > 0,
   );
 
+  const startNewAttempt = (nextPage: "question" | "instructions") => {
+    beginFreshPracticeAttempt(
+      "reading",
+      selectedTaskId,
+      allPractices.map((item) => item.id),
+    );
+    alreadyCompletedRef.current = false;
+    restoredRef.current = false;
+    setSelectedAnswers({});
+    setPassageIndex(0);
+    setQuestionIndex(0);
+    setQuestionIndexInPractice(0);
+    setTime(timerTime);
+    setPage(nextPage);
+  };
+
   useEffect(() => {
     setQuestionIndexInPractice(0);
     setPassageIndex(0);
@@ -171,6 +190,14 @@ const ReadingPracticeView = ({
     setSessionHydrated(false);
 
     const fetchPreviousAnswers = async () => {
+      if (isFreshPracticeAttempt("reading", selectedTaskId)) {
+        setSelectedAnswers({});
+        setTime(timerTime);
+        setPage("question");
+        alreadyCompletedRef.current = false;
+        setSessionHydrated(true);
+        return;
+      }
       if (!user || !selectedPracticeId) {
         setSessionHydrated(true);
         return;
@@ -182,6 +209,14 @@ const ReadingPracticeView = ({
         if (response.ok) {
           const data = await response.json();
           if (data.answers) {
+            if (isFreshPracticeAttempt("reading", selectedTaskId)) {
+              setSelectedAnswers({});
+              setTime(timerTime);
+              setPage("question");
+              alreadyCompletedRef.current = false;
+              setSessionHydrated(true);
+              return;
+            }
             setSelectedAnswers(data.answers);
             alreadyCompletedRef.current = true;
             setPage("instructions");
@@ -241,6 +276,12 @@ const ReadingPracticeView = ({
 
           if (response.ok) {
             completedRef.current = true;
+            const isLast =
+              allPractices.findIndex((p) => p.id == selectedPracticeId) >=
+              allPractices.length - 1;
+            if (isLast) {
+              endFreshPracticeAttempt("reading", selectedTaskId);
+            }
             const result = await response.json();
             // Log practice completed
             const attemptId = `practice_${practice.id}_${Date.now()}`;
@@ -313,9 +354,7 @@ const ReadingPracticeView = ({
 
   const handleRetakeTask = () => {
     if (allPractices.length === 0) return;
-    setSelectedAnswers({});
-    setPage("question");
-    setTime(timerTime);
+    startNewAttempt("question");
     retakeTask("reading", allPractices[0].id, selectedTaskId, router);
   };
 
@@ -483,11 +522,7 @@ const ReadingPracticeView = ({
                   <div className="flex gap-[10px]">
                     <Button
                       onClick={() => {
-                        alreadyCompletedRef.current = false;
-                        setSelectedAnswers({});
-                        setTime(timerTime);
-                        clearInProgress(progressKey);
-                        setPage("question");
+                        startNewAttempt("question");
                       }}
                       variant="outline"
                       className="cursor-pointer max-w-[119px] rounded-[24px] text-[14px] bg-[#4A7DFF] items-center justify-center font-normal text-white h-[40px] mt-[32px]"

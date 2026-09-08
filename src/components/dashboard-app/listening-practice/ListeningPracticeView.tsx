@@ -35,6 +35,11 @@ import {
 import { useUnsavedWorkGuard } from "@/hooks/useUnsavedWorkGuard";
 import { usePracticeSessionAnalytics } from "@/hooks/usePracticeSessionAnalytics";
 import { useTimerExpiredAnalytics } from "@/hooks/useTimerExpiredAnalytics";
+import {
+  beginFreshPracticeAttempt,
+  endFreshPracticeAttempt,
+  isFreshPracticeAttempt,
+} from "@/lib/inProgressSession";
 
 interface ListeningPracticeViewProps {
   practice: TPracticeDto;
@@ -122,6 +127,29 @@ const ListeningPracticeView = ({
       Object.keys(selectedAnswers).length > 0,
   );
 
+  const listeningTimerTime = task5or6.includes(practice.taskId)
+    ? 240 + (task5or6[1] === practice.taskId ? 30 : 0)
+    : 30;
+  const [ignorePreviousAnswers, setIgnorePreviousAnswers] = useState(() =>
+    isFreshPracticeAttempt("listening", selectedTaskId),
+  );
+
+  const startNewAttempt = (nextPage: "instructions" | "problem") => {
+    beginFreshPracticeAttempt(
+      "listening",
+      selectedTaskId,
+      allPractices.map((item) => item.id),
+    );
+    setIgnorePreviousAnswers(true);
+    setIsFromFirstPage(false);
+    setSelectedAnswers({});
+    setPassageIndex(0);
+    setQuestionIndex(0);
+    setQuestionIndexInPractice(0);
+    setTime(listeningTimerTime);
+    setPage(nextPage);
+  };
+
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
 
@@ -145,7 +173,11 @@ const ListeningPracticeView = ({
     setPage("instructions");
     completedRef.current = false;
 
-    if (previousAnswer?.answers) {
+    if (isFreshPracticeAttempt("listening", selectedTaskId)) {
+      setIgnorePreviousAnswers(true);
+      setSelectedAnswers({});
+    } else if (previousAnswer?.answers) {
+      setIgnorePreviousAnswers(false);
       setSelectedAnswers(previousAnswer.answers);
       if (selectedPracticeId) {
         trackKpi.practiceTestResume({
@@ -153,10 +185,12 @@ const ListeningPracticeView = ({
         });
       }
     } else {
+      setIgnorePreviousAnswers(false);
       setSelectedAnswers({});
     }
 
     const fetchPreviousAnswers = async () => {
+      if (isFreshPracticeAttempt("listening", selectedTaskId)) return;
       if (!user || !selectedPracticeId) return;
       if (previousAnswer?.answers) return;
       try {
@@ -166,6 +200,7 @@ const ListeningPracticeView = ({
         if (response.ok) {
           const data = await response.json();
           if (data.answers) {
+            if (isFreshPracticeAttempt("listening", selectedTaskId)) return;
             setSelectedAnswers(data.answers);
             trackKpi.practiceTestResume({
               testId: selectedPracticeId,
@@ -210,6 +245,13 @@ const ListeningPracticeView = ({
           if (response.ok) {
             const result = await response.json();
             completedRef.current = true;
+            const isLast =
+              allPractices.findIndex((p) => p.id == selectedPracticeId) >=
+              allPractices.length - 1;
+            if (isLast) {
+              endFreshPracticeAttempt("listening", selectedTaskId);
+              setIgnorePreviousAnswers(false);
+            }
             // Log practice completed
             const attemptId = `practice_${practice.id}_${Date.now()}`;
             await ActivityLogger.practiceCompleted(
@@ -285,11 +327,7 @@ const ListeningPracticeView = ({
 
   const handleRetakeTask = () => {
     if (allPractices.length === 0) return;
-    setSelectedAnswers({});
-    setIsFromFirstPage(false);
-    setPage("instructions");
-    setQuestionIndex(0);
-    setPassageIndex(0);
+    startNewAttempt("instructions");
     retakeTask("listening", allPractices[0].id, selectedTaskId, router);
   };
 
@@ -500,7 +538,8 @@ const ListeningPracticeView = ({
                 {practice.isFree ||
                 hasPaidPracticeAccess(user?.publicMetadata?.plan) ? (
                   <div>
-                    {completedPractice.includes(practice.id) ? (
+                    {completedPractice.includes(practice.id) &&
+                    !ignorePreviousAnswers ? (
                       <div className="flex flex-col gap-[16px] mt-[23px]">
                         <span className="flex justify-center items-center max-w-[342px] bg-[#F2F6FF] px-[16px] h-auto min-h-[44px] leading-[28px] rounded-[8px] text-[#5786FF] text-[16px] font-medium">
                           You’ve already completed this exercise
@@ -509,8 +548,7 @@ const ListeningPracticeView = ({
                         <div className="flex gap-[10px]">
                           <Button
                             onClick={() => {
-                              setIsFromFirstPage(false);
-                              setPage("problem");
+                              startNewAttempt("problem");
                             }}
                             variant="outline"
                             className="cursor-pointer max-w-[119px] rounded-[24px] text-[14px] bg-[#4A7DFF]  items-center justify-center  font-normal text-white  h-[40px]  mt-[32px]"
