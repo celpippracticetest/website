@@ -1,4 +1,4 @@
-/** Crisp live chat — shared helpers for CrispChat + FloatingChatIcon (single custom launcher). */
+/** Crisp live chat — shared helpers for CrispChat. */
 
 export const CRISP_WEBSITE_ID =
   process.env.NEXT_PUBLIC_CRISP_WEBSITE_ID ??

@@ -26,9 +26,8 @@ export function parseAppClientPlatform(
   userAgent: string,
   flag?: string | null,
 ): AppClientPlatform {
-  if (flag === "android_app" || flag === "ios_app" || flag === "web") {
-    return flag;
-  }
+  const fromFlag = normalizeAppClientPlatform(flag);
+  if (fromFlag) return fromFlag;
   if (!APP_UA_RE.test(userAgent)) {
     return "web";
   }
@@ -36,6 +35,20 @@ export function parseAppClientPlatform(
     return "ios_app";
   }
   return "android_app";
+}
+
+export function normalizeAppClientPlatform(
+  value: unknown,
+): AppClientPlatform | undefined {
+  if (value === "android_app" || value === "ios_app" || value === "web") {
+    return value;
+  }
+  return undefined;
+}
+
+/** User-metadata payload so server-side `sign_up` can include `app_platform`. */
+export function appPlatformUserMetadata(): { app_platform: AppClientPlatform } {
+  return { app_platform: rememberAppClientPlatform() };
 }
 
 export function getAppClientPlatform(): AppClientPlatform {

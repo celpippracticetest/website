@@ -355,6 +355,12 @@ export default async function RootLayout({
         )}
 
         <Script
+          id="crazyegg"
+          src="https://script.crazyegg.com/pages/scripts/0133/6360.js"
+          strategy="afterInteractive"
+        />
+
+        <Script
           id="third-party-loader"
           strategy="lazyOnload"
           dangerouslySetInnerHTML={{

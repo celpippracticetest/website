@@ -13,9 +13,6 @@ const UserResponseReview = dynamic(() => import("./UserResponseReview"), {
   ssr: false,
 });
 const Footer = dynamic(() => import("./Footer"), { ssr: true });
-const FloatingChatIcon = dynamic(() => import("../../AskBeavo/FloatingChatIcon"), {
-  ssr: false,
-});
 
 function ErrorFallback() {
   return (
@@ -49,7 +46,6 @@ export default function HomePageClient() {
         {/* <Blog /> */}
         <FAQ />
         <Footer />
-        <FloatingChatIcon autoOpen={false} />
       </div>
     </ErrorBoundary>
   );

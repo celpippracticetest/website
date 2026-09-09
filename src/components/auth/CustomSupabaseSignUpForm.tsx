@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DEFAULT_POST_AUTH_PATH } from "@/lib/auth/post-auth-redirect";
+import { appPlatformUserMetadata } from "@/lib/appClientPlatform";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
 import { trackAuth } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
@@ -68,6 +69,7 @@ export function CustomSupabaseSignUpForm({
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(dest)}`,
+            data: appPlatformUserMetadata(),
           },
         });
         if (signErr) {

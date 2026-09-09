@@ -54,6 +54,7 @@ export async function findOrCreateWebUserByEmail(rawEmail: string): Promise<stri
       userId,
       email: normalized,
       method: "guest_checkout",
+      appPlatform: "web",
     });
     return userId;
   } catch (err: unknown) {

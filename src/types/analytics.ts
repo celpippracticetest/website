@@ -29,6 +29,7 @@ export interface SignUpEvent extends GTMEvent {
   event: "sign_up";
   method?: string;
   user_id: string;
+  app_platform?: "android_app" | "ios_app" | "web";
 }
 
 export interface LoginInitiatedEvent extends GTMEvent {

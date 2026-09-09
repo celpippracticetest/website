@@ -1,5 +1,6 @@
 // Google Tag Manager utility functions
 import { track as vercelTrack } from "@vercel/analytics";
+import { rememberAppClientPlatform } from "@/lib/appClientPlatform";
 import {
   GOOGLE_ADS_CONVERSION_ID,
   GOOGLE_ADS_SIGNUP_LABEL,
@@ -592,6 +593,7 @@ export const trackAuth = {
         event: "sign_up",
         user_id: userId,
         method,
+        app_platform: rememberAppClientPlatform(),
         ...attributionData,
         conversion_name: "sign_up",
         conversion_label: conversionLabel || undefined,

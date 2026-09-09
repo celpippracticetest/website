@@ -3,20 +3,11 @@ import SvgChevronDownExam from "@/components/icons/ChevronDownExam";
 import AskBeavoButton from "@/components/AskBeavo/AskBeavoButton";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { forwardRef } from "react";
-import dynamic from "next/dynamic";
-import { useAskBeavoStore } from "@/stores/askBeavoStore";
 import {
   mockExamPartHref,
   mockExamResultsHref,
   sanitizeMockExamAttemptIdParam,
 } from "@/lib/mockExamAttemptId";
-
-const FloatingChatIcon = dynamic(
-  () => import("../../../AskBeavo/FloatingChatIcon"),
-  {
-    ssr: false,
-  },
-);
 
 interface ExamHeaderProps {
   setShowModal: (show: boolean) => void;
@@ -47,7 +38,6 @@ const ExamHeader = forwardRef<HTMLDivElement, ExamHeaderProps>(
   ) => {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { isOpen, setOpen } = useAskBeavoStore();
     const resultsHref = examId
       ? (() => {
           const base = mockExamResultsHref(

@@ -1,3 +1,7 @@
+import {
+  normalizeAppClientPlatform,
+  type AppClientPlatform,
+} from "@/lib/appClientPlatform";
 import { sendGa4Events } from "@/lib/ga4MeasurementProtocol";
 import {
   META_EVENT,
@@ -11,12 +15,15 @@ export async function sendSignupConversionEvents(args: {
   email?: string | null;
   method?: string;
   eventSourceUrl?: string | null;
+  appPlatform?: string | null;
 }): Promise<void> {
   const userId = args.userId.trim();
   if (!userId) return;
 
   const method = args.method?.trim() || "email";
   const eventId = metaEventIdCompleteRegistration(userId);
+  const appPlatform: AppClientPlatform =
+    normalizeAppClientPlatform(args.appPlatform) ?? "web";
 
   void sendGa4Events({
     clientId: userId,
@@ -24,7 +31,11 @@ export async function sendSignupConversionEvents(args: {
     events: [
       {
         name: "sign_up",
-        params: { method, source_page: args.eventSourceUrl || undefined },
+        params: {
+          method,
+          source_page: args.eventSourceUrl || undefined,
+          app_platform: appPlatform,
+        },
       },
     ],
   });

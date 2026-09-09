@@ -716,6 +716,7 @@ export const trackAuth = {
       event: "sign_up",
       user_id: userId,
       method,
+      app_platform: rememberAppClientPlatform(),
       source_page: currentSourcePage(),
       referral_code: currentReferralCode(),
       ...attributionData,

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { normalizeAppClientPlatform } from "@/lib/appClientPlatform";
 import { sendSignupConversionEvents } from "@/lib/signupConversions";
 
 export const runtime = "nodejs";
@@ -66,10 +67,15 @@ async function handleUserCreated(record: SupabaseAuthUserRecord): Promise<void> 
   if (!userId) return;
 
   const email = record.email?.trim() || null;
+  const meta = record.raw_user_meta_data ?? {};
   await sendSignupConversionEvents({
     userId,
     email,
     method: inferSignupMethodFromRecord(record),
+    appPlatform:
+      normalizeAppClientPlatform(meta.app_platform) ??
+      normalizeAppClientPlatform(meta.platform) ??
+      "web",
   });
 }
 

@@ -10,6 +10,7 @@ import { AuthLiveJoinedBanner } from "@/components/auth/AuthPageChrome";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { appPlatformUserMetadata } from "@/lib/appClientPlatform";
 import { DEFAULT_POST_AUTH_PATH } from "@/lib/auth/post-auth-redirect";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser-client";
 import { trackAuth, trackKpi } from "@/lib/analytics";
@@ -141,6 +142,7 @@ export function SupabaseAuthForm({
           options: {
             emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(dest)}`,
             shouldCreateUser: mode === "sign-up",
+            ...(mode === "sign-up" ? { data: appPlatformUserMetadata() } : {}),
           },
         });
         if (otpErr) {
@@ -186,6 +188,7 @@ export function SupabaseAuthForm({
             password,
             options: {
               emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(dest)}`,
+              data: appPlatformUserMetadata(),
             },
           });
           if (signErr) {
