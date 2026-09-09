@@ -38,6 +38,11 @@ import {
   sendMetaCapiEvents,
 } from "@/lib/metaConversionsApi";
 import { sendGa4Events } from "@/lib/ga4MeasurementProtocol";
+import {
+  normalizeAppClientPlatform,
+  parseAppClientPlatform,
+  type AppClientPlatform,
+} from "@/lib/appClientPlatform";
 
 function recordToStripeMetadata(record: Record<string, unknown>): Stripe.MetadataParam {
   const out: Stripe.MetadataParam = {};
@@ -46,6 +51,20 @@ function recordToStripeMetadata(record: Record<string, unknown>): Stripe.Metadat
     out[key] = value === null ? "" : String(value);
   }
   return out;
+}
+
+function checkoutAppPlatform(
+  req: NextRequest,
+  userMetadata: Record<string, unknown> | null | undefined,
+  formData: FormData
+): AppClientPlatform {
+  const fromForm = normalizeAppClientPlatform(formData.get("app_platform"));
+  if (fromForm) return fromForm;
+  const fromUser =
+    normalizeAppClientPlatform(userMetadata?.app_platform) ??
+    normalizeAppClientPlatform(userMetadata?.platform);
+  if (fromUser) return fromUser;
+  return parseAppClientPlatform(req.headers.get("user-agent") || "");
 }
 
 /** GET — same handler as POST (no self-fetch: avoids dev deadlock / invalid response). */
@@ -118,6 +137,7 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
 
     // Check if user has referral discount (prioritize referral over partner / campaign)
     const userMetadata = user.publicMetadata as any;
+    const appPlatform = checkoutAppPlatform(req, userMetadata, formData);
     let promotionCode: string | null = null;
     let referralDiscountApplied = false;
     let partnerDiscountApplied = false;
@@ -803,6 +823,7 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
       metadata: recordToStripeMetadata({
         user_id: user.id,
         plan_name: productDetails.name,
+        app_platform: appPlatform,
         referral_code: userMetadata?.referralCode || null,
         final_offer_source: finalOfferMetadata,
         challenge_mode: hasChallengePayload ? "refund_goal" : null,
@@ -836,6 +857,7 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
           metadata: recordToStripeMetadata({
             user_id: user.id,
             plan_name: productDetails.name,
+            app_platform: appPlatform,
             referral_code: userMetadata?.referralCode || null,
             final_offer_source: finalOfferMetadata,
             challenge_mode: hasChallengePayload ? "refund_goal" : null,
@@ -935,6 +957,7 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
         metadata: recordToStripeMetadata({
           user_id: user.id,
           checkout_id: session.id,
+          app_platform: appPlatform,
           referral_code: userMetadata?.referralCode || null,
           final_offer_source: finalOfferMetadata,
           challenge_mode: hasChallengePayload ? "refund_goal" : null,

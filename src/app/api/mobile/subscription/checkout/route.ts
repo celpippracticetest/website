@@ -10,6 +10,11 @@ import {
   ACQUISITION_ATTRIBUTION_COOKIE,
   flatAcquisitionFromCookie,
 } from "@/lib/attributionCookie";
+import {
+  normalizeAppClientPlatform,
+  parseAppClientPlatform,
+  type AppClientPlatform,
+} from "@/lib/appClientPlatform";
 
 type UserMetadata = Record<string, unknown>;
 
@@ -225,6 +230,20 @@ function readStringValue(value: unknown): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
+function mobileCheckoutAppPlatform(
+  request: NextRequest,
+  body: Record<string, unknown>,
+  publicMetadata: UserMetadata
+): AppClientPlatform {
+  const fromBody = normalizeAppClientPlatform(body.app_platform);
+  if (fromBody) return fromBody;
+  const fromUser =
+    normalizeAppClientPlatform(publicMetadata.app_platform) ??
+    normalizeAppClientPlatform(publicMetadata.platform);
+  if (fromUser) return fromUser;
+  return parseAppClientPlatform(request.headers.get("user-agent") || "");
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { user, userId, mobileAuthKind, supabaseAuthUserId } =
@@ -270,6 +289,11 @@ export async function POST(request: NextRequest) {
         : (defaultPrice as Stripe.Price);
     const mode = price.recurring ? "subscription" : "payment";
     const publicMetadata = (user.publicMetadata ?? {}) as UserMetadata;
+    const appPlatform = mobileCheckoutAppPlatform(
+      request,
+      body && typeof body === "object" ? (body as Record<string, unknown>) : {},
+      publicMetadata
+    );
     const firstTouch =
       typeof publicMetadata.firstTouch === "object" && publicMetadata.firstTouch
         ? (publicMetadata.firstTouch as UserMetadata)
@@ -434,6 +458,7 @@ export async function POST(request: NextRequest) {
           ? toMetadataValue(publicMetadata.partnerReferralCode)
           : "",
         origin: "mobile_app",
+        app_platform: appPlatform,
         ...ga4CheckoutMeta,
         ...attributionMetadata,
         ...attributionSnapshot,
@@ -455,6 +480,7 @@ export async function POST(request: NextRequest) {
                   ? toMetadataValue(publicMetadata.partnerReferralCode)
                   : "",
                 origin: "mobile_app",
+        app_platform: appPlatform,
                 ...ga4CheckoutMeta,
                 ...attributionMetadata,
                 ...attributionSnapshot,
@@ -470,6 +496,7 @@ export async function POST(request: NextRequest) {
           user_id: userId,
           checkout_id: session.id,
           origin: "mobile_app",
+        app_platform: appPlatform,
         },
       });
     }

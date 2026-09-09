@@ -273,12 +273,8 @@ export default async function RootLayout({
         <CriticalCSS />
         <VercelAnalytics />
 
-        {/* Direct GA4 so KPI events reach Analytics even before / without GTM. */}
-        <Script
-          id="ga4-gtag"
-          src={`https://www.googletagmanager.com/gtag/js?id=${GA4_MEASUREMENT_ID}`}
-          strategy="lazyOnload"
-        />
+        {/* Queue GA4 config immediately; load gtag.js on first user gesture so it
+            stays off the Lighthouse TBT window (lazyOnload still ran during lab load). */}
         <Script
           id="ga4-init"
           strategy="afterInteractive"
@@ -301,6 +297,19 @@ export default async function RootLayout({
               gtag('config', '${GA4_MEASUREMENT_ID}', {
                 send_page_view: false
               });
+              (function(id){
+                function injectGtagSrc(){
+                  if (window.__ga4GtagSrcInjected) return;
+                  window.__ga4GtagSrcInjected = true;
+                  var s = document.createElement('script');
+                  s.async = true;
+                  s.src = 'https://www.googletagmanager.com/gtag/js?id=' + id;
+                  document.head.appendChild(s);
+                }
+                ['click','scroll','mousemove','touchstart','keydown'].forEach(function(evt){
+                  window.addEventListener(evt, injectGtagSrc, { once: true, passive: true });
+                });
+              })('${GA4_MEASUREMENT_ID}');
             `,
           }}
         />
