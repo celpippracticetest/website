@@ -1,4 +1,4 @@
-import PremiumPlanModal from "@/components/premium-plan/PremiumPlanModal";
+import PremiumPlanModalGate from "@/components/premium-plan/PremiumPlanModalGate";
 import "./globals.css";
 import "../../sentry.client.config"; // Initialize Sentry on client
 import NextTopLoader from "nextjs-toploader";
@@ -242,13 +242,6 @@ export default async function RootLayout({
             }),
           }}
         />
-
-        {/* Crazy Egg: must be in <head> (their checker flags body/afterInteractive). */}
-        <script
-          type="text/javascript"
-          src="https://script.crazyegg.com/pages/scripts/0133/6360.js"
-          async
-        />
       </head>
 
       <body className="bg-[#F4F7FF]">
@@ -275,7 +268,7 @@ export default async function RootLayout({
             {children}
           </ErrorBoundary>
         </ReactQueryProvider>
-        <PremiumPlanModal />
+        <PremiumPlanModalGate />
         <PerformanceMonitor />
         <CriticalCSS />
         <VercelAnalytics />
@@ -284,7 +277,7 @@ export default async function RootLayout({
         <Script
           id="ga4-gtag"
           src={`https://www.googletagmanager.com/gtag/js?id=${GA4_MEASUREMENT_ID}`}
-          strategy="afterInteractive"
+          strategy="lazyOnload"
         />
         <Script
           id="ga4-init"

@@ -110,8 +110,6 @@ const Hero = () => {
         style={{
           background:
             "linear-gradient(-45deg, #CEDCFF70, #DAFFFA70, #FFB78A70, #CEDCFF70)",
-          backgroundSize: "300% 300%",
-          animation: "gradient 14s ease-in-out infinite",
         }}
         className="relative pt-[80px] flex flex-col min-h-screen screen1024:min-h-[100dvh] justify-between transition-all duration-300 w-full background-animate shadow-[inset_0px_-80px_96px_-4px_#F4F7FF]"
       >

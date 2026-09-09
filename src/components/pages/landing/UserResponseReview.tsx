@@ -208,7 +208,7 @@ const UserResponseReview = () => {
               </div>
               <div
                 className={`bg-primary6
-                 px-[8px] screen1280:!px-[16px]  py-[8px] rounded-[24px] h-[44px] text-primary1 flex items-center justify-center`}
+                 px-[8px] screen1280:!px-[16px]  py-[8px] rounded-[24px] h-[44px] text-[#1848B8] flex items-center justify-center`}
               >
                 <span
                   className={`text-[14px] screen1280:!text-[18px] font-normal `}

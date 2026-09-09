@@ -36,18 +36,22 @@ const ReadingResultView = ({
   ).length;
   const incorrectCount = Math.max(0, allQuestions.length - numberOfCorrect);
   const explanationOpenedRef = React.useRef(false);
+  const incorrectShownRef = React.useRef(false);
+
+  React.useEffect(() => {
+    if (incorrectShownRef.current || incorrectCount <= 0) return;
+    incorrectShownRef.current = true;
+    trackKpi.incorrectAnswerShown({
+      module: "reading",
+      testId: examPart?.examId?.toString(),
+      incorrectCount,
+      questionCount: allQuestions.length,
+    });
+  }, [examPart?.examId, incorrectCount, allQuestions.length]);
 
   const handleAccordionChange = (value: string) => {
     if (!value || explanationOpenedRef.current) return;
     explanationOpenedRef.current = true;
-    if (incorrectCount > 0) {
-      trackKpi.incorrectAnswerShown({
-        module: "reading",
-        testId: examPart?.examId?.toString(),
-        incorrectCount,
-        questionCount: allQuestions.length,
-      });
-    }
     trackKpi.explanationOpen({
       module: "reading",
       testId: examPart?.examId?.toString(),
