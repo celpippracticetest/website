@@ -216,7 +216,8 @@ export const ActivityLogger = {
     skill?: "Listening" | "Reading" | "Writing" | "Speaking",
     tokensPrompt?: number,
     tokensCompletion?: number,
-    attemptId?: string
+    attemptId?: string,
+    durationSeconds?: number
   ) {
     return logUserActivity({
       eventType: "ai_feedback_generated",
@@ -225,6 +226,7 @@ export const ActivityLogger = {
       attemptId,
       llmTokensPrompt: tokensPrompt || 0,
       llmTokensCompletion: tokensCompletion || 0,
+      durationSeconds,
     });
   },
 

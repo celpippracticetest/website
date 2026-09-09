@@ -159,6 +159,7 @@ const SpeakingExamView = ({
     }, 320);
 
     try {
+      const scoringStartedAt = Date.now();
       const response = await fetch("/api/exams/answers/speaking", {
         method: "POST",
         body: formData,
@@ -172,7 +173,11 @@ const SpeakingExamView = ({
       }
       setProgressBar(100);
 
-      await response.json();
+      const result = await response.json();
+      const latencySec = Math.max(
+        0,
+        Math.round((Date.now() - scoringStartedAt) / 1000),
+      );
       // Log mock exam part completed
       const loggerAttemptId =
         searchParams.get("attemptId") ||
@@ -184,6 +189,16 @@ const SpeakingExamView = ({
         undefined, // Breakdown will be available later
         recordingTime,
       );
+      if (result?.usage) {
+        await ActivityLogger.aiFeedbackGenerated(
+          "mock",
+          "Speaking",
+          result.usage.prompt_tokens || 0,
+          result.usage.completion_tokens || 0,
+          loggerAttemptId,
+          latencySec,
+        );
+      }
 
       setIsSubmit(true);
     } catch (error) {

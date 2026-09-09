@@ -331,9 +331,10 @@ const SpeakingPracticeView = ({
           })
           .then(async (data) => {
             completedRef.current = true;
+            const latencyMs = Date.now() - scoringStartedAt;
             trackKpi.aiScoreReturned({
               module: "speaking",
-              latencyMs: Date.now() - scoringStartedAt,
+              latencyMs,
               estimatedClb: data.overall,
             });
             // Log practice completed
@@ -355,6 +356,7 @@ const SpeakingPracticeView = ({
                 data.usage.prompt_tokens || 0,
                 data.usage.completion_tokens || 0,
                 attemptId,
+                Math.max(0, Math.round(latencyMs / 1000)),
               );
             }
 

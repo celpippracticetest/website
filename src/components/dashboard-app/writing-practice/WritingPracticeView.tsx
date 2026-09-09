@@ -244,9 +244,10 @@ const WritingPracticeView = ({
       setProgressBar(100);
       const result = await response.json();
       completedRef.current = true;
+      const latencyMs = Date.now() - scoringStartedAt;
       trackKpi.aiScoreReturned({
         module: "writing",
-        latencyMs: Date.now() - scoringStartedAt,
+        latencyMs,
         estimatedClb: result.overall,
       });
 
@@ -269,6 +270,7 @@ const WritingPracticeView = ({
           result.usage.prompt_tokens || 0,
           result.usage.completion_tokens || 0,
           logAttemptId,
+          Math.max(0, Math.round(latencyMs / 1000)),
         );
       }
 

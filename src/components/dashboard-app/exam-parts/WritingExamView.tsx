@@ -184,6 +184,7 @@ const WritingExamView = ({
         setProgressBar((prev) => (prev < 100 ? prev + 1 : prev));
       }, 300); // Increment every 300ms to reach 100 in ~30s
 
+      const scoringStartedAt = Date.now();
       const response = await fetch(url, {
         method: "POST",
         body: JSON.stringify(requestData),
@@ -196,6 +197,10 @@ const WritingExamView = ({
       }
       setProgressBar(100);
       const result = await response.json();
+      const latencySec = Math.max(
+        0,
+        Math.round((Date.now() - scoringStartedAt) / 1000),
+      );
 
       // Log mock exam part completed
       const loggerAttemptId =
@@ -216,6 +221,7 @@ const WritingExamView = ({
           result.usage.prompt_tokens || 0,
           result.usage.completion_tokens || 0,
           attemptId,
+          latencySec,
         );
       }
     } catch (error) {

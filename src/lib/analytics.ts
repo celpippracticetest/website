@@ -1529,9 +1529,20 @@ export const trackKpi = {
     module?: PracticeModule | string;
     reasonText?: string;
   }) => {
+    const raw = params.rating;
+    const positive =
+      raw === 1 ||
+      raw === "1" ||
+      raw === "up" ||
+      raw === "helpful" ||
+      raw === "yes";
     trackEvent({
       event: "ai_feedback_rated",
-      rating: params.rating,
+      rating: positive ? 1 : 0,
+      // GA4 `customEvent:rating` is not registered on the current property.
+      // eventValue 1 = not helpful, 2 = helpful so Data API can split without
+      // that dimension. 0 means the param was never set (historical events).
+      value: positive ? 2 : 1,
       module: normalizeModule(params.module) || params.module,
       reason_text: params.reasonText,
     });
