@@ -147,11 +147,24 @@ export function useHybridWebUser() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(() => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT") {
+        setSupabaseUser(null);
+        return;
+      }
+
+      if (
+        session?.user &&
+        (event === "INITIAL_SESSION" ||
+          event === "SIGNED_IN" ||
+          event === "TOKEN_REFRESHED")
+      ) {
+        setSupabaseUser(session.user);
+        return;
+      }
+
       void resolveFreshSupabaseUser(supabase).then(setSupabaseUser);
     });
-
-    void resolveFreshSupabaseUser(supabase).then(setSupabaseUser);
 
     return () => {
       subscription.unsubscribe();

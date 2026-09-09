@@ -36,8 +36,7 @@ const Practice = () => {
             width={325}
             height={488}
             sizes="(max-width: 1280px) 0px, 325px"
-            quality={100}
-            unoptimized
+            quality={75}
           />
           <Image
             className="absolute left-auto right-auto screen744:!right-[21px] -top-[126px] flex screen1280:!hidden"
@@ -46,8 +45,7 @@ const Practice = () => {
             width={242}
             height={297}
             sizes="(min-width: 1280px) 0px, 242px"
-            quality={100}
-            unoptimized
+            quality={75}
           />
         </div>
       </div>

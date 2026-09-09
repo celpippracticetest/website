@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
 import SvgLearning from "@/components/icons/Learning";
 import SvgPractice from "@/components/icons/Practice";
@@ -31,29 +31,35 @@ const TopHeader = () => {
   ];
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const sidebarMenuRef = useRef<HTMLDivElement>(null);
+  const hamburgerButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
+    if (!isMenuOpen) return;
+
     const checkMenu = (event: MouseEvent) => {
-      if (sidebarMenuRef?.current) {
-        const target = event.target as Node | null;
-        if (!sidebarMenuRef?.current.contains(target)) {
-          setIsMenuOpen(false);
-        }
+      const target = event.target as Node | null;
+      if (!target) return;
+      const clickedInsideDrawer = sidebarMenuRef.current?.contains(target);
+      const clickedHamburger = hamburgerButtonRef.current?.contains(target);
+      if (!clickedInsideDrawer && !clickedHamburger) {
+        setIsMenuOpen(false);
       }
     };
 
     window.document.addEventListener("mousedown", checkMenu);
-  }, []);
+    return () => window.document.removeEventListener("mousedown", checkMenu);
+  }, [isMenuOpen]);
 
   useEffect(() => {
     if (isMenuOpen === true && dimensions.width <= 1279) {
       document.body.classList.add("overflow-hidden");
-    } else if (isMenuOpen === false && dimensions.width <= 1279) {
+    } else {
       document.body.classList.remove("overflow-hidden");
     }
     if (isMenuOpen === true && dimensions.width > 1279) {
       setIsMenuOpen(false);
     }
+    return () => document.body.classList.remove("overflow-hidden");
   }, [isMenuOpen, dimensions]);
 
   useEffect(() => {
@@ -63,7 +69,9 @@ const TopHeader = () => {
         height: window.innerHeight,
       });
     };
+    handleSize();
     window.addEventListener("resize", handleSize);
+    return () => window.removeEventListener("resize", handleSize);
   }, []);
 
   const icons = [
@@ -140,13 +148,17 @@ const TopHeader = () => {
         }}
       >
         <div className="flex items-center gap-[12px] screen744:!gap-[24px]">
-          <span
+          <button
+            ref={hamburgerButtonRef}
+            type="button"
             className="screen1280:!hidden flex"
-            onClick={() => setIsMenuOpen && setIsMenuOpen(!isMenuOpen)}
-            aria-label="Open menu"
+            onClick={() => setIsMenuOpen((open) => !open)}
+            aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={isMenuOpen}
+            aria-controls="mobile-nav"
           >
             <SvgHamburger />
-          </span>
+          </button>
           <Link className="shrink-0 flex flex-row items-center" href={"/"}>
             <Image
               src="/images/header-logo-left.png"
@@ -195,57 +207,64 @@ const TopHeader = () => {
         <TopHeaderRightSide />
       </div>
 
-      {isMenuOpen && (
-        <div className="fixed top-0 w-full h-full  backdrop-blur-[20px] z-[9999999]"></div>
-      )}
-      <motion.div
-        ref={sidebarMenuRef}
-        initial={{ x: "100%" }}
-        animate={{ x: isMenuOpen ? "0%" : "100%" }}
-        transition={{ duration: 0.5, ease: "easeInOut" }}
-        aria-hidden={!isMenuOpen}
-        className={` z-[9999999] fixed right-0 top-0 flex flex-col text-[#3D3B3B] bg-[#f9f9f9] p-[24px] w-full max-w-[720px] h-[100vh] ${
-          isMenuOpen ? "pointer-events-auto" : "pointer-events-none"
-        }`}
-      >
-        <div className="flex justify-between">
-          <span
-            className={` "text-[#232222] text-[20px]  screen1280:flex !font-lobster`}
-          >
-            <Link className="shrink-0" href={"/"}>
-              <Image
-                alt="logo"
-                width={133}
-                height={40}
-                src="/images/logo.png"
-              />
-            </Link>
-          </span>
-          <span
-            className={`cursor-pointer  text-[#232222]`}
-            onClick={() => setIsMenuOpen(false)}
-          >
-            <SvgClose />
-          </span>
-        </div>
-        <div className=" mt-[32px] gap-[16px]">
-          {["Practice", "Mock Exams", "Learning", "Words"].map(
-            (label, index) => (
-              <React.Fragment key={label}>
-                <Link
-                  key={label}
-                  className="h-[36px] group gap-[10px] flex items-center underline-offset-[8px] decoration-[2px] hover:underline text-text2 hover:cursor-pointer hover:!text-primary1"
-                  href={hrefs[index]}
+      <AnimatePresence>
+        {isMenuOpen && (
+          <>
+            <div className="fixed top-0 w-full h-full  backdrop-blur-[20px] z-[9999999]"></div>
+            <motion.div
+              id="mobile-nav"
+              ref={sidebarMenuRef}
+              initial={{ x: "100%" }}
+              animate={{ x: "0%" }}
+              exit={{ x: "100%" }}
+              transition={{ duration: 0.5, ease: "easeInOut" }}
+              className=" z-[9999999] fixed right-0 top-0 flex flex-col text-[#3D3B3B] bg-[#f9f9f9] p-[24px] w-full max-w-[720px] h-[100vh] pointer-events-auto"
+            >
+              <div className="flex justify-between">
+                <span
+                  className={` "text-[#232222] text-[20px]  screen1280:flex !font-lobster`}
                 >
-                  {icons[index]}
+                  <Link className="shrink-0" href={"/"}>
+                    <Image
+                      alt="logo"
+                      width={133}
+                      height={40}
+                      src="/images/logo.png"
+                    />
+                  </Link>
+                </span>
+                <button
+                  type="button"
+                  className="cursor-pointer text-[#232222]"
+                  onClick={() => setIsMenuOpen(false)}
+                  aria-label="Close menu"
+                >
+                  <SvgClose />
+                </button>
+              </div>
+              <div className=" mt-[32px] gap-[16px]">
+                {["Practice", "Mock Exams", "Learning", "Words"].map(
+                  (label, index) => (
+                    <React.Fragment key={label}>
+                      <Link
+                        key={label}
+                        className="h-[36px] group gap-[10px] flex items-center underline-offset-[8px] decoration-[2px] hover:underline text-text2 hover:cursor-pointer hover:!text-primary1"
+                        href={hrefs[index]}
+                      >
+                        {icons[index]}
 
-                  <span className=" text-[16px] font-normal">{label}</span>
-                </Link>
-              </React.Fragment>
-            ),
-          )}
-        </div>
-      </motion.div>
+                        <span className=" text-[16px] font-normal">
+                          {label}
+                        </span>
+                      </Link>
+                    </React.Fragment>
+                  ),
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

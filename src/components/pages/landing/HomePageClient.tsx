@@ -39,12 +39,14 @@ export default function HomePageClient() {
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <div className="bg-[#F4F7FF]">
-        <Hero />
-        <UserResponseReview />
-        <Comments />
-        <Practice />
-        {/* <Blog /> */}
-        <FAQ />
+        <main>
+          <Hero />
+          <UserResponseReview />
+          <Comments />
+          <Practice />
+          {/* <Blog /> */}
+          <FAQ />
+        </main>
         <Footer />
       </div>
     </ErrorBoundary>

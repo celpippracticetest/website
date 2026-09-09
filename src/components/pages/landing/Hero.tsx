@@ -174,9 +174,9 @@ const Hero = () => {
                             {item.title1}
                           </span>
                         )}
-                        <h3 className="text-text1 font-normal text-[20px] leading-[28px]">
+                        <span className="text-text1 font-normal text-[20px] leading-[28px]">
                           {item.title2}
-                        </h3>
+                        </span>
                       </motion.div>
                     ))}
                   </div>
@@ -193,8 +193,7 @@ const Hero = () => {
                       height={491}
                       priority={true}
                       sizes="(max-width: 1280px) 0px, 327px"
-                      quality={100}
-                      unoptimized
+                      quality={75}
                       loading="eager"
                       fetchPriority="high"
                     />

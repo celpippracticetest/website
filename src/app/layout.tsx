@@ -8,7 +8,6 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
 import { Suspense } from "react";
 import ReactQueryProvider from "@/components/ReactQueryProvider";
-import { LazyIntercom } from "@/components/LazyComponents";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
 import CriticalCSS from "@/components/CriticalCSS";
 import AuthAnalyticsTracker from "@/components/analytics/AuthAnalyticsTracker";
@@ -134,36 +133,6 @@ export default async function RootLayout({
           }}
         />
 
-        {/* Critical preloads */}
-        <link
-          rel="preload"
-          as="image"
-          href="/images/hero.png"
-          type="image/png"
-          fetchPriority="high"
-        />
-        <link
-          rel="preload"
-          as="image"
-          href="/images/logo.png"
-          type="image/png"
-          fetchPriority="high"
-        />
-
-        {/* DNS prefetch / preconnect */}
-        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
-        <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.googleapis.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-
         {/* Icons & PWA */}
         <link rel="icon" href="/favicon/favicon.ico" sizes="any" />
         <link
@@ -187,6 +156,26 @@ export default async function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="CELPIP Test" />
         <meta name="theme-color" content="#3B82F6" />
+
+        <Script
+          id="celpip-app-platform"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function () {
+                var ua = navigator.userAgent || '';
+                var flag = window.__CELPIP_APP_PLATFORM;
+                var platform = 'web';
+                if (flag === 'android_app' || flag === 'ios_app' || flag === 'web') {
+                  platform = flag;
+                } else if (/CELPIPApp\\/|CelpipAppWebView/i.test(ua)) {
+                  platform = /iPhone|iPad|iPod/i.test(ua) ? 'ios_app' : 'android_app';
+                }
+                window.__CELPIP_APP_PLATFORM = platform;
+              })();
+            `,
+          }}
+        />
 
         {/* JSON-LD early is fine */}
         <Script
@@ -253,6 +242,13 @@ export default async function RootLayout({
             }),
           }}
         />
+
+        {/* Crazy Egg: must be in <head> (their checker flags body/afterInteractive). */}
+        <script
+          type="text/javascript"
+          src="https://script.crazyegg.com/pages/scripts/0133/6360.js"
+          async
+        />
       </head>
 
       <body className="bg-[#F4F7FF]">
@@ -280,7 +276,6 @@ export default async function RootLayout({
           </ErrorBoundary>
         </ReactQueryProvider>
         <PremiumPlanModal />
-        <LazyIntercom />
         <PerformanceMonitor />
         <CriticalCSS />
         <VercelAnalytics />
@@ -301,15 +296,10 @@ export default async function RootLayout({
               window.gtag = gtag;
               gtag('js', new Date());
               (function () {
-                var ua = navigator.userAgent || '';
-                var flag = window.__CELPIP_APP_PLATFORM;
-                var platform = 'web';
-                if (flag === 'android_app' || flag === 'ios_app' || flag === 'web') {
-                  platform = flag;
-                } else if (/CELPIPApp\\/|CelpipAppWebView/i.test(ua)) {
-                  platform = /iPhone|iPad|iPod/i.test(ua) ? 'ios_app' : 'android_app';
+                var platform = window.__CELPIP_APP_PLATFORM;
+                if (platform !== 'android_app' && platform !== 'ios_app' && platform !== 'web') {
+                  platform = 'web';
                 }
-                window.__CELPIP_APP_PLATFORM = platform;
                 gtag('set', 'user_properties', {
                   platform: platform,
                   app_platform: platform
@@ -353,12 +343,6 @@ export default async function RootLayout({
             }}
           />
         )}
-
-        <Script
-          id="crazyegg"
-          src="https://script.crazyegg.com/pages/scripts/0133/6360.js"
-          strategy="afterInteractive"
-        />
 
         <Script
           id="third-party-loader"

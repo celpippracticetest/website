@@ -37,7 +37,7 @@ const Footer = () => {
             </Link>
 
             <div className="mt-[16px] screen744:!max-w-238 screen1280:!max-w-[460px]">
-              <span className="text-text3 font-light text-[14px] screen744:!text-[12px] screen1280:!text-[18px] flex text-justify">
+              <span className="text-text2 font-light text-[14px] screen744:!text-[12px] screen1280:!text-[18px] flex text-justify">
                 CELPIPPRACTICETEST.com is an independent platform and is not
                 affiliated with, endorsed by, or associated with Paragon Testing
                 Enterprises or the official CELPIP test
@@ -113,7 +113,7 @@ const Footer = () => {
         </div>
 
         <div className="flex mt-[55px] screen744:!mt-[65px] screen1280:!mt-[50px] justify-center">
-          <span className="text-text3 font-normal text-[14px] ">
+          <span className="text-text2 font-normal text-[14px] ">
             {`© ${new Date().getFullYear()} CELPIPPRACTICETEST.com. All rights reserved.`}
           </span>
         </div>

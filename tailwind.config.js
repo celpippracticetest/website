@@ -48,6 +48,7 @@ module.exports = {
         gray: "#919191",
         purpule_light: "#FDF4FF",
         purple: "#DA2AFE",
+        purple_dark: "#8A14B0",
         success_light: "#F0FFFD",
         success: "#0DAA94",
         border: "hsl(var(--border))",
@@ -94,9 +95,10 @@ module.exports = {
           ring: "hsl(var(--sidebar-ring))",
         },
         button: {
-          primary: "rgba(49, 107, 255, 1)",
+          // Darkened vs #316BFF / #F27059 so white text meets WCAG 4.5:1
+          primary: "rgba(37, 84, 214, 1)",
           primaryShadow: "rgba(117, 156, 255, 1)",
-          secondary: "rgba(242, 112, 89, 1)",
+          secondary: "rgba(196, 69, 50, 1)",
           disabled: "rgba(213, 214, 216, 1)",
         },
         celblue: {

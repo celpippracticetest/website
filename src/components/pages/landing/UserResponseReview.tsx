@@ -110,7 +110,7 @@ const UserResponseReview = () => {
   > = {
     mock: {
       bg: "bg-purpule_light",
-      text: "text-purple",
+      text: "text-purple_dark",
     },
     practice: {
       bg: "bg-success_light",
@@ -151,8 +151,9 @@ const UserResponseReview = () => {
             >
               <div
                 onClick={() => setActive(index)}
-                className={`${active === index ? "bg-primary2 text-white" : "text-text2"
-                  } flex items-center hover:cursor-pointer justify-center hover:text-white hover:bg-primary2 text-[18px] h-[40px] w-[191px] screen1280:!w-[276px] rounded-[16px] transition-colors duration-300 z-[10] flex-shrink-0`}
+                className={`${
+                  active === index ? "bg-primary2 text-white" : "text-text2"
+                } flex items-center hover:cursor-pointer justify-center hover:text-white hover:bg-primary2 text-[18px] h-[40px] w-[191px] screen1280:!w-[276px] rounded-[16px] transition-colors duration-300 z-[10] flex-shrink-0`}
               >
                 {tab.title}
               </div>
@@ -207,7 +208,7 @@ const UserResponseReview = () => {
               </div>
               <div
                 className={`bg-primary6
-                 px-[8px] screen1280:!px-[16px]  py-[8px] rounded-[24px] h-[44px] text-primary2 flex items-center justify-center`}
+                 px-[8px] screen1280:!px-[16px]  py-[8px] rounded-[24px] h-[44px] text-primary1 flex items-center justify-center`}
               >
                 <span
                   className={`text-[14px] screen1280:!text-[18px] font-normal `}

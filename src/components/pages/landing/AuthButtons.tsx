@@ -53,6 +53,8 @@ const AuthButtons = () => {
                 className="w-10 h-10 p-1 rounded-full ring-2 ring-gray-300"
                 src={user.imageUrl}
                 alt="User Avatar"
+                width={40}
+                height={40}
               />
             ) : (
               <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-600">

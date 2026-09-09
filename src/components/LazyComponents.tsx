@@ -1,13 +1,6 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { Suspense } from "react";
-
-// Lazy load Intercom
-export const LazyIntercom = dynamic(() => import("./IntercomLoader"), {
-  loading: () => null,
-  ssr: false,
-});
 
 // Generic loading component
 export const LoadingSpinner = () => (

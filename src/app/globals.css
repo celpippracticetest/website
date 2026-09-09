@@ -49,10 +49,6 @@ svg {
   height: auto;
 }
 
-.intercom-lightweight-app-launcher {
-  bottom: 80px !important;
-}
-
 /* Critical CSS for above-the-fold content */
 .critical-content {
   contain: layout style paint;

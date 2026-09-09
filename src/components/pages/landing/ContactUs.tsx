@@ -4,23 +4,13 @@ import React from "react";
 import Link from "next/link";
 import TopHeader from "./TopHeader";
 import Footer from "./Footer";
+import { openCrispChat } from "@/lib/crisp";
 
 const SUPPORT_EMAIL = "support@celpippracticetest.com";
 const REFUND_URL = "https://refund.celpippractice.ca";
 
 function openLiveChat() {
-  if (typeof window === "undefined") return;
-  const w = window as unknown as {
-    Intercom?: (cmd: string) => void;
-    showIntercom?: () => void;
-  };
-  if (w.showIntercom) {
-    w.showIntercom();
-    return;
-  }
-  if (w.Intercom) {
-    w.Intercom("show");
-  }
+  openCrispChat();
 }
 
 const contactMethods = [

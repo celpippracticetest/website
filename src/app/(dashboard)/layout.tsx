@@ -1,5 +1,4 @@
 import LayoutClient from "@/components/dashboard-new/LayoutClient";
-import IntercomLoader from "@/components/IntercomLoader";
 import { currentUser } from "@/lib/auth/web-auth-session";
 import { shouldShowOnboardingSurvey } from "@/lib/onboardingSurveyVisibility";
 import { Metadata } from "next";
@@ -28,10 +27,5 @@ export default async function RootLayout({
 
   const showSurvey = shouldShowOnboardingSurvey(user);
 
-  return (
-    <>
-      <IntercomLoader />
-      <LayoutClient showSurvey={showSurvey} children={children} />
-    </>
-  );
+  return <LayoutClient showSurvey={showSurvey} children={children} />;
 }

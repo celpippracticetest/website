@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { normalizeAppClientPlatform } from "@/lib/appClientPlatform";
+import { appPlatformFromUserMetadata } from "@/lib/appClientPlatform";
 import { sendSignupConversionEvents } from "@/lib/signupConversions";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,6 +17,8 @@ type SupabaseAuthUserRecord = {
   created_at?: string;
   raw_user_meta_data?: Record<string, unknown> | null;
   raw_app_meta_data?: Record<string, unknown> | null;
+  user_metadata?: Record<string, unknown> | null;
+  app_metadata?: Record<string, unknown> | null;
 };
 
 function verifyWebhookSecret(req: NextRequest): boolean {
@@ -32,9 +35,10 @@ function verifyWebhookSecret(req: NextRequest): boolean {
 }
 
 function inferSignupMethodFromRecord(record: SupabaseAuthUserRecord): string {
-  const provider = String(record.raw_app_meta_data?.provider ?? "").toLowerCase();
+  const appMeta = record.raw_app_meta_data ?? record.app_metadata ?? {};
+  const provider = String(appMeta.provider ?? "").toLowerCase();
   if (provider.includes("google")) return "google";
-  const identities = record.raw_app_meta_data?.providers;
+  const identities = appMeta.providers;
   if (Array.isArray(identities) && identities.length > 0) {
     const first = String(identities[0] ?? "").toLowerCase();
     if (first.includes("google")) return "google";
@@ -62,20 +66,43 @@ function parseSupabaseUserCreated(
   return null;
 }
 
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function resolveSignupAppPlatform(
+  record: SupabaseAuthUserRecord
+): Promise<string> {
+  const fromInsert = appPlatformFromUserMetadata(
+    record.raw_user_meta_data ?? record.user_metadata
+  );
+  if (fromInsert) return fromInsert;
+
+  // Native Google (ID token) creates the user without metadata. The Flutter
+  // WebView shell then calls updateUser({ app_platform }). Wait and re-read.
+  await wait(2000);
+  const admin = getSupabaseAdmin();
+  const userId = record.id?.trim();
+  if (!admin || !userId) return "web";
+
+  const { data } = await admin.auth.admin.getUserById(userId);
+  return (
+    appPlatformFromUserMetadata(
+      (data.user?.user_metadata ?? {}) as Record<string, unknown>
+    ) ?? "web"
+  );
+}
+
 async function handleUserCreated(record: SupabaseAuthUserRecord): Promise<void> {
   const userId = record.id?.trim();
   if (!userId) return;
 
   const email = record.email?.trim() || null;
-  const meta = record.raw_user_meta_data ?? {};
   await sendSignupConversionEvents({
     userId,
     email,
     method: inferSignupMethodFromRecord(record),
-    appPlatform:
-      normalizeAppClientPlatform(meta.app_platform) ??
-      normalizeAppClientPlatform(meta.platform) ??
-      "web",
+    appPlatform: await resolveSignupAppPlatform(record),
   });
 }
 

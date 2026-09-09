@@ -46,6 +46,16 @@ export function normalizeAppClientPlatform(
   return undefined;
 }
 
+export function appPlatformFromUserMetadata(
+  meta: Record<string, unknown> | null | undefined,
+): AppClientPlatform | undefined {
+  if (!meta) return undefined;
+  return (
+    normalizeAppClientPlatform(meta.app_platform) ??
+    normalizeAppClientPlatform(meta.platform)
+  );
+}
+
 /** User-metadata payload so server-side `sign_up` can include `app_platform`. */
 export function appPlatformUserMetadata(): { app_platform: AppClientPlatform } {
   return { app_platform: rememberAppClientPlatform() };
