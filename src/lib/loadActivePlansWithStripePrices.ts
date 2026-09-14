@@ -79,9 +79,11 @@ export async function loadActivePlansWithStripePrices(
           }
 
           return {
-            id: price.id,
+            // Keep CMS/catalog price id so Play/App Store maps still match.
+            // Regional amount/currency come from the geo Stripe price.
+            id: catalogPrice.id,
             name: displayNameForPlan(plan),
-            priceId: price.id,
+            priceId: catalogPrice.id,
             ...(stripeProductId ? { stripeProductId } : {}),
             amount: price.unit_amount != null ? price.unit_amount / 100 : 0,
             currency: price.currency,
@@ -150,7 +152,6 @@ export async function attachStripePricingToSerializedPlans(
           ...plan,
           price: priceStr,
           currency: price.currency,
-          stripePriceId: price.id,
           ...(billing
             ? { billingInterval: billing.billingInterval, billingIntervalCount: billing.billingIntervalCount }
             : {}),
