@@ -59,6 +59,7 @@ export function PricingBrandPlanCard({
       itemPrice: plan.price,
       extraFields: pricingCheckoutFields,
       attributionFields: attribution,
+      currency: plan.currency,
       isLoaded,
       isSignedIn,
     });

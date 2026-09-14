@@ -29,15 +29,21 @@ export function getTrustedClientIp(req: NextRequest | Request): string {
   return "0.0.0.0";
 }
 
+type HeaderBag = { get(name: string): string | null };
+
 /** ISO 3166-1 alpha-2 when available (Vercel / Cloudflare). */
-export function getRequestCountry(req: NextRequest | Request): string | null {
-  const vercel = req.headers.get("x-vercel-ip-country")?.trim().toUpperCase();
+export function countryFromHeaderBag(headers: HeaderBag): string | null {
+  const vercel = headers.get("x-vercel-ip-country")?.trim().toUpperCase();
   if (vercel && vercel !== "DEV") return vercel;
 
-  const cf = req.headers.get("cf-ipcountry")?.trim().toUpperCase();
+  const cf = headers.get("cf-ipcountry")?.trim().toUpperCase();
   if (cf && cf !== "XX" && cf !== "T1") return cf;
 
   return null;
+}
+
+export function getRequestCountry(req: NextRequest | Request): string | null {
+  return countryFromHeaderBag(req.headers);
 }
 
 function ipv4DottedParts(s: string): number[] | null {

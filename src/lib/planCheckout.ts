@@ -58,6 +58,7 @@ export function submitPlanCheckout(args: {
   itemPrice?: string | number | null;
   extraFields?: Record<string, string>;
   attributionFields?: Record<string, string>;
+  currency?: string | null;
   isLoaded: boolean;
   isSignedIn: boolean;
 }): boolean {
@@ -105,7 +106,7 @@ export function submitPlanCheckout(args: {
 
   try {
     trackEcommerce.selectItem(items, "pricing_plans", "Pricing Plans");
-    trackEcommerce.beginCheckout(items, "CAD", value);
+    trackEcommerce.beginCheckout(items, (args.currency || "CAD").toUpperCase(), value);
   } catch {
     // never block checkout on analytics
   }

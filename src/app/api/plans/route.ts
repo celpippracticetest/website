@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getActivePlansCatalog } from "@/lib/plansCatalog";
+import { getRequestCountry } from "@/lib/clientIpGeo";
+import { isIndiaCountry } from "@/lib/stripeRegionalPricing";
 import { getDb } from "@/lib/appDocumentsClient";
 
 export async function GET(req: NextRequest) {
     try {
+        const country = getRequestCountry(req);
         const db = await getDb();
         const plansCollection = db.collection("plans");
 
@@ -82,7 +86,27 @@ export async function GET(req: NextRequest) {
             .sort({ order: 1 })
             .toArray();
 
-        return NextResponse.json({ plans });
+        if (!isIndiaCountry(country)) {
+            return NextResponse.json({ plans });
+        }
+
+        const withGeoPricing = await getActivePlansCatalog({ country });
+        const byId = new Map(withGeoPricing.map((p) => [p._id, p]));
+        const merged = plans.map((plan) => {
+          const id = plan._id?.toString?.() ?? String(plan._id);
+          const overlay = byId.get(id);
+          if (!overlay) return plan;
+          return {
+            ...plan,
+            price: overlay.price,
+            currency: overlay.currency,
+            stripePriceId: overlay.stripePriceId,
+            billingInterval: overlay.billingInterval,
+            billingIntervalCount: overlay.billingIntervalCount,
+          };
+        });
+
+        return NextResponse.json({ plans: merged });
     } catch (error) {
         console.error("Error fetching plans:", error);
         return NextResponse.json(

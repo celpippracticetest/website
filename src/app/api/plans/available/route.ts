@@ -1,16 +1,19 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 import { getDb } from "@/lib/appDocumentsClient";
 import { loadActivePlansWithStripePrices } from "@/lib/loadActivePlansWithStripePrices";
+import { getRequestCountry } from "@/lib/clientIpGeo";
 
 /**
  * Mobile catalog: active CMS plans with live Stripe price amounts.
  * Shape matches Flutter `SubscriptionPlan.fromJson` (`id` = Stripe price id).
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const db = await getDb();
-    const plans = await loadActivePlansWithStripePrices(db);
+    const plans = await loadActivePlansWithStripePrices(db, {
+      country: getRequestCountry(request),
+    });
 
     return NextResponse.json({
       plans: plans.map((plan) => ({

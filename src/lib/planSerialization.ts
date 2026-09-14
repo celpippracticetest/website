@@ -15,6 +15,7 @@ export function toSerializedPlan(plan: Partial<Plan>): SerializedPlan {
     billingInterval: plan.billingInterval,
     billingIntervalCount: plan.billingIntervalCount,
     stripePriceId: plan.stripePriceId,
+    currency: (plan as SerializedPlan).currency,
     iconType: plan.iconType,
     iconWrapperColor: plan.iconWrapperColor,
     order: plan.order,

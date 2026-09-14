@@ -1,14 +1,18 @@
 import { Metadata } from "next";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import PricingPageShell from "./PricingPageShell";
 import { pricingFaqs } from "@/components/pages/pricing/pricingContent";
 import { JsonLd } from "@/components/seo/JsonLd";
+import { countryFromHeaderBag } from "@/lib/clientIpGeo";
 import {
   PRICING_AB_COOKIE,
   parsePricingAbLayout,
   parsePricingStylePreviewQuery,
 } from "@/lib/pricingAbTest";
 import { getActivePlansCatalog } from "@/lib/plansCatalog";
+
+/** Geo pricing must not be CDN-cached as a single CAD HTML payload. */
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "CELPIP Practice Test Pricing Plans | Choose Your Plan",
@@ -46,7 +50,10 @@ export default async function PricingPage({ searchParams }: PricingPageProps) {
   const pricingAbParticipatesInExperiment = previewLayout === null;
   const pricingAbLayout = previewLayout ?? assignedLayout;
 
-  const plansWithStripePricing = await getActivePlansCatalog();
+  const requestHeaders = await headers();
+  const plansWithStripePricing = await getActivePlansCatalog({
+    country: countryFromHeaderBag(requestHeaders),
+  });
 
   return (
     <>

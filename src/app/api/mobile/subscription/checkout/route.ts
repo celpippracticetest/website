@@ -6,6 +6,8 @@ import { requireAuthenticatedRequest } from "@/lib/auth/request-auth";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { stripe } from "@/lib/stripe";
 import { stripeCheckoutPaymentMethodParams } from "@/lib/stripeCheckoutPaymentMethods";
+import { getRequestCountry } from "@/lib/clientIpGeo";
+import { resolveStripePriceForCountry } from "@/lib/stripeRegionalPricing";
 import {
   ACQUISITION_ATTRIBUTION_COOKIE,
   flatAcquisitionFromCookie,
@@ -283,10 +285,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const price =
+    const catalogPrice =
       typeof defaultPrice === "string"
         ? await stripe.prices.retrieve(defaultPrice)
         : (defaultPrice as Stripe.Price);
+    const price = await resolveStripePriceForCountry(
+      catalogPrice,
+      getRequestCountry(request)
+    );
     const mode = price.recurring ? "subscription" : "payment";
     const publicMetadata = (user.publicMetadata ?? {}) as UserMetadata;
     const appPlatform = mobileCheckoutAppPlatform(

@@ -99,6 +99,22 @@ export function formatPlanCadPrice(value: string) {
   }).format(numericValue);
 }
 
+export function isInrPlanCurrency(currency?: string | null) {
+  return currency?.trim().toLowerCase() === "inr";
+}
+
+export function formatPlanCardPrice(price: string, currency?: string | null) {
+  if (isInrPlanCurrency(currency)) {
+    const numericValue = parsePrice(price);
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: numericValue % 1 === 0 ? 0 : 2,
+    }).format(numericValue);
+  }
+  return `$ ${price}`;
+}
+
 export function isWeeklyPlan(plan: SerializedPlan) {
   return getDurationGroupKey(plan) === "weekly";
 }

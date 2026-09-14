@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import type Stripe from "stripe";
 
 import { stripe } from "@/lib/stripe";
+import { resolveStripePriceForCountry } from "@/lib/stripeRegionalPricing";
+import { getRequestCountry } from "@/lib/clientIpGeo";
 import { appUserAdmin, currentUser } from "@/lib/auth/server-auth";
 import { logger, captureException, trackAPICall } from "@/lib/sentry-logger";
 import { getDb } from "@/lib/appDocumentsClient";
@@ -404,6 +406,17 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
 
       priceId = productDetails.default_price as string;
       priceObject = await stripe.prices.retrieve(priceId);
+    }
+
+    const geoCountry = getRequestCountry(req);
+    priceObject = await resolveStripePriceForCountry(priceObject, geoCountry);
+    priceId = priceObject.id;
+    const productIdFromPrice =
+      typeof priceObject.product === "string"
+        ? priceObject.product
+        : priceObject.product.id;
+    if (productDetails.id !== productIdFromPrice) {
+      productDetails = await stripe.products.retrieve(productIdFromPrice);
     }
 
     const mode = priceObject.recurring ? "subscription" : "payment";

@@ -38,6 +38,7 @@ function toSerializedPlans(plans: unknown[]): SerializedPlan[] {
           : undefined,
       stripePriceId:
         typeof plan.stripePriceId === "string" ? plan.stripePriceId : undefined,
+      currency: typeof plan.currency === "string" ? plan.currency : undefined,
       iconType: plan.iconType as SerializedPlan["iconType"],
       iconWrapperColor:
         typeof plan.iconWrapperColor === "string"

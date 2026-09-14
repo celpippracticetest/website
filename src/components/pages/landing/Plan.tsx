@@ -43,6 +43,9 @@ const Plan = () => {
               features={item.features}
               icon={item.icon}
               iconWrapperColor={item.iconWrapperColor}
+              stripePriceId={item.stripePriceId}
+              stripeProductId={item.stripeProductId}
+              currency={item.currency}
             />
           ))}
         </div>

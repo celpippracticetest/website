@@ -18,6 +18,7 @@ function serializePlan(plan: {
   billingIntervalCount?: number;
   stripeProductId?: string;
   stripePriceId?: string;
+  currency?: string;
   iconType?: string;
   iconWrapperColor?: string;
   order?: number;
@@ -39,6 +40,7 @@ function serializePlan(plan: {
     billingIntervalCount: plan.billingIntervalCount,
     stripeProductId: plan.stripeProductId,
     stripePriceId: plan.stripePriceId,
+    currency: plan.currency,
     iconType: plan.iconType as SerializedPlan["iconType"],
     iconWrapperColor: plan.iconWrapperColor,
     order: plan.order,
@@ -48,6 +50,8 @@ function serializePlan(plan: {
 export type GetActivePlansCatalogOptions = {
   /** When true, only rows that match {@link isPremiumPlusPlan} (Plus tier / mock exams / naming heuristics). */
   plusOnly?: boolean;
+  /** ISO country from the request IP (India uses INR Stripe prices). */
+  country?: string | null;
 };
 
 /** Active plans from `app_documents` + live Stripe recurring amounts (same as `/pricing`). */
@@ -58,7 +62,9 @@ export async function getActivePlansCatalog(
   const plansRepo = new PlansRepository(db);
   const plans = await plansRepo.getActivePlans();
   const serializedPlans = plans.map(serializePlan);
-  const withStripe = await attachStripePricingToSerializedPlans(serializedPlans);
+  const withStripe = await attachStripePricingToSerializedPlans(serializedPlans, {
+    country: options.country,
+  });
   if (!options.plusOnly) return withStripe;
   return withStripe.filter(isPremiumPlusPlan);
 }

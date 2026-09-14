@@ -7,6 +7,7 @@ import {
   buildCheckoutSessionAction,
   submitPlanCheckout,
 } from "@/lib/planCheckout";
+import { formatPlanCardPrice, isInrPlanCurrency } from "@/lib/pricing";
 
 interface IPlanCard {
   title: string;
@@ -23,6 +24,7 @@ interface IPlanCard {
   isModal?: boolean;
   stripePriceId?: string;
   stripeProductId?: string;
+  currency?: string;
 }
 const PlanCard = ({
   title,
@@ -39,6 +41,7 @@ const PlanCard = ({
   isModal = false,
   stripePriceId,
   stripeProductId,
+  currency,
 }: IPlanCard) => {
   const { isLoaded, isSignedIn } = useHybridWebUser();
   const checkoutAction = buildCheckoutSessionAction({
@@ -54,6 +57,7 @@ const PlanCard = ({
       stripePriceId,
       stripeProductId,
       legacyType: type,
+      currency,
       isLoaded,
       isSignedIn,
     });
@@ -109,7 +113,7 @@ const PlanCard = ({
         >
           {type != "Free" && (
             <>
-              {oldPrice && (
+              {oldPrice && !isInrPlanCurrency(currency) && (
                 <>
                   <span className="relative text-text3 text-[18px] font-medium">
                     $ {oldPrice}
@@ -127,7 +131,7 @@ const PlanCard = ({
             </>
           )}
           <span className="text-black font-bold text-[25px]">
-            $ {price}
+            {formatPlanCardPrice(price, currency)}
             {type == "Free" && (
               <span className="text-gray font-normal text-[20px]">
                 {" "}

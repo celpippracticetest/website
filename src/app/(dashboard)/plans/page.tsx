@@ -2,7 +2,11 @@ import PlanCard from "@/components/pages/plans/PlanCard";
 import { CheckoutRepository } from "@/repositories/checkout.repo";
 import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
 import documentsClient from "@/lib/appDocumentsClient";
+import { getActivePlansCatalog } from "@/lib/plansCatalog";
+import { countryFromHeaderBag } from "@/lib/clientIpGeo";
+import { isIndiaCountry } from "@/lib/stripeRegionalPricing";
 import { PlansRepository } from "@/repositories/plans.repo";
+import { headers } from "next/headers";
 import SvgBestValuePlan from "@/components/icons/BestValuePlan";
 import SvgPopularPlan from "@/components/icons/PopularPlan";
 import SvgFreePlan from "@/components/icons/FreePlan";
@@ -28,10 +32,13 @@ const Plans = async () => {
   const db = await documentsClient.db();
   const userRepo = new CheckoutRepository(documentsClient);
   const plansRepo = new PlansRepository(db);
+  const country = countryFromHeaderBag(await headers());
 
   const [prevCheckout, plans] = await Promise.all([
     userRepo.findLatestCheckoutByUserId(user?.id || ""),
-    plansRepo.getActivePlans(),
+    isIndiaCountry(country)
+      ? getActivePlansCatalog({ country })
+      : plansRepo.getActivePlans(),
   ]);
 
   const currentPlanTitle = prevCheckout?.lineItems?.[0]?.description || "";
@@ -64,6 +71,7 @@ const Plans = async () => {
               planTitle={item.planTitle}
               stripePriceId={item.stripePriceId}
               stripeProductId={item.stripeProductId}
+              currency={item.currency}
             />
           ))}
         </div>

@@ -1,5 +1,6 @@
 import type { AppDocumentsDb as Db } from "@/lib/pg/types";
 import { stripe } from "@/lib/stripe";
+import { resolveStripePriceForCountry } from "@/lib/stripeRegionalPricing";
 import type { Plan } from "@/models/plans.model";
 import { PlansRepository } from "@/repositories/plans.repo";
 import type { PlanBillingInterval, SerializedPlan } from "@/types/pricing";
@@ -32,7 +33,8 @@ function displayNameForPlan(plan: Plan): string {
 }
 
 export async function loadActivePlansWithStripePrices(
-  db: Db
+  db: Db,
+  options?: { country?: string | null }
 ): Promise<SubscriptionPlanFromStripe[]> {
   const repo = new PlansRepository(db);
   const activePlans = await repo.getActivePlans();
@@ -51,9 +53,13 @@ export async function loadActivePlansWithStripePrices(
     await Promise.all(
       withStripePrice.map(async (plan) => {
         try {
-          const price = await stripe.prices.retrieve(plan.stripePriceId.trim(), {
+          const catalogPrice = await stripe.prices.retrieve(plan.stripePriceId.trim(), {
             expand: ["product"],
           });
+          const price = await resolveStripePriceForCountry(
+            catalogPrice,
+            options?.country
+          );
 
           if (!price.active || !price.recurring) {
             return null;
@@ -63,9 +69,11 @@ export async function loadActivePlansWithStripePrices(
             typeof plan.stripeProductId === "string" && plan.stripeProductId.trim()
               ? plan.stripeProductId.trim()
               : undefined;
-          if (!stripeProductId && price.product) {
-            const prod = price.product;
-            if (typeof prod !== "string" && prod && !("deleted" in prod && prod.deleted === true)) {
+          if (!stripeProductId) {
+            const prod = price.product ?? catalogPrice.product;
+            if (typeof prod === "string") {
+              stripeProductId = prod;
+            } else if (prod && !("deleted" in prod && prod.deleted === true)) {
               stripeProductId = prod.id;
             }
           }
@@ -116,14 +124,19 @@ function recurringToBilling(
  * `SerializedPlan[]` built for `/pricing`, so the page matches checkout.
  */
 export async function attachStripePricingToSerializedPlans(
-  plans: SerializedPlan[]
+  plans: SerializedPlan[],
+  options?: { country?: string | null }
 ): Promise<SerializedPlan[]> {
   return Promise.all(
     plans.map(async (plan) => {
       const priceId = plan.stripePriceId?.trim();
       if (!priceId) return plan;
       try {
-        const price = await stripe.prices.retrieve(priceId);
+        const catalogPrice = await stripe.prices.retrieve(priceId);
+        const price = await resolveStripePriceForCountry(
+          catalogPrice,
+          options?.country
+        );
         if (!price.active || !price.recurring || price.unit_amount == null) {
           return plan;
         }
@@ -136,6 +149,8 @@ export async function attachStripePricingToSerializedPlans(
         return {
           ...plan,
           price: priceStr,
+          currency: price.currency,
+          stripePriceId: price.id,
           ...(billing
             ? { billingInterval: billing.billingInterval, billingIntervalCount: billing.billingIntervalCount }
             : {}),
