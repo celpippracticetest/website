@@ -26,7 +26,7 @@ export async function generateMetadata({
   return skillHubPageMetadata(
     "reading",
     undefined,
-    "Free CELPIP Reading Practice Tests & Mock Exams | CELPIPPRACTICETEST",
+    "CELPIP Reading Practice Test 2026 | Free Online Mock Tests",
     "Boost CELPIP Reading scores with realistic passages, quick explanations, and speed drills. Strengthen scanning, inference, and time management | CELPIPPRACTICETEST.com",
     {
       selectedPracticeId,

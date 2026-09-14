@@ -142,6 +142,34 @@ export const PAGE_SEO_REGISTRY: Record<string, PageSeoItem> = {
     description:
       "Explore CELPIP exam preparation resources, skill practice, and full mock exam pathways to improve your score with structured study.",
   },
+  "/reading": {
+    path: "/reading",
+    title: "CELPIP Reading Practice Test 2026 | Free Online Mock Tests",
+    description:
+      "CELPIP Reading practice with timed passages, multiple-choice and dropdown tasks, and score-focused strategies for every part.",
+    keywords: ["celpip reading practice", "celpip reading test online"],
+  },
+  "/writing": {
+    path: "/writing",
+    title: "CELPIP Writing Practice Test 2026 | Free Online Mock Tests",
+    description:
+      "CELPIP Writing practice for Task 1 (email) and Task 2 (survey response). Timed prompts with AI feedback on structure and language.",
+    keywords: ["celpip writing practice", "celpip writing test online"],
+  },
+  "/listening": {
+    path: "/listening",
+    title: "CELPIP Listening Practice Test 2026 | Free Online Mock Tests",
+    description:
+      "Practice CELPIP Listening with realistic audio tasks, timed parts, and instant feedback. Drill each listening task type before test day.",
+    keywords: ["celpip listening practice", "celpip listening test online"],
+  },
+  "/speaking": {
+    path: "/speaking",
+    title: "CELPIP Speaking Practice Test 2026 | Free Online Mock Tests",
+    description:
+      "CELPIP Speaking practice with recording, timed prompts for all eight tasks, and AI feedback on fluency, vocabulary, and coherence.",
+    keywords: ["celpip speaking practice", "celpip speaking test online"],
+  },
   "/practice/listening": {
     path: "/practice/listening",
     title: "CELPIP Listening Practice Test Online | Timed Tasks & Tips",

@@ -33,7 +33,7 @@ export async function generateMetadata({
   return skillHubPageMetadata(
     "writing",
     undefined,
-    "Free CELPIP Writing Practice Tests & Mock Exams | CELPIPPRACTICETEST",
+    "CELPIP Writing Practice Test 2026 | Free Online Mock Tests",
     "Get higher CELPIP Writing marks with practice prompts, instant AI feedback, and model answers. Hone grammar, coherence, task response fast | CELPIPPRACTICETEST.com",
     {
       selectedPracticeId,

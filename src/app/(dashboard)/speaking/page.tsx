@@ -25,7 +25,7 @@ export async function generateMetadata({
   return skillHubPageMetadata(
     "speaking",
     undefined,
-    "Free CELPIP Speaking Practice Tests & Mock Exams | CELPIPPRACTICETEST",
+    "CELPIP Speaking Practice Test 2026 | Free Online Mock Tests",
     "Simulate the real CELPIP Speaking test with timed tasks, AI grading, and expert tips. Track progress, boost fluency, and hit your target score | CELPIPPRACTICETEST.com",
     {
       selectedPracticeId,

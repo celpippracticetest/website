@@ -35,7 +35,7 @@ export async function generateMetadata({
   return skillHubPageMetadata(
     "listening",
     undefined,
-    "Free CELPIP Listening Practice Tests & Mock Exams | CELPIPPRACTICETEST",
+    "CELPIP Listening Practice Test 2026 | Free Online Mock Tests",
     "Prepare for CELPIP Listening with authentic recordings, adaptive quizzes, and analytics. Improve accuracy, note-taking, and exam-day confidence | CELPIPPRACTICETEST.com",
     {
       selectedPracticeId,
