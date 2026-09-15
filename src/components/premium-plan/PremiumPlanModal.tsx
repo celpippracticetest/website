@@ -2,14 +2,9 @@
 
 import React, { useEffect, useMemo } from "react";
 import useStore from "@/store";
-import { X } from "lucide-react";
 import { usePlans } from "@/hooks/usePlans";
 import { motion, AnimatePresence } from "framer-motion";
-import { PricingBrandHeader } from "@/components/pages/pricing/brand/PricingBrandHeader";
-import { PricingBrandPlansSection } from "@/components/pages/pricing/brand/PricingBrandPlansSection";
-import { PricingBrandPartnersSection } from "@/components/pages/pricing/brand/PricingBrandPartnersSection";
-import { PricingBrandReviewsSection } from "@/components/pages/pricing/brand/PricingBrandReviewsSection";
-import { PricingBrandFaqSection } from "@/components/pages/pricing/brand/PricingBrandFaqSection";
+import { PremiumPaywallDialog } from "@/components/premium-plan/PremiumPaywallDialog";
 import type { SerializedPlan } from "@/types/pricing";
 import { trackKpi } from "@/lib/analytics";
 
@@ -54,6 +49,7 @@ const PremiumPlanModal = () => {
   const { plans, isLoading } = usePlans();
 
   const serializedPlans = useMemo(() => toSerializedPlans(plans), [plans]);
+  const close = () => setPremiumPlanModalState();
 
   useEffect(() => {
     if (isPremiumPlanModalOpen) {
@@ -77,53 +73,22 @@ const PremiumPlanModal = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[9999] flex items-end justify-center overflow-y-auto bg-black/60 p-0 backdrop-blur-sm"
-          onClick={() => setPremiumPlanModalState()}
+          className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-[#17161680] p-4 backdrop-blur-[6px] screen744:p-8"
+          onClick={close}
         >
           <motion.div
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="relative flex h-[92vh] w-full flex-col overflow-hidden rounded-t-3xl bg-[#eef2f8] shadow-2xl"
+            initial={{ opacity: 0, scale: 0.96, y: 12 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.98, y: 8 }}
+            transition={{ type: "spring", damping: 26, stiffness: 320 }}
+            className="my-auto w-full max-w-[880px]"
             onClick={(e) => e.stopPropagation()}
           >
-            <button
-              type="button"
-              onClick={() => setPremiumPlanModalState()}
-              className="absolute top-4 right-4 z-20 rounded-full bg-white p-2 shadow-md transition-colors hover:bg-gray-100"
-              aria-label="Close pricing"
-            >
-              <X className="h-5 w-5 text-gray-600" />
-            </button>
-
-            <div className="custom-scrollbar flex-1 overflow-y-auto px-6 py-10 screen744:px-10">
-              <div className="mx-auto flex w-full max-w-[1060px] flex-col items-center">
-                <PricingBrandHeader titleTag="h2" />
-
-                {isLoading ? (
-                  <p className="mt-10 text-sm text-[#5b6575]">Loading plans…</p>
-                ) : serializedPlans.length === 0 ? (
-                  <p className="mt-10 text-sm text-[#5b6575]">
-                    Plans are unavailable right now. Please try again later.
-                  </p>
-                ) : (
-                  <PricingBrandPlansSection
-                    plans={serializedPlans}
-                    featuredPlan="Monthly"
-                    showPerWeek
-                  />
-                )}
-
-                <PricingBrandPartnersSection />
-
-                <PricingBrandReviewsSection />
-
-                <div className="mt-14 w-full">
-                  <PricingBrandFaqSection />
-                </div>
-              </div>
-            </div>
+            <PremiumPaywallDialog
+              plans={serializedPlans}
+              isLoading={isLoading}
+              onClose={close}
+            />
           </motion.div>
         </motion.div>
       )}
