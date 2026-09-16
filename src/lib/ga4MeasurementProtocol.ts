@@ -1,4 +1,8 @@
 import { GA4_MEASUREMENT_ID } from "@/lib/ga4-constants";
+import {
+  normalizeAppClientPlatform,
+  type AppClientPlatform,
+} from "@/lib/appClientPlatform";
 
 type Ga4Primitive = string | number | boolean;
 
@@ -16,7 +20,27 @@ type SendGa4EventsInput = {
   /** GA4 session id (digits); merged into each event for session-scoped attribution. */
   gaSessionId?: string | null;
   events: Ga4Event[];
+  userProperties?: Record<string, string>;
 };
+
+function appPlatformFromEvents(events: Ga4Event[]): AppClientPlatform | undefined {
+  for (const event of events) {
+    const platform = normalizeAppClientPlatform(event.params?.app_platform);
+    if (platform) return platform;
+  }
+  return undefined;
+}
+
+function toGa4UserProperties(
+  properties: Record<string, string>,
+): Record<string, { value: string }> {
+  const out: Record<string, { value: string }> = {};
+  for (const [key, value] of Object.entries(properties)) {
+    const trimmed = value.trim().slice(0, 36);
+    if (trimmed) out[key] = { value: trimmed };
+  }
+  return out;
+}
 
 function getGa4Config(): { measurementId: string; apiSecret: string } | null {
   // Canonical server-side GA4 configuration. Measurement ID is hardcoded (public);
@@ -112,6 +136,17 @@ export async function sendGa4Events(
   };
   if (input.userId?.trim()) {
     payload.user_id = input.userId.trim();
+  }
+
+  const userProperties: Record<string, string> = { ...(input.userProperties || {}) };
+  const appPlatform = appPlatformFromEvents(input.events);
+  if (appPlatform) {
+    userProperties.platform = appPlatform;
+    userProperties.app_platform = appPlatform;
+  }
+  const ga4UserProperties = toGa4UserProperties(userProperties);
+  if (Object.keys(ga4UserProperties).length > 0) {
+    payload.user_properties = ga4UserProperties;
   }
 
   try {

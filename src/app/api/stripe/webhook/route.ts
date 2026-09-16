@@ -23,6 +23,7 @@ import {
   matchUsersCollectionByWebUserIds,
   supabaseAuthUserIdFieldsOnUserDoc,
 } from "@/lib/users/userDocumentIdentity";
+import { normalizeAppClientPlatform } from "@/lib/appClientPlatform";
 import {
   sendGa4Events,
   type Ga4ItemParam,
@@ -358,6 +359,9 @@ function buildStripeGaAttributionParams(
     googleAdsCampaignId ||
     utmCampaignRaw ||
     "";
+  const appPlatform = normalizeAppClientPlatform(
+    readMetadataValue(metadata, "app_platform"),
+  );
   return {
     source: inferAttributionSource(metadata),
     medium: inferAttributionMedium(metadata),
@@ -384,6 +388,7 @@ function buildStripeGaAttributionParams(
       readMetadataValue(metadata, "attribution_session_id") || "",
     purchase_page: readMetadataValue(metadata, "purchase_page") || "",
     entry_page: readMetadataValue(metadata, "entry_page") || "",
+    ...(appPlatform ? { app_platform: appPlatform } : {}),
   };
 }
 

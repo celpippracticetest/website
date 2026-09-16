@@ -389,7 +389,12 @@ export function pushToDataLayer(
 
     // Enrich event with user context if requested
     const enrichedEvent = enrichContext
-      ? { ...event, ...getUserContext(), timestamp: new Date().toISOString() }
+      ? {
+          ...event,
+          ...getUserContext(),
+          app_platform: rememberAppClientPlatform(),
+          timestamp: new Date().toISOString(),
+        }
       : event;
 
     // Push to dataLayer

@@ -166,10 +166,11 @@ export default async function RootLayout({
                 var ua = navigator.userAgent || '';
                 var flag = window.__CELPIP_APP_PLATFORM;
                 var platform = 'web';
-                if (flag === 'android_app' || flag === 'ios_app' || flag === 'web') {
+                if (flag === 'android_app' || flag === 'ios_app') {
                   platform = flag;
                 } else if (/CELPIPApp\\/|CelpipAppWebView/i.test(ua)) {
-                  platform = /iPhone|iPad|iPod/i.test(ua) ? 'ios_app' : 'android_app';
+                  var isIos = /iPhone|iPad|iPod|iOS|iPadOS|Macintosh/i.test(ua);
+                  platform = isIos ? 'ios_app' : 'android_app';
                 }
                 window.__CELPIP_APP_PLATFORM = platform;
               })();
@@ -289,6 +290,7 @@ export default async function RootLayout({
                 if (platform !== 'android_app' && platform !== 'ios_app' && platform !== 'web') {
                   platform = 'web';
                 }
+                gtag('set', { app_platform: platform });
                 gtag('set', 'user_properties', {
                   platform: platform,
                   app_platform: platform

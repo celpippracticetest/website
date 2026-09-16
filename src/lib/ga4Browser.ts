@@ -1,4 +1,5 @@
 /** Send GA4 events directly via gtag (no GTM). */
+import { rememberAppClientPlatform } from "@/lib/appClientPlatform";
 import { GA4_MEASUREMENT_ID } from "@/lib/ga4-constants";
 
 const DEBUG = process.env.NODE_ENV === "development";
@@ -148,6 +149,20 @@ function dispatchGa4Event(eventName: string, params: Record<string, unknown>): b
   const gtag = getGtag();
   const measurementId = getMeasurementId();
   if (!gtag || !measurementId) return false;
+
+  const platform = rememberAppClientPlatform();
+  if (!params.app_platform) {
+    params.app_platform = platform;
+  }
+  try {
+    gtag("set", { app_platform: platform });
+    gtag("set", "user_properties", {
+      platform,
+      app_platform: platform,
+    });
+  } catch {
+    // gtag queues `set` the same as `event` once the command API exists.
+  }
 
   if (DEBUG) {
     console.log("[GA4]", eventName, params);

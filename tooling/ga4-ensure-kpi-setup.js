@@ -3,7 +3,8 @@
  * the CELPIP web KPI catalog (activation, engagement, funnel, reliability).
  *
  * Requires the same env as `ga4-ensure-skill-type-dimension.js`:
- *   GA4_PROPERTY_ID
+ *   GA4_PROPERTY_ID          live tag is 486889727 (G-S24BC0HY77);
+ *                            533185817 is the older G-96KY4M8029 stream.
  *   ANALYTICS_CLIENT_EMAIL + ANALYTICS_PRIVATE_KEY
  *   (or ANALYTICS_CREDENTIALS_FILE / GOOGLE_APPLICATION_CREDENTIALS)
  *
@@ -209,6 +210,12 @@ const EVENT_DIMENSIONS = [
     displayName: "Explanation source",
     description: "score_report, practice_review, or ask_ai.",
   },
+  {
+    parameterName: "app_platform",
+    displayName: "App platform",
+    description:
+      "android_app, ios_app, or web. Native WebView vs public website (GA Platform stays web).",
+  },
 ];
 
 /** User-scoped custom dimensions (must be unique vs event-scoped names). */
@@ -233,12 +240,7 @@ const USER_DIMENSIONS = [
     displayName: "Has test date",
     description: "true when the user provided a scheduled exam date.",
   },
-  {
-    parameterName: "app_platform",
-    displayName: "App platform",
-    description:
-      "android_app, ios_app, or web. Native WebView vs public website (GA Platform stays web).",
-  },
+  // `app_platform` is EVENT-scoped on the live property (cannot duplicate as USER).
   // `style` and `pricing_ab_model` already exist as EVENT dimensions on this property.
 ];
 
@@ -1028,7 +1030,10 @@ async function markKeyEvent(accessToken, parent, eventName) {
 }
 
 async function main() {
-  const propertyId = String(process.env.GA4_PROPERTY_ID || "").trim();
+  const propertyArg = process.argv.find((arg) => /^\d{6,}$/.test(String(arg)));
+  const propertyId = String(
+    propertyArg || process.env.GA4_PROPERTY_ID || "",
+  ).trim();
   if (!propertyId) {
     console.error("Missing GA4_PROPERTY_ID.");
     return 1;
