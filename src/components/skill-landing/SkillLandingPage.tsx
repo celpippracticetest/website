@@ -7,6 +7,7 @@ import Link from "next/link";
 
 import dynamic from "next/dynamic";
 import ExamSectionCard from "../pages/landing/ExamSectionCard";
+import { skillLandingTaskHref } from "@/lib/skillLandingTasks";
 
 // Icons
 const SvgListening = dynamic(() => import("../icons/Listening"), { ssr: false });
@@ -56,16 +57,12 @@ const SkillLandingPage: React.FC<SkillLandingPageProps> = ({
 
                 {/* Tasks Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-16">
-                    {content.tasks.map((task, index) => {
-                        // Match real task by taskNumber (e.g. "Task 1" -> "1")
-                        const realTask = availableTasks.find(t => {
-                            const num = t.taskNumber.replace(/\D/g, "");
-                            return num === task.id;
-                        });
-
-                        const href = realTask
-                            ? `/${skillType}?taskId=${realTask.id}`
-                            : `/${skillType}?taskId=${task.id}`; // Fallback
+                    {content.tasks.map((task) => {
+                        const href = skillLandingTaskHref(
+                            skillType,
+                            task.id,
+                            availableTasks,
+                        );
 
                         return (
                             <Link

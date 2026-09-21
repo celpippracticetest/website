@@ -13,11 +13,14 @@ import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { ObjectId } from "bson";
 import { redirect, RedirectType } from "next/navigation";
 import SkillLandingPage from "@/components/skill-landing/SkillLandingPage";
+import { SkillHubJsonLd } from "@/components/seo/SkillHubJsonLd";
 import { skillPagesContent } from "@/data/skill-pages-content";
 import type { Metadata } from "next";
 import { skillHubPageMetadata } from "@/lib/skillHubPageMetadata";
 
 interface PracticeTask {
+  id: string;
+  category: string;
   taskNumber: string;
   name: string;
 }
@@ -102,33 +105,45 @@ const DashboardApp = async ({
       }));
 
     return (
-      <SkillLandingPage
-        content={skillPagesContent.listening}
-        skillType="listening"
-        availableTasks={availableTasks}
-      />
+      <>
+        <SkillHubJsonLd skillType="listening" availableTasks={availableTasks} />
+        <SkillLandingPage
+          content={skillPagesContent.listening}
+          skillType="listening"
+          availableTasks={availableTasks}
+        />
+      </>
     );
   }
 
   if (!selectedPracticeId && !taskId) {
     return (
-      <ShowTaskHeader>
-        <div className="flex  h-[52px] screen744:!hidden gap-[8px] flex-col w-full items-start">
-          <span className="text-[18px] text-[#37465C] font-semibold">
-            Practice
-          </span>
-          <span className="text-[14px] text-[#76808F] font-normal">
-            Listening
-          </span>
-        </div>
-        <ShowTasks
-          tasks={listeningTasks.map((t) => ({
-            ...t,
-            icon: <SvgListeningPart className="text-[#316BFF]" />,
-            title: "Listening Practice",
+      <>
+        <SkillHubJsonLd
+          skillType="listening"
+          availableTasks={listeningTasks[0].tasks.map((task) => ({
+            id: task.id,
+            taskNumber: task.taskNumber,
           }))}
         />
-      </ShowTaskHeader>
+        <ShowTaskHeader>
+          <div className="flex  h-[52px] screen744:!hidden gap-[8px] flex-col w-full items-start">
+            <span className="text-[18px] text-[#37465C] font-semibold">
+              Practice
+            </span>
+            <span className="text-[14px] text-[#76808F] font-normal">
+              Listening
+            </span>
+          </div>
+          <ShowTasks
+            tasks={listeningTasks.map((t) => ({
+              ...t,
+              icon: <SvgListeningPart className="text-[#316BFF]" />,
+              title: "Listening Practice",
+            }))}
+          />
+        </ShowTaskHeader>
+      </>
     );
   }
 

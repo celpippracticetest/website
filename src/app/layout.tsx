@@ -16,6 +16,7 @@ import ScrollDepthTracker from "@/components/analytics/ScrollDepthTracker";
 import type { Metadata, Viewport } from "next";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { GA4_MEASUREMENT_ID } from "@/lib/ga4-constants";
+import { buildRootLayoutJsonLd } from "@/lib/seo/siteSchema";
 
 const jakarta = Plus_Jakarta_Sans({
   display: "swap",
@@ -178,7 +179,18 @@ export default async function RootLayout({
           }}
         />
 
-        {/* JSON-LD early is fine */}
+        {/* JSON-LD: global Organization + WebSite, then product offers */}
+        {buildRootLayoutJsonLd(baseUrl).map((schema) => (
+          <Script
+            key={String(schema["@id"])}
+            id={`ld-${String(schema["@type"]).toLowerCase()}`}
+            type="application/ld+json"
+            strategy="beforeInteractive"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify(schema),
+            }}
+          />
+        ))}
         <Script
           id="structured-data"
           type="application/ld+json"
@@ -230,14 +242,6 @@ export default async function RootLayout({
                     priceCurrency: "CAD",
                     availability: "https://schema.org/InStock",
                   },
-                },
-                {
-                  "@type": "Organization",
-                  name: "Celpip Practice Test",
-                  url: baseUrl,
-                  logo: `${baseUrl}/logo.png`,
-                  description:
-                    "CELPIP preparation platform with AI-powered scoring and mock exams.",
                 },
               ],
             }),

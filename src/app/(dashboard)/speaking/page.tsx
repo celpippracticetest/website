@@ -12,6 +12,7 @@ import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { ObjectId } from "bson";
 import { redirect, RedirectType } from "next/navigation";
 import SkillLandingPage from "@/components/skill-landing/SkillLandingPage";
+import { SkillHubJsonLd } from "@/components/seo/SkillHubJsonLd";
 import { skillPagesContent } from "@/data/skill-pages-content";
 import type { Metadata } from "next";
 import { skillHubPageMetadata } from "@/lib/skillHubPageMetadata";
@@ -42,6 +43,8 @@ export async function generateMetadata({
   );
 }
 interface PracticeTask {
+  id: string;
+  category: string;
   taskNumber: string;
   name: string;
 }
@@ -93,33 +96,45 @@ const SpeakingPage = async ({
       }));
 
     return (
-      <SkillLandingPage
-        content={skillPagesContent.speaking}
-        skillType="speaking"
-        availableTasks={availableTasks}
-      />
+      <>
+        <SkillHubJsonLd skillType="speaking" availableTasks={availableTasks} />
+        <SkillLandingPage
+          content={skillPagesContent.speaking}
+          skillType="speaking"
+          availableTasks={availableTasks}
+        />
+      </>
     );
   }
 
   if (!selectedPracticeId && !taskId) {
     return (
-      <ShowTaskHeader>
-        <div className="flex  h-[52px] screen744:!hidden gap-[8px] flex-col w-full items-start">
-          <span className="text-[18px] text-[#37465C] font-semibold">
-            Practice
-          </span>
-          <span className="text-[14px] text-[#76808F] font-normal">
-            Speaking
-          </span>
-        </div>
-        <div className="flex mt-[32px]  screen744:!mt-[0] items-center justify-center gap-[8px] max-w-[1200px] w-full h-[60px] rounded-[12px] bg-[#FFEBD6]">
-          <SvgSpeakingPart className="text-[#F27059]" />
-          <span className="text-[#37465C] font-semibold text-[20px]">
-            Speaking Practice
-          </span>
-        </div>
-        <ShowTasks tasks={speakingTasks} />
-      </ShowTaskHeader>
+      <>
+        <SkillHubJsonLd
+          skillType="speaking"
+          availableTasks={speakingTasks[0].tasks.map((task) => ({
+            id: task.id,
+            taskNumber: task.taskNumber,
+          }))}
+        />
+        <ShowTaskHeader>
+          <div className="flex  h-[52px] screen744:!hidden gap-[8px] flex-col w-full items-start">
+            <span className="text-[18px] text-[#37465C] font-semibold">
+              Practice
+            </span>
+            <span className="text-[14px] text-[#76808F] font-normal">
+              Speaking
+            </span>
+          </div>
+          <div className="flex mt-[32px]  screen744:!mt-[0] items-center justify-center gap-[8px] max-w-[1200px] w-full h-[60px] rounded-[12px] bg-[#FFEBD6]">
+            <SvgSpeakingPart className="text-[#F27059]" />
+            <span className="text-[#37465C] font-semibold text-[20px]">
+              Speaking Practice
+            </span>
+          </div>
+          <ShowTasks tasks={speakingTasks} />
+        </ShowTaskHeader>
+      </>
     );
   }
   const task: TTaskSchemaDto | null = await taskRepo.findTaskById(taskId ?? "");

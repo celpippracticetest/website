@@ -13,6 +13,7 @@ import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { ObjectId } from "bson";
 import { redirect, RedirectType } from "next/navigation";
 import SkillLandingPage from "@/components/skill-landing/SkillLandingPage";
+import { SkillHubJsonLd } from "@/components/seo/SkillHubJsonLd";
 import { skillPagesContent } from "@/data/skill-pages-content";
 import type { Metadata } from "next";
 import { skillHubPageMetadata } from "@/lib/skillHubPageMetadata";
@@ -44,6 +45,8 @@ export async function generateMetadata({
 }
 
 interface PracticeTask {
+  id: string;
+  category: string;
   taskNumber: string;
   name: string;
 }
@@ -97,33 +100,45 @@ const ReadingPage = async ({
       }));
 
     return (
-      <SkillLandingPage
-        content={skillPagesContent.reading}
-        skillType="reading"
-        availableTasks={availableTasks}
-      />
+      <>
+        <SkillHubJsonLd skillType="reading" availableTasks={availableTasks} />
+        <SkillLandingPage
+          content={skillPagesContent.reading}
+          skillType="reading"
+          availableTasks={availableTasks}
+        />
+      </>
     );
   }
 
   if (!selectedPracticeId && !taskId) {
     return (
-      <ShowTaskHeader>
-        <div className="flex  h-[52px] screen744:!hidden gap-[8px] flex-col w-full items-start">
-          <span className="text-[18px] text-[#37465C] font-semibold">
-            Practice
-          </span>
-          <span className="text-[14px] text-[#76808F] font-normal">
-            Reading
-          </span>
-        </div>
-        <ShowTasks
-          tasks={readingTasks.map((t) => ({
-            ...t,
-            icon: <SvgReadingPart className="text-[#F27059]" />,
-            title: "Reading Practice",
+      <>
+        <SkillHubJsonLd
+          skillType="reading"
+          availableTasks={readingTasks[0].tasks.map((task) => ({
+            id: task.id,
+            taskNumber: task.taskNumber,
           }))}
         />
-      </ShowTaskHeader>
+        <ShowTaskHeader>
+          <div className="flex  h-[52px] screen744:!hidden gap-[8px] flex-col w-full items-start">
+            <span className="text-[18px] text-[#37465C] font-semibold">
+              Practice
+            </span>
+            <span className="text-[14px] text-[#76808F] font-normal">
+              Reading
+            </span>
+          </div>
+          <ShowTasks
+            tasks={readingTasks.map((t) => ({
+              ...t,
+              icon: <SvgReadingPart className="text-[#F27059]" />,
+              title: "Reading Practice",
+            }))}
+          />
+        </ShowTaskHeader>
+      </>
     );
   }
   const task: TTaskSchemaDto | null = await taskRepo.findTaskById(taskId ?? "");
