@@ -100,12 +100,6 @@ export default async function middleware(req: NextRequest) {
   }
 
   const practiceHubDeepLink = req.nextUrl.pathname.match(PRACTICE_HUB_DEEP_LINK);
-  if (practiceHubDeepLink && !hasWebAuth) {
-    return end(NextResponse.redirect(signInUrlWithReturn(req)));
-  }
-  if (req.nextUrl.pathname === "/practice-overview" && !hasWebAuth) {
-    return end(NextResponse.redirect(signInUrlWithReturn(req)));
-  }
   if (practiceHubDeepLink) {
     const [, skill, practiceId, taskId] = practiceHubDeepLink;
     const url = req.nextUrl.clone();

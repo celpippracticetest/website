@@ -385,8 +385,8 @@ const ListeningPracticeView = ({
           completedPractice={completedPractice}
         />
         <Card className="bg-white/90 flex flex-col overflow-scroll border border-[#D5D6D8] w-full">
-          <div className="flex justify-between lg:items-center gap-2 lg:gap-0 px-6 py-4 border-b border-[#D5D6D8] lg:flex-row  w-full  h-auto bg-[#FFEBD6]">
-            <div className="flex gap-2 w-full items-start justify-between flex-col">
+          <div className="flex flex-nowrap items-center justify-between gap-2 px-6 py-4 border-b border-[#D5D6D8] w-full h-auto bg-[#FFEBD6]">
+            <div className="flex min-w-0 flex-1 flex-col items-start gap-2">
               <h1 className="text-[18px] font-bold text-[#212E42]">
                 {page === "instructions"
                   ? "Instruction"
@@ -396,7 +396,7 @@ const ListeningPracticeView = ({
             </div>
 
             {page !== "instructions" && page !== "finish" ? (
-              <div className="flex flex-wrap items-center gap-2 justify-end pb-[10px] ">
+              <div className="flex shrink-0 flex-nowrap items-center justify-end gap-2">
                 {isAtEndOfPracticeQuestions && (
                   <ObjectivePracticeSubmitButtons
                     onSubmitAndNext={handleSubmitAndNext}

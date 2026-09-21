@@ -3,6 +3,35 @@
 import { useRecentSignupsLiveStat } from "@/hooks/useRecentSignupsLiveStat";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import StarIcon from "@mui/icons-material/Star";
+import Image from "next/image";
+import Link from "next/link";
+
+function AuthHomeLogo({ className = "" }: { className?: string }) {
+  return (
+    <Link
+      href="/"
+      className={`inline-flex items-center gap-2 ${className}`.trim()}
+    >
+      <Image
+        src="/images/header-logo-left.png"
+        alt=""
+        width={32}
+        height={32}
+        className="hidden h-8 w-8 min-[376px]:block"
+        sizes="32px"
+      />
+      <Image
+        src="/images/header-logo-right.png"
+        alt="CELPIP Practice Test"
+        width={84}
+        height={40}
+        className="h-8 w-auto max-[375px]:max-w-[140px]"
+        style={{ height: "auto" }}
+        sizes="(max-width: 743px) 120px, 84px"
+      />
+    </Link>
+  );
+}
 
 const BENEFITS = [
   "Access practice across all 4 skills",
@@ -27,18 +56,23 @@ export function AuthLiveJoinedBanner() {
   );
 }
 
-export function AuthMarketingShell({ children }: { children: React.ReactNode }) {
+export function AuthMarketingShell({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <div
       className={`${AUTH_PAGE_BACKGROUND_CLASS} flex flex-col justify-center py-10 md:min-h-screen md:py-12`}
     >
       <div className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-4 md:grid-cols-2 md:gap-12 md:px-8 lg:gap-16">
         <aside className="hidden md:block md:max-w-lg md:pr-4">
+          <AuthHomeLogo className="mb-6" />
           <h2 className="text-balance text-3xl font-extrabold leading-tight text-[#1B2B5A] lg:text-4xl">
             Start Your CELPIP Journey Today
           </h2>
           <p className="mt-3 text-base leading-relaxed text-slate-600 lg:text-lg">
-            Join 70,000+ test-takers who improved their scores with our platform.
+            Join 70,000+ test-takers improving their scores.
           </p>
           <ul className="mt-8 space-y-3">
             {BENEFITS.map((line) => (
@@ -56,12 +90,16 @@ export function AuthMarketingShell({ children }: { children: React.ReactNode }) 
           <div className="mt-10 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex gap-0.5">
               {[1, 2, 3, 4, 5].map((i) => (
-                <StarIcon key={i} sx={{ fontSize: 18, color: "#F59E0B" }} aria-hidden />
+                <StarIcon
+                  key={i}
+                  sx={{ fontSize: 18, color: "#F59E0B" }}
+                  aria-hidden
+                />
               ))}
             </div>
             <p className="mt-3 text-sm italic leading-relaxed text-slate-600">
-              &ldquo;I got CLB 9 in all sections after just 3 weeks of practice. The AI
-              feedback on writing was a game-changer.&rdquo;
+              &ldquo;I got CLB 9 in all sections after just 3 weeks of practice.
+              The AI feedback on writing was a game-changer.&rdquo;
             </p>
             <div className="mt-4 flex items-center gap-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -73,13 +111,20 @@ export function AuthMarketingShell({ children }: { children: React.ReactNode }) 
                 className="h-8 w-8 rounded-full border border-slate-100 object-cover"
               />
               <div>
-                <p className="text-sm font-semibold text-slate-900">Carlos R.</p>
+                <p className="text-sm font-semibold text-slate-900">
+                  Carlos R.
+                </p>
                 <p className="text-xs text-slate-500">Achieved CLB 9</p>
               </div>
             </div>
           </div>
         </aside>
-        <div className="mx-auto w-full max-w-[440px]">{children}</div>
+        <div className="mx-auto w-full max-w-[440px]">
+          <div className="mb-4 flex justify-center md:hidden">
+            <AuthHomeLogo />
+          </div>
+          {children}
+        </div>
       </div>
     </div>
   );

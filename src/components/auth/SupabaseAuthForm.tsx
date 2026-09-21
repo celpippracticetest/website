@@ -1,9 +1,5 @@
 "use client";
 
-import BoltIcon from "@mui/icons-material/Bolt";
-import ShieldIcon from "@mui/icons-material/Shield";
-import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { AuthLiveJoinedBanner } from "@/components/auth/AuthPageChrome";
@@ -20,7 +16,6 @@ const primaryCtaClass =
   "w-full rounded-xl bg-[linear-gradient(135deg,#1E3A8A_0%,#2563EB_55%,#3B82F6_100%)] font-semibold text-white shadow-md hover:opacity-[0.96]";
 
 type AuthMode = "sign-in" | "sign-up";
-type EmailMethod = "password" | "magic-link";
 
 function GoogleIcon() {
   return (
@@ -84,7 +79,6 @@ export function SupabaseAuthForm({
 }) {
   const router = useRouter();
   const [mode, setMode] = useState<AuthMode>(initialMode);
-  const [emailMethod, setEmailMethod] = useState<EmailMethod>("password");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -120,46 +114,6 @@ export function SupabaseAuthForm({
     });
     if (oauthErr) setError(oauthErr.message);
   }, [dest]);
-
-  const handleMagicLink = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      setError(null);
-      setNotice(null);
-      const supabase = createBrowserSupabaseClient();
-      if (!supabase) {
-        setError("Auth is not configured.");
-        return;
-      }
-      if (!email.trim()) {
-        setError("Enter your email address.");
-        return;
-      }
-      setSubmitting(true);
-      try {
-        const { error: otpErr } = await supabase.auth.signInWithOtp({
-          email: email.trim(),
-          options: {
-            emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(dest)}`,
-            shouldCreateUser: mode === "sign-up",
-            ...(mode === "sign-up" ? { data: appPlatformUserMetadata() } : {}),
-          },
-        });
-        if (otpErr) {
-          setError(otpErr.message);
-          return;
-        }
-        setNotice(
-          mode === "sign-up"
-            ? "Check your inbox — we sent a sign-up link. Click it to confirm and log in."
-            : "Check your inbox — we sent a magic link. Click it to sign in.",
-        );
-      } finally {
-        setSubmitting(false);
-      }
-    },
-    [email, mode, dest],
-  );
 
   const handlePasswordAuth = useCallback(
     async (e: React.FormEvent) => {
@@ -301,38 +255,9 @@ export function SupabaseAuthForm({
       )}
     >
       <div className="border-b border-slate-100 px-6 pb-5 pt-6 text-center sm:px-8">
-        <Link
-          href="/"
-          className="mb-4 inline-flex items-center justify-center gap-2"
-        >
-          <Image
-            src="/images/header-logo-left.png"
-            alt=""
-            width={32}
-            height={32}
-            className="hidden h-8 w-8 min-[376px]:block"
-            sizes="32px"
-          />
-          <Image
-            src="/images/header-logo-right.png"
-            alt="CELPIP Practice Test"
-            width={84}
-            height={40}
-            className="h-8 w-auto max-[375px]:max-w-[140px]"
-            sizes="(max-width: 743px) 120px, 84px"
-          />
-        </Link>
-        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-blue-600">
-          Free to start
-        </p>
-        <h1 className="mt-1.5 text-xl font-extrabold tracking-tight text-[#1B2B5A] sm:text-2xl">
+        <h1 className="text-xl font-extrabold tracking-tight text-[#1B2B5A] sm:text-2xl">
           {mode === "sign-in" ? "Welcome back" : "Create free account"}
         </h1>
-        <p className="mt-1 text-sm text-slate-500">
-          {mode === "sign-in"
-            ? "Sign in to continue practising."
-            : "Join thousands improving their CELPIP scores."}
-        </p>
       </div>
 
       <div className="px-4 pb-2 pt-4">
@@ -391,132 +316,75 @@ export function SupabaseAuthForm({
 
         <Divider label="or continue with email" />
 
-        {/* Method toggle (sign-in only) */}
-        {mode === "sign-in" && (
-          <div className="mb-4 flex gap-1 rounded-xl bg-slate-100 p-1">
-            {(["password", "magic-link"] as const).map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => {
-                  setEmailMethod(m);
-                  setError(null);
-                  setNotice(null);
-                }}
-                className={cn(
-                  "flex-1 rounded-lg py-2 text-xs font-semibold transition-all",
-                  emailMethod === m
-                    ? "bg-white text-[#1B2B5A] shadow-sm"
-                    : "text-slate-500 hover:text-slate-700",
-                )}
-              >
-                {m === "password" ? "Password" : "Magic link"}
-              </button>
-            ))}
+        <form onSubmit={handlePasswordAuth} className="space-y-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="auth-email">Email</Label>
+            <Input
+              id="auth-email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="border-slate-200"
+              placeholder="you@example.com"
+            />
           </div>
-        )}
 
-        {/* Email field (shared) */}
-        <div className="mb-3 space-y-1.5">
-          <Label htmlFor="auth-email">Email</Label>
-          <Input
-            id="auth-email"
-            type="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="border-slate-200"
-            placeholder="you@example.com"
-          />
-        </div>
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="auth-password">Password</Label>
+              {mode === "sign-in" && (
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  disabled={submitting}
+                  className="text-xs font-medium text-blue-600 hover:underline disabled:opacity-50"
+                >
+                  Forgot password?
+                </button>
+              )}
+            </div>
+            <Input
+              id="auth-password"
+              type="password"
+              autoComplete={
+                mode === "sign-in" ? "current-password" : "new-password"
+              }
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="border-slate-200"
+            />
+          </div>
 
-        {/* Magic link form (sign-in with magic link) */}
-        {mode === "sign-in" && emailMethod === "magic-link" ? (
-          <form onSubmit={handleMagicLink} className="space-y-3">
-            <Button
-              type="submit"
-              disabled={submitting}
-              className={primaryCtaClass}
-            >
-              {submitting ? "Sending…" : "Send magic link"}
-            </Button>
-          </form>
-        ) : null}
-
-        {/* Password form (sign-in password OR sign-up) */}
-        {(mode === "sign-in" && emailMethod === "password") ||
-        mode === "sign-up" ? (
-          <form onSubmit={handlePasswordAuth} className="space-y-3">
+          {mode === "sign-up" && (
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="auth-password">Password</Label>
-                {mode === "sign-in" && (
-                  <button
-                    type="button"
-                    onClick={handleForgotPassword}
-                    disabled={submitting}
-                    className="text-xs font-medium text-blue-600 hover:underline disabled:opacity-50"
-                  >
-                    Forgot password?
-                  </button>
-                )}
-              </div>
+              <Label htmlFor="auth-confirm">Confirm password</Label>
               <Input
-                id="auth-password"
+                id="auth-confirm"
                 type="password"
-                autoComplete={
-                  mode === "sign-in" ? "current-password" : "new-password"
-                }
+                autoComplete="new-password"
                 required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
                 className="border-slate-200"
               />
             </div>
+          )}
 
-            {mode === "sign-up" && (
-              <div className="space-y-1.5">
-                <Label htmlFor="auth-confirm">Confirm password</Label>
-                <Input
-                  id="auth-confirm"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
-                  className="border-slate-200"
-                />
-              </div>
-            )}
-
-            <Button
-              type="submit"
-              disabled={submitting}
-              className={primaryCtaClass}
-            >
-              {submitting
-                ? "Please wait…"
-                : mode === "sign-in"
-                  ? "Sign in"
-                  : "Create account"}
-            </Button>
-
-            {mode === "sign-up" && (
-              <p className="text-center text-xs text-slate-500">
-                Or{" "}
-                <button
-                  type="button"
-                  onClick={() => setEmailMethod("magic-link")}
-                  className="font-medium text-blue-600 hover:underline"
-                >
-                  sign up with a magic link
-                </button>{" "}
-                instead — no password needed.
-              </p>
-            )}
-          </form>
-        ) : null}
+          <Button
+            type="submit"
+            disabled={submitting}
+            className={primaryCtaClass}
+          >
+            {submitting
+              ? "Please wait…"
+              : mode === "sign-in"
+                ? "Sign in"
+                : "Create account"}
+          </Button>
+        </form>
 
         {/* Footer switch */}
         <p className="mt-5 text-center text-sm text-slate-500">
@@ -544,17 +412,6 @@ export function SupabaseAuthForm({
             </>
           )}
         </p>
-
-        <div className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 border-t border-slate-100 pt-5 text-[11px] text-slate-500">
-          <span className="inline-flex items-center gap-1">
-            <ShieldIcon sx={{ fontSize: 15, color: "#64748B" }} aria-hidden />
-            Bank-level security
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <BoltIcon sx={{ fontSize: 15, color: "#64748B" }} aria-hidden />
-            Instant access
-          </span>
-        </div>
 
         <AuthLiveJoinedBanner />
       </div>

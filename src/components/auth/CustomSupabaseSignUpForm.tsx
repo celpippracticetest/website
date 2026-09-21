@@ -2,7 +2,6 @@
 
 import BoltIcon from "@mui/icons-material/Bolt";
 import ShieldIcon from "@mui/icons-material/Shield";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
@@ -108,27 +107,6 @@ export function CustomSupabaseSignUpForm({
       )}
     >
       <div className="border-b border-slate-100 px-6 pb-5 pt-6 text-center sm:px-8">
-        <Link
-          href="/"
-          className="mb-4 inline-flex items-center justify-center gap-2"
-        >
-          <Image
-            src="/images/header-logo-left.png"
-            alt=""
-            width={32}
-            height={32}
-            className="hidden h-8 w-8 min-[376px]:block"
-            sizes="32px"
-          />
-          <Image
-            src="/images/header-logo-right.png"
-            alt="CELPIP Practice Test"
-            width={84}
-            height={40}
-            className="h-8 w-auto max-[375px]:max-w-[140px]"
-            sizes="(max-width: 743px) 120px, 84px"
-          />
-        </Link>
         <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-blue-600">
           Free to start
         </p>
