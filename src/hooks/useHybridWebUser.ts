@@ -134,6 +134,9 @@ export function useHybridWebUser() {
       setSupabaseUser(null);
       return;
     }
+    // Mint a new JWT so app_metadata.plan matches Auth after checkout webhooks.
+    // Without this, session.user stays on the pre-purchase plan until logout/login.
+    await supabase.auth.refreshSession().catch(() => undefined);
     const fresh = await resolveFreshSupabaseUser(supabase);
     setSupabaseUser(fresh);
   }, []);
@@ -147,22 +150,16 @@ export function useHybridWebUser() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    } = supabase.auth.onAuthStateChange((event, _session) => {
       if (event === "SIGNED_OUT") {
         setSupabaseUser(null);
         return;
       }
 
-      if (
-        session?.user &&
-        (event === "INITIAL_SESSION" ||
-          event === "SIGNED_IN" ||
-          event === "TOKEN_REFRESHED")
-      ) {
-        setSupabaseUser(session.user);
-        return;
-      }
-
+      // Always prefer getUser() over session.user JWT claims. After Stripe
+      // upgrades app_metadata.plan, the local access token can stay stale until
+      // refresh — using session.user here is why Pro still looked locked until
+      // logout/login.
       void resolveFreshSupabaseUser(supabase).then(setSupabaseUser);
     });
 
