@@ -11,6 +11,8 @@ import useStore from "@/store";
 import { Popover } from "radix-ui";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
+import { isFreeGuestMockExam } from "@/lib/freeMockExam";
+import { saveGuestObjectiveAnswer } from "@/lib/guestMockAnswers";
 import React from "react";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 import UpgradeModal from "@/components/modal/UpgradeModal";
@@ -158,52 +160,62 @@ const ReadingExamView = ({
   }, [user, practice.taskId, attemptId]);
 
   useEffect(() => {
-    if (page === "answer" && user) {
-      const submitAnswers = async () => {
-        try {
-          const response = await fetch("/api/exams/answers", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              examId: practice.taskId,
-              partId: partId,
-              answers: selectedAnswers,
-              attemptId,
-            }),
-          });
+    if (page !== "answer") return;
+    const continueExam = () => {
+      if (section === "reading" && partId >= 10) {
+        setShowContinueModal(true);
+      } else {
+        router.push(
+          mockExamPartHref(practice.taskId, partId + 1, attemptId, {
+            section,
+          }),
+        );
+      }
+    };
+    if (!user) {
+      if (!isFreeGuestMockExam({ order: examNumber })) return;
+      void saveGuestObjectiveAnswer({
+        examId: practice.taskId,
+        attemptId,
+        partId,
+        answers: selectedAnswers,
+      }).finally(continueExam);
+      return;
+    }
+    const submitAnswers = async () => {
+      try {
+        const response = await fetch("/api/exams/answers", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            examId: practice.taskId,
+            partId: partId,
+            answers: selectedAnswers,
+            attemptId,
+          }),
+        });
 
-          if (response.ok) {
-            const result = await response.json();
-            // Log mock exam part completed
-            const loggerAttemptId =
-              attemptId || `mock_${practice.taskId}_${Date.now()}`;
-            await ActivityLogger.mockCompleted(
-              loggerAttemptId,
-              practice.taskId.toString(),
-              result.overall,
-              result,
-              time,
-            );
-          }
-        } catch (error) {
-          // Optionally handle error
-          console.error("Failed to submit answers:", error);
-        }
-        if (section === "reading" && partId >= 10) {
-          setShowContinueModal(true);
-        } else {
-          router.push(
-            mockExamPartHref(practice.taskId, partId + 1, attemptId, {
-              section,
-            }),
+        if (response.ok) {
+          const result = await response.json();
+          const loggerAttemptId =
+            attemptId || `mock_${practice.taskId}_${Date.now()}`;
+          await ActivityLogger.mockCompleted(
+            loggerAttemptId,
+            practice.taskId.toString(),
+            result.overall,
+            result,
+            time,
           );
         }
-      };
+      } catch (error) {
+        console.error("Failed to submit answers:", error);
+      }
+      continueExam();
+    };
 
-      submitAnswers();
-    }
+    void submitAnswers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, user?.id]);
 
@@ -214,17 +226,21 @@ const ReadingExamView = ({
     }));
   };
 
+  const freeMock = isFreeGuestMockExam({ order: examNumber });
   const shouldShowPractice: boolean =
-    practice.isFree || hasPaidPracticeAccess(user?.publicMetadata?.plan);
+    freeMock ||
+    practice.isFree ||
+    hasPaidPracticeAccess(user?.publicMetadata?.plan);
 
   useEffect(() => {
+    if (freeMock) return;
     if (
       isLoaded &&
       (!user || !hasPaidPracticeAccess(user.publicMetadata?.plan as string))
     ) {
       router.push("/exam-overview");
     }
-  }, [isLoaded, user, router]);
+  }, [isLoaded, user, router, freeMock]);
 
   const [menuShowModal, setMenuShowModal] = useState(false);
   const ref = useRef<HTMLDivElement>(null);

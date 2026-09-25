@@ -7,8 +7,7 @@ import { TaskRepository } from "@/repositories/tasks.repo";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import { ExamPartsRepository } from "@/repositories/examParts.repo";
 import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
-import { hasMockExamAccess } from "@/lib/subscriptionAccess";
-import { getFirstReadyMockExamId } from "@/lib/getFirstReadyMockExam";
+import { canPracticeMockExam } from "@/lib/freeMockExamAccess";
 import { sanitizeMockExamAttemptIdParam } from "@/lib/mockExamAttemptId";
 import {
   OPENROUTER_EVAL_MAX_TOKENS,
@@ -38,15 +37,13 @@ export const POST = async function (req: NextRequest) {
         { status: 400 }
       );
     }
-    const firstReadyExamId = await getFirstReadyMockExamId();
     if (
-      !hasMockExamAccess(
-        user.publicMetadata.plan as string | undefined,
-        user.publicMetadata.purchaseDate,
-        answerBody.examId,
-        firstReadyExamId,
-        user?.publicMetadata?.purchasedMockExamIds
-      )
+      !(await canPracticeMockExam({
+        examId: answerBody.examId,
+        plan: user.publicMetadata.plan as string | undefined,
+        purchaseDate: user.publicMetadata.purchaseDate,
+        purchasedMockExamIds: user?.publicMetadata?.purchasedMockExamIds,
+      }))
     ) {
       return NextResponse.json(
         { message: "You havent any free credit." },

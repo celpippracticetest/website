@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import LoginModal from "../modal/LoginModal";
 import UpgradeModal from "../modal/UpgradeModal";
 import { hasMockExamAccess } from "@/lib/subscriptionAccess";
+import { isFreeGuestMockExam } from "@/lib/freeMockExam";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -70,11 +71,12 @@ const ExamOverview = ({
     if (!isLoaded) {
       return;
     }
-    if (noUser) {
+    const freeExam = isFreeGuestMockExam(exam);
+    if (noUser && !freeExam) {
       setShowLoginModal(true);
       return;
     }
-    if (!canAccessExam(exam.id)) {
+    if (!freeExam && !canAccessExam(exam.id)) {
       setShowUpgradeModal(true);
       return;
     }
@@ -106,7 +108,9 @@ const ExamOverview = ({
       <div className="w-full  flex flex-col gap-4">
         <div className="flex flex-wrap w-full gap-[16px] pb-[10px]">
           {exams.map((exam: TExamSchemaDto, i: number) => {
-            const locked = isLoaded && isSignedIn && !canAccessExam(exam.id);
+            const freeExam = isFreeGuestMockExam(exam);
+            const locked =
+              isLoaded && isSignedIn && !freeExam && !canAccessExam(exam.id);
             const progress = progressByExamId[exam.id];
             const hasProgress = Boolean(
               progress && progress.completedParts > 0,
@@ -130,6 +134,11 @@ const ExamOverview = ({
                   <p className=" text-[#37465C]  font-medium text-center w-full">
                     {exam.name}
                   </p>
+                  {freeExam ? (
+                    <div className="rounded-full bg-[#E7F8F2] px-3 py-1 text-[12px] font-semibold text-[#0DAA94]">
+                      Free
+                    </div>
+                  ) : null}
                   {locked ? (
                     <div className="flex items-center gap-1 rounded-full bg-[#F1E9FE] px-3 py-1 text-[12px] font-semibold text-[#7C3AED]">
                       <SvgLock />

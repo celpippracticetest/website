@@ -7,8 +7,7 @@ import { ExamPartsRepository } from "@/repositories/examParts.repo";
 import { USER_PROMPTS } from "./userPrompts";
 import { SYSTEM_PROPMTS } from "./systemPrompts";
 import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
-import { hasMockExamAccess } from "@/lib/subscriptionAccess";
-import { getFirstReadyMockExamId } from "@/lib/getFirstReadyMockExam";
+import { canPracticeMockExam } from "@/lib/freeMockExamAccess";
 import { sanitizeMockExamAttemptIdParam } from "@/lib/mockExamAttemptId";
 import {
   OPENROUTER_EVAL_MAX_TOKENS,
@@ -120,16 +119,14 @@ export const POST = async function (req: Request) {
       return NextResponse.json({ message: "exam not found" }, { status: 404 });
     }
 
-    const firstReadyExamId = await getFirstReadyMockExamId();
     const resolvedExamId = examPart.examId.toString();
     if (
-      !hasMockExamAccess(
-        user.publicMetadata.plan as string | undefined,
-        user.publicMetadata.purchaseDate,
-        resolvedExamId,
-        firstReadyExamId,
-        user?.publicMetadata?.purchasedMockExamIds
-      )
+      !(await canPracticeMockExam({
+        examId: resolvedExamId,
+        plan: user.publicMetadata.plan as string | undefined,
+        purchaseDate: user.publicMetadata.purchaseDate,
+        purchasedMockExamIds: user?.publicMetadata?.purchasedMockExamIds,
+      }))
     ) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }

@@ -13,6 +13,7 @@ import { TExamSchemaDto } from "@/models/exam.model";
 import { useRouter } from "nextjs-toploader/app";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
+import { isFreeGuestMockExam } from "@/lib/freeMockExam";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import AskBeavoButton from "@/components/AskBeavo/AskBeavoButton";
 import { ActivityLogger } from "@/lib/userActivity";
@@ -271,6 +272,7 @@ const ResultExamView = ({
   ]);
 
   useEffect(() => {
+    if (isFreeGuestMockExam(exams)) return;
     if (
       isLoaded &&
       (!user || !hasPaidPracticeAccess(user.publicMetadata?.plan as string))

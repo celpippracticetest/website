@@ -10,6 +10,8 @@ import { useEffect } from "react";
 import useStore from "@/store";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
+import { isFreeGuestMockExam } from "@/lib/freeMockExam";
+import { saveGuestWritingAnswer } from "@/lib/guestMockAnswers";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 import UpgradeModal from "@/components/modal/UpgradeModal";
 import LoginModal from "@/components/modal/LoginModal";
@@ -152,7 +154,9 @@ const WritingExamView = ({
   }, [isSubmit, progressKey]);
 
   useUnsavedWorkGuard(
-    page === "question" && !isSubmit && (text.trim().length > 0 || time < writingTimerTime),
+    page === "question" &&
+      !isSubmit &&
+      (text.trim().length > 0 || time < writingTimerTime),
   );
 
   useEffect(() => {
@@ -168,7 +172,20 @@ const WritingExamView = ({
     }
   }, [isSubmit]);
 
+  const freeMock = isFreeGuestMockExam({ order: examNumber });
+
   const submitAnswer = async () => {
+    if (freeMock && !user) {
+      setProgressBar(1);
+      await saveGuestWritingAnswer({
+        examId: practice.taskId,
+        attemptId,
+        partId,
+        text,
+      });
+      setProgressBar(100);
+      return;
+    }
     try {
       setProgressBar(0); // Start loading
       const url = "/api/exams/answers/writing";
@@ -233,7 +250,9 @@ const WritingExamView = ({
   };
 
   const shouldShowPractice: boolean =
-    practice.isFree || hasPaidPracticeAccess(user?.publicMetadata?.plan);
+    freeMock ||
+    practice.isFree ||
+    hasPaidPracticeAccess(user?.publicMetadata?.plan);
 
   const [menuShowModal, setMenuShowModal] = useState(false);
   interface PracticeSection {
@@ -396,6 +415,14 @@ const WritingExamView = ({
                     if (page == "description") {
                       setPage("question");
                     } else if (page == "question") {
+                      if (freeMock && !user && text.trim()) {
+                        void saveGuestWritingAnswer({
+                          examId: practice.taskId,
+                          attemptId,
+                          partId,
+                          text,
+                        });
+                      }
                       if (section === "writing" && partId >= 12) {
                         router.push(
                           mockExamResultsHref(practice.taskId, attemptId),
@@ -503,7 +530,7 @@ const WritingExamView = ({
                           placeholder="Type your response here..."
                           value={text}
                           onChange={(e) => {
-                            if (!user) {
+                            if (!freeMock && !user) {
                               setPremiumPlanModalState();
                             } else if (!shouldShowPractice) {
                               setPremiumPlanModalState();
@@ -532,7 +559,7 @@ const WritingExamView = ({
                             disabled={progressBar > 0}
                             className="flex h-[40px] items-center justify-center text-white text-[14px] font-normal  rounded-[24px] bg-[#4A7DFF] w-full"
                             onClick={() => {
-                              if (!user) {
+                              if (!freeMock && !user) {
                                 setPremiumPlanModalState();
                                 return;
                               }
@@ -560,7 +587,9 @@ const WritingExamView = ({
                             Your answer submitted!
                           </span>
                           <p className="text-[14px] font-medium text-[#37465C]">
-                            You can now proceed to the next step.
+                            {user
+                              ? "You can now proceed to the next step."
+                              : "Sign in when you view your results to see your score."}
                           </p>
                           <Button
                             className="mt-4 bg-[#4A7DFF] text-white rounded-full px-6 py-2"

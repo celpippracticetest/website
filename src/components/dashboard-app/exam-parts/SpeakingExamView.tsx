@@ -9,6 +9,8 @@ import useStore from "@/store";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
+import { isFreeGuestMockExam } from "@/lib/freeMockExam";
+import { saveGuestSpeakingAnswer } from "@/lib/guestMockAnswers";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 
 import UpgradeModal from "@/components/modal/UpgradeModal";
@@ -78,8 +80,11 @@ const SpeakingExamView = ({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const hasStartedRecordingRef = useRef(false);
   const audioChunks = useRef<Blob[]>([]);
+  const freeMock = isFreeGuestMockExam({ order: examNumber });
   const shouldShowPractice =
-    practice.isFree || hasPaidPracticeAccess(user?.publicMetadata?.plan);
+    freeMock ||
+    practice.isFree ||
+    hasPaidPracticeAccess(user?.publicMetadata?.plan);
 
   const [errorAccessingMicrophone, setErrorAccessingMicrophone] =
     useState(false);
@@ -88,16 +93,17 @@ const SpeakingExamView = ({
   );
 
   useEffect(() => {
+    if (freeMock) return;
     if (
       isLoaded &&
       (!user || !hasPaidPracticeAccess(user.publicMetadata?.plan as string))
     ) {
       router.push("/exam-overview");
     }
-  }, [isLoaded, user, router]);
+  }, [isLoaded, user, router, freeMock]);
   const startRecording = async () => {
     try {
-      if (!user) {
+      if (!user && !freeMock) {
         setPremiumPlanModalState();
         return;
       }
@@ -147,6 +153,19 @@ const SpeakingExamView = ({
     const blob = new Blob(audioChunks.current, { type: "audio/m4a" });
     const url = URL.createObjectURL(blob);
     setAudioURL(url);
+
+    if (freeMock && !user) {
+      setProgressBar(1);
+      await saveGuestSpeakingAnswer({
+        examId: practice.taskId,
+        attemptId,
+        partId,
+        audio: blob,
+      });
+      setProgressBar(100);
+      setIsSubmit(true);
+      return;
+    }
 
     const formData = new FormData();
     formData.append("audio", blob, "recording.m4a");

@@ -12,6 +12,8 @@ import { useEffect } from "react";
 import ListeningDropDownQuestionList from "../listening-practice/components/ListeningDropDownQuestionList";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
+import { isFreeGuestMockExam } from "@/lib/freeMockExam";
+import { saveGuestObjectiveAnswer } from "@/lib/guestMockAnswers";
 import SvgArrowRight from "@/components/icons/ArrowRight";
 import SvgSpeakingPart from "@/components/icons/SpeakingPart";
 import SvgWritingPart from "@/components/icons/WritingPart";
@@ -151,52 +153,63 @@ const ListeningExamView = ({
   }, [user, practice.taskId, attemptId]);
 
   useEffect(() => {
-    if (page === "answer" && user) {
-      const submitAnswers = async () => {
-        try {
-          const response = await fetch("/api/exams/answers", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              examId: practice.taskId,
-              partId: partId,
-              answers: selectedAnswers,
-              attemptId,
-            }),
-          });
+    if (page !== "answer") return;
+    const continueExam = () => {
+      if (section === "listening" && partId >= 6) {
+        setShowContinueModal(true);
+      } else {
+        router.push(
+          mockExamPartHref(practice.taskId, partId + 1, attemptId, {
+            section,
+          }),
+        );
+      }
+    };
+    const freeMock = isFreeGuestMockExam({ order: examNumber });
+    if (!user) {
+      if (!freeMock) return;
+      void saveGuestObjectiveAnswer({
+        examId: practice.taskId,
+        attemptId,
+        partId,
+        answers: selectedAnswers,
+      }).finally(continueExam);
+      return;
+    }
+    const submitAnswers = async () => {
+      try {
+        const response = await fetch("/api/exams/answers", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            examId: practice.taskId,
+            partId: partId,
+            answers: selectedAnswers,
+            attemptId,
+          }),
+        });
 
-          if (response.ok) {
-            const result = await response.json();
-            // Log mock exam part completed
-            const loggerAttemptId =
-              attemptId || `mock_${practice.taskId}_${Date.now()}`;
-            await ActivityLogger.mockCompleted(
-              loggerAttemptId,
-              practice.taskId.toString(),
-              result.overall,
-              result,
-              time,
-            );
-          }
-        } catch (error) {
-          // Optionally handle error
-          console.error("Failed to submit answers:", error);
-        }
-        if (section === "listening" && partId >= 6) {
-          setShowContinueModal(true);
-        } else {
-          router.push(
-            mockExamPartHref(practice.taskId, partId + 1, attemptId, {
-              section,
-            }),
+        if (response.ok) {
+          const result = await response.json();
+          const loggerAttemptId =
+            attemptId || `mock_${practice.taskId}_${Date.now()}`;
+          await ActivityLogger.mockCompleted(
+            loggerAttemptId,
+            practice.taskId.toString(),
+            result.overall,
+            result,
+            time,
           );
         }
-      };
+      } catch (error) {
+        console.error("Failed to submit answers:", error);
+      }
+      continueExam();
+    };
 
-      submitAnswers();
-    }
+    void submitAnswers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, user?.id]);
   //   useEffect(() => {
@@ -218,6 +231,7 @@ const ListeningExamView = ({
   //   // onComplete();
   // };
   useEffect(() => {
+    if (isFreeGuestMockExam({ order: examNumber })) return;
     if (
       isLoaded &&
       (!user || !hasPaidPracticeAccess(user.publicMetadata?.plan as string))

@@ -5,8 +5,7 @@ import { ListeningAndReadingAnswerRepository } from "@/repositories/listeningAnd
 import { ExamPartsRepository } from "@/repositories/examParts.repo";
 import { TExamPartSchemaDto } from "@/models/examParts.model";
 import { getAuthenticatedRequestContext } from "@/lib/auth/request-auth";
-import { hasMockExamAccess } from "@/lib/subscriptionAccess";
-import { getFirstReadyMockExamId } from "@/lib/getFirstReadyMockExam";
+import { canPracticeMockExam } from "@/lib/freeMockExamAccess";
 import { sanitizeMockExamAttemptIdParam } from "@/lib/mockExamAttemptId";
 
 export async function POST(req: NextRequest) {
@@ -22,15 +21,13 @@ export async function POST(req: NextRequest) {
     if (!parseResult.data.examId || !parseResult.data.partId) {
       return NextResponse.json({ message: "exam id or part id is missing" }, { status: 400 });
     }
-    const firstReadyExamId = await getFirstReadyMockExamId();
     if (
-      !hasMockExamAccess(
-        user.publicMetadata.plan as string | undefined,
-        user.publicMetadata.purchaseDate,
-        parseResult.data.examId,
-        firstReadyExamId,
-        user?.publicMetadata?.purchasedMockExamIds
-      )
+      !(await canPracticeMockExam({
+        examId: parseResult.data.examId,
+        plan: user.publicMetadata.plan as string | undefined,
+        purchaseDate: user.publicMetadata.purchaseDate,
+        purchasedMockExamIds: user?.publicMetadata?.purchasedMockExamIds,
+      }))
     ) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }

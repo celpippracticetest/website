@@ -16,9 +16,19 @@ import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpe
 import { currentUser } from "@/lib/auth/web-auth-session";
 import { hasMockExamAccess } from "@/lib/subscriptionAccess";
 import { getFirstReadyMockExamId } from "@/lib/getFirstReadyMockExam";
+import { isFreeGuestMockExam } from "@/lib/freeMockExam";
+import FreeMockResultsAuthGate from "@/components/dashboard-app/exam-parts/FreeMockResultsAuthGate";
+import ClaimGuestMockAnswers from "@/components/dashboard-app/exam-parts/ClaimGuestMockAnswers";
 
-const Exam = async ({ params }: { params: { slug: string[] } }) => {
+const Exam = async ({
+  params,
+  searchParams,
+}: {
+  params: { slug: string[] };
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) => {
   const resolvedParams = await params;
+  const resolvedSearch = await searchParams;
   const examId: string | undefined =
     resolvedParams?.slug?.[0]?.split("exam_")?.[1];
   const partNumber: string | undefined =
@@ -57,12 +67,34 @@ const Exam = async ({ params }: { params: { slug: string[] } }) => {
   ) {
     redirect("/exam-overview", RedirectType.push);
   }
-  if (!hasExamAccess) {
-    redirect("/exam-overview", RedirectType.push);
-  }
   const examRepo = new ExamRepository(documentsClient);
   const exam: TExamSchemaDto | null = await examRepo.findExamById(examId);
   if (!exam) {
+    redirect("/exam-overview", RedirectType.push);
+  }
+  const freeExam = isFreeGuestMockExam(exam);
+  const canOpenExam = hasExamAccess || freeExam;
+  if (!canOpenExam) {
+    redirect("/exam-overview", RedirectType.push);
+  }
+  if (isResultPage && !user) {
+    if (!freeExam) {
+      redirect("/exam-overview", RedirectType.push);
+    }
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(resolvedSearch)) {
+      const raw = Array.isArray(value) ? value[0] : value;
+      if (raw) query.set(key, raw);
+    }
+    const qs = query.toString();
+    return (
+      <FreeMockResultsAuthGate
+        examName={exam.name}
+        returnTo={`/exams/exam_${examId}/results${qs ? `?${qs}` : ""}`}
+      />
+    );
+  }
+  if (isResultPage && !hasExamAccess && !freeExam) {
     redirect("/exam-overview", RedirectType.push);
   }
   const examPartsRepo = new ExamPartsRepository(documentsClient);
@@ -107,6 +139,7 @@ const Exam = async ({ params }: { params: { slug: string[] } }) => {
 
     return (
       <main className=" bg-[#F2F6FF] min-h-screen flex w-full justify-center  max-w-[1280px] mx-auto">
+        <ClaimGuestMockAnswers examId={examId} />
         <div className=" mx-auto w-full flex flex-col rounded-lg">
           <ResultExamView
             exams={exam}
