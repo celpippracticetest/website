@@ -1,4 +1,5 @@
 import { trackEcommerce, trackKpi } from "@/lib/analytics";
+import { applySitewideDiscount } from "@/lib/sitewidePlanDiscount";
 import { mergePendingGa4IntoAttribution } from "@/lib/ga4BrowserIds";
 import {
   buildSignUpUrlForCheckout,
@@ -56,6 +57,8 @@ export function submitPlanCheckout(args: {
   legacyType?: string | null;
   itemName?: string | null;
   itemPrice?: string | number | null;
+  /** Arm B passes 30 so analytics match the discounted price. 0 keeps list price. */
+  discountPercent?: number;
   extraFields?: Record<string, string>;
   attributionFields?: Record<string, string>;
   currency?: string | null;
@@ -90,10 +93,14 @@ export function submitPlanCheckout(args: {
     args.stripeProductId?.trim() ||
     args.legacyType ||
     "plan";
-  const value =
+  const listValue =
     typeof args.itemPrice === "number"
       ? args.itemPrice
       : parsePlanPrice(args.itemPrice ?? null);
+  const value =
+    args.discountPercent && args.discountPercent > 0
+      ? applySitewideDiscount(listValue, args.discountPercent)
+      : listValue;
   const items = [
     {
       item_id: itemId,

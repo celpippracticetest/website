@@ -7,6 +7,7 @@ import {
   buildCheckoutSessionAction,
   submitPlanCheckout,
 } from "@/lib/planCheckout";
+import { usePlanDiscountPercent } from "@/hooks/usePlanDiscountAb";
 import { formatPlanCardPrice, isInrPlanCurrency } from "@/lib/pricing";
 
 interface IPlanCard {
@@ -25,6 +26,7 @@ interface IPlanCard {
   stripePriceId?: string;
   stripeProductId?: string;
   currency?: string;
+  discountPercent?: number;
 }
 const PlanCard = ({
   title,
@@ -42,8 +44,10 @@ const PlanCard = ({
   stripePriceId,
   stripeProductId,
   currency,
+  discountPercent: serverDiscountPercent,
 }: IPlanCard) => {
   const { isLoaded, isSignedIn } = useHybridWebUser();
+  const discountPercent = usePlanDiscountPercent(serverDiscountPercent);
   const checkoutAction = buildCheckoutSessionAction({
     stripePriceId,
     stripeProductId,
@@ -58,6 +62,7 @@ const PlanCard = ({
       stripeProductId,
       legacyType: type,
       currency,
+      discountPercent,
       isLoaded,
       isSignedIn,
     });
@@ -131,7 +136,7 @@ const PlanCard = ({
             </>
           )}
           <span className="text-black font-bold text-[25px]">
-            {formatPlanCardPrice(price, currency)}
+            {formatPlanCardPrice(price, currency, discountPercent)}
             {type == "Free" && (
               <span className="text-gray font-normal text-[20px]">
                 {" "}

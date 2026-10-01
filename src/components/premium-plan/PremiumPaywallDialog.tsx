@@ -10,6 +10,7 @@ import {
   getPlanPriceDisplay,
   type FeaturedPlanName,
 } from "@/lib/brandPlanPricing";
+import { usePlanDiscountPercent } from "@/hooks/usePlanDiscountAb";
 import { groupPlansByDuration } from "@/lib/pricingPlanSections";
 import type { DurationGroupKey, SerializedPlan } from "@/types/pricing";
 import { cn } from "@/lib/utils";
@@ -35,9 +36,11 @@ function titleCaseSaveLabel(label: string | null): string | null {
 type PaywallPlanCardProps = {
   name: FeaturedPlanName;
   price: string;
+  compareAtPrice: string | null;
   priceSuffix: string;
   perWeekEquivalent: string;
   saveLabel: string | null;
+  saleLabel: string | null;
   plan: SerializedPlan | null;
   highlighted: boolean;
 };
@@ -45,14 +48,17 @@ type PaywallPlanCardProps = {
 function PaywallPlanCard({
   name,
   price,
+  compareAtPrice,
   priceSuffix,
   perWeekEquivalent,
   saveLabel,
+  saleLabel,
   plan,
   highlighted,
 }: PaywallPlanCardProps) {
   const { isSignedIn, isLoaded } = useHybridWebUser();
   const attribution = useCheckoutAttributionPayload();
+  const discountPercent = usePlanDiscountPercent();
 
   const canCheckout = Boolean(
     plan?.stripePriceId ||
@@ -68,12 +74,13 @@ function PaywallPlanCard({
       legacyType: plan.type,
       itemName: plan.planTitle || plan.title || name,
       itemPrice: plan.price,
+      discountPercent,
       attributionFields: attribution,
       currency: plan.currency,
       isLoaded,
       isSignedIn,
     });
-  }, [attribution, isLoaded, isSignedIn, name, plan]);
+  }, [attribution, discountPercent, isLoaded, isSignedIn, name, plan]);
 
   return (
     <article
@@ -92,6 +99,11 @@ function PaywallPlanCard({
 
       <div className="flex items-center gap-2">
         <span className="text-[15px] font-semibold text-[#5b6575]">{name}</span>
+        {saleLabel ? (
+          <span className="text-[13px] font-semibold text-[#e07a45]">
+            {saleLabel}
+          </span>
+        ) : null}
         {saveLabel ? (
           <span className="text-[13px] font-semibold text-[#2e9e5b]">
             {saveLabel}
@@ -99,7 +111,12 @@ function PaywallPlanCard({
         ) : null}
       </div>
 
-      <div className="mt-3 flex items-baseline gap-1.5">
+      <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+        {compareAtPrice ? (
+          <span className="text-[16px] font-semibold text-[#98a2b3] line-through">
+            {compareAtPrice}
+          </span>
+        ) : null}
         <span className="text-[32px] font-extrabold tracking-[-0.03em] text-[#111827]">
           {price}
         </span>
@@ -143,6 +160,7 @@ export function PremiumPaywallDialog({
   isLoading,
   onClose,
 }: PremiumPaywallDialogProps) {
+  const discountPercent = usePlanDiscountPercent();
   const grouped = useMemo(() => groupPlansByDuration(plans), [plans]);
   const weeklyPlan = findSectionPlan(grouped, "weekly");
   const monthlyPlan = findSectionPlan(grouped, "monthly");
@@ -150,14 +168,17 @@ export function PremiumPaywallDialog({
 
   const weeklyDisplay = getPlanPriceDisplay(weeklyPlan, "weekly", {
     showPerWeek: true,
+    discountPercent,
   });
   const monthlyDisplay = getPlanPriceDisplay(monthlyPlan, "monthly", {
     weeklyPlan,
     showPerWeek: true,
+    discountPercent,
   });
   const quarterlyDisplay = getPlanPriceDisplay(quarterlyPlan, "quarterly", {
     weeklyPlan,
     showPerWeek: true,
+    discountPercent,
   });
 
   const cards = [
@@ -205,6 +226,9 @@ export function PremiumPaywallDialog({
             Save up to 60% on Quarterly
           </h2>
           <p className="mt-2 mb-0 max-w-[520px] text-[14px] leading-[1.45] text-[#8b93a3]">
+            {discountPercent > 0
+              ? `${discountPercent}% off all plans. `
+              : null}
             Take a full CELPIP exam and get instant AI scoring on your writing
             and speaking.
           </p>
@@ -225,9 +249,11 @@ export function PremiumPaywallDialog({
                 key={name}
                 name={name}
                 price={display.price}
+                compareAtPrice={display.compareAtPrice}
                 priceSuffix={display.priceSuffix}
                 perWeekEquivalent={display.perWeekEquivalent}
                 saveLabel={titleCaseSaveLabel(display.saveLabel)}
+                saleLabel={titleCaseSaveLabel(display.saleLabel)}
                 plan={plan}
                 highlighted={name === "Monthly"}
               />

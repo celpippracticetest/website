@@ -6,7 +6,12 @@ import { getActivePlansCatalog } from "@/lib/plansCatalog";
 import { countryFromHeaderBag } from "@/lib/clientIpGeo";
 import { isIndiaCountry } from "@/lib/stripeRegionalPricing";
 import { PlansRepository } from "@/repositories/plans.repo";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
+import {
+  isPlanDiscountAbVariant,
+  PLAN_DISCOUNT_AB_COOKIE,
+  planDiscountPercent,
+} from "@/lib/planDiscountAb";
 import SvgBestValuePlan from "@/components/icons/BestValuePlan";
 import SvgPopularPlan from "@/components/icons/PopularPlan";
 import SvgFreePlan from "@/components/icons/FreePlan";
@@ -33,6 +38,10 @@ const Plans = async () => {
   const userRepo = new CheckoutRepository(documentsClient);
   const plansRepo = new PlansRepository(db);
   const country = countryFromHeaderBag(await headers());
+  const planDiscountRaw = (await cookies()).get(PLAN_DISCOUNT_AB_COOKIE)?.value;
+  const discountPercent = planDiscountPercent(
+    isPlanDiscountAbVariant(planDiscountRaw) ? planDiscountRaw : "a",
+  );
 
   const [prevCheckout, plans] = await Promise.all([
     userRepo.findLatestCheckoutByUserId(user?.id || ""),
@@ -72,6 +81,7 @@ const Plans = async () => {
               stripePriceId={item.stripePriceId}
               stripeProductId={item.stripeProductId}
               currency={item.currency}
+              discountPercent={discountPercent}
             />
           ))}
         </div>

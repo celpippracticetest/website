@@ -6,6 +6,7 @@ import { trackEcommerce } from "@/lib/analytics";
 import { PricingBrandHeader } from "@/components/pages/pricing/brand/PricingBrandHeader";
 import { PricingBrandPlansSection } from "@/components/pages/pricing/brand/PricingBrandPlansSection";
 import { PricingBrandFaqSection } from "@/components/pages/pricing/brand/PricingBrandFaqSection";
+import { applySitewideDiscount } from "@/lib/sitewidePlanDiscount";
 import type { SerializedPlan } from "@/types/pricing";
 
 function parsePrice(raw?: string): number {
@@ -18,12 +19,14 @@ interface PricingPageClientProps {
   plans: SerializedPlan[];
   pricingAbLayout: PricingAbLayout;
   pricingAbParticipatesInExperiment: boolean;
+  planDiscountPercent?: number;
 }
 
 export default function PricingPageClient({
   plans,
   pricingAbLayout,
   pricingAbParticipatesInExperiment,
+  planDiscountPercent = 0,
 }: PricingPageClientProps) {
   const pricingCheckoutFields = useMemo(() => {
     if (!pricingAbParticipatesInExperiment) return undefined;
@@ -51,23 +54,27 @@ export default function PricingPageClient({
         item_id:
           p.stripePriceId || p.stripeProductId || p.type || `plan_${index}`,
         item_name: p.planTitle || p.title || p.type,
-        price: parsePrice(p.price),
+        price:
+          planDiscountPercent > 0
+            ? applySitewideDiscount(parsePrice(p.price), planDiscountPercent)
+            : parsePrice(p.price),
         quantity: 1,
         index,
       }));
     if (!items.length) return;
     trackEcommerce.viewItemList(items, "pricing_plans", "Pricing Plans");
-  }, [plans]);
+  }, [plans, planDiscountPercent]);
 
   return (
     <div className="flex min-h-[calc(100vh-64px)] flex-col items-center bg-[#eef2f8] px-6 pb-[72px] pt-14 box-border">
       <div className="flex w-full max-w-[1060px] flex-col items-center">
-        <PricingBrandHeader />
+        <PricingBrandHeader discountPercent={planDiscountPercent} />
         <PricingBrandPlansSection
           plans={plans}
           pricingCheckoutFields={pricingCheckoutFields}
           featuredPlan="Monthly"
           showPerWeek
+          discountPercent={planDiscountPercent}
         />
         <div className="mt-16 w-full">
           <PricingBrandFaqSection />

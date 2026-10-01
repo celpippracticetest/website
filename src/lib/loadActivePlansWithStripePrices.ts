@@ -3,6 +3,7 @@ import { stripe } from "@/lib/stripe";
 import { resolveStripePriceForCountry } from "@/lib/stripeRegionalPricing";
 import type { Plan } from "@/models/plans.model";
 import { PlansRepository } from "@/repositories/plans.repo";
+import { applySitewideDiscount } from "@/lib/sitewidePlanDiscount";
 import type { PlanBillingInterval, SerializedPlan } from "@/types/pricing";
 
 /**
@@ -85,7 +86,10 @@ export async function loadActivePlansWithStripePrices(
             name: displayNameForPlan(plan),
             priceId: catalogPrice.id,
             ...(stripeProductId ? { stripeProductId } : {}),
-            amount: price.unit_amount != null ? price.unit_amount / 100 : 0,
+            amount:
+              price.unit_amount != null
+                ? applySitewideDiscount(price.unit_amount / 100)
+                : 0,
             currency: price.currency,
             interval: price.recurring.interval,
             intervalCount: price.recurring.interval_count ?? 1,

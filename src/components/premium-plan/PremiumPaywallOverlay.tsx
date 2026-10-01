@@ -11,6 +11,7 @@ import { PricingBrandReviewsSection } from "@/components/pages/pricing/brand/Pri
 import { PricingBrandFaqSection } from "@/components/pages/pricing/brand/PricingBrandFaqSection";
 import type { SerializedPlan } from "@/types/pricing";
 import { trackKpi } from "@/lib/analytics";
+import { usePlanDiscountPercent } from "@/hooks/usePlanDiscountAb";
 
 function toSerializedPlans(plans: unknown[]): SerializedPlan[] {
   return plans.map((raw) => {
@@ -60,6 +61,7 @@ export function PremiumPaywallOverlay({
   triggerSource = "premium_plan_modal",
 }: PremiumPaywallOverlayProps) {
   const { plans, isLoading } = usePlans();
+  const discountPercent = usePlanDiscountPercent();
   const serializedPlans = useMemo(() => toSerializedPlans(plans), [plans]);
 
   useEffect(() => {
@@ -106,7 +108,10 @@ export function PremiumPaywallOverlay({
 
             <div className="custom-scrollbar flex-1 overflow-y-auto px-6 py-10 screen744:px-10">
               <div className="mx-auto flex w-full max-w-[1060px] flex-col items-center">
-                <PricingBrandHeader titleTag="h2" />
+                <PricingBrandHeader
+                  titleTag="h2"
+                  discountPercent={discountPercent}
+                />
 
                 {isLoading ? (
                   <p className="mt-10 text-sm text-[#5b6575]">Loading plans…</p>
@@ -119,6 +124,7 @@ export function PremiumPaywallOverlay({
                     plans={serializedPlans}
                     featuredPlan="Monthly"
                     showPerWeek
+                    discountPercent={discountPercent}
                   />
                 )}
 

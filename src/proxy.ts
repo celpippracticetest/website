@@ -8,6 +8,15 @@ import { appUserAdmin } from "@/lib/auth/app-user-admin";
 import { logger, trackUserAction, captureException } from "@/lib/sentry-logger";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { PRICING_AB_COOKIE, type PricingAbLayout } from "@/lib/pricingAbTest";
+import {
+  isPlanDiscountAbVariant,
+  parsePlanDiscountPreviewQuery,
+  pickPlanDiscountAbVariant,
+  PLAN_DISCOUNT_AB_COOKIE,
+  PLAN_DISCOUNT_AB_MAX_AGE_SECONDS,
+  upsertCookieHeader,
+  type PlanDiscountAbVariant,
+} from "@/lib/planDiscountAb";
 import { HOME_AB_COOKIE, type HomeAbVariant } from "@/lib/homeAbTest";
 import { applyMarketingCookiesToResponse } from "@/lib/marketingCookies";
 import {
@@ -73,6 +82,34 @@ export default async function middleware(req: NextRequest) {
       }
     : null;
 
+  const planAbPreview = parsePlanDiscountPreviewQuery(
+    req.nextUrl.searchParams.get("plan_ab"),
+  );
+  const existingPlanAb = req.cookies.get(PLAN_DISCOUNT_AB_COOKIE)?.value;
+  const existingPlanVariant = isPlanDiscountAbVariant(existingPlanAb)
+    ? existingPlanAb
+    : null;
+  const planDiscountVariant: PlanDiscountAbVariant =
+    planAbPreview ?? existingPlanVariant ?? pickPlanDiscountAbVariant();
+  const shouldSetPlanDiscountCookie = planDiscountVariant !== existingPlanVariant;
+
+  function headersWithPlanDiscount(base?: Headers): Headers {
+    const headers = new Headers(base ?? req.headers);
+    if (!shouldSetPlanDiscountCookie) return headers;
+    const current = headers.get("cookie") || "";
+    headers.set(
+      "cookie",
+      upsertCookieHeader(current, PLAN_DISCOUNT_AB_COOKIE, planDiscountVariant),
+    );
+    return headers;
+  }
+
+  function nextWithPlanDiscount(base?: Headers) {
+    return NextResponse.next({
+      request: { headers: headersWithPlanDiscount(base) },
+    });
+  }
+
   const end = (response: NextResponse) => {
     if (
       NOINDEX_PATHS.has(req.nextUrl.pathname) ||
@@ -84,6 +121,13 @@ export default async function middleware(req: NextRequest) {
     }
     for (const w of supabaseCookieWrites) {
       response.cookies.set(w.name, w.value, w.options);
+    }
+    if (shouldSetPlanDiscountCookie) {
+      response.cookies.set(PLAN_DISCOUNT_AB_COOKIE, planDiscountVariant, {
+        path: "/",
+        maxAge: PLAN_DISCOUNT_AB_MAX_AGE_SECONDS,
+        sameSite: "lax",
+      });
     }
     return applyMarketingCookiesToResponse(req, response);
   };
@@ -107,7 +151,11 @@ export default async function middleware(req: NextRequest) {
     url.search = "";
     url.searchParams.set("selectedPracticeId", practiceId);
     url.searchParams.set("taskId", taskId);
-    return end(NextResponse.rewrite(url));
+    return end(
+      NextResponse.rewrite(url, {
+        request: { headers: headersWithPlanDiscount() },
+      }),
+    );
   }
 
   const practiceMetaForSharing = supabaseWebUser
@@ -174,7 +222,7 @@ export default async function middleware(req: NextRequest) {
 
       const response = NextResponse.next({
         request: {
-          headers: newReqHeaders,
+          headers: headersWithPlanDiscount(newReqHeaders),
         },
       });
 
@@ -195,7 +243,7 @@ export default async function middleware(req: NextRequest) {
 
     const response = NextResponse.next({
       request: {
-        headers: newReqHeaders,
+        headers: headersWithPlanDiscount(newReqHeaders),
       },
     });
 
@@ -237,7 +285,7 @@ export default async function middleware(req: NextRequest) {
     const inviter = url.searchParams.get("inviter");
 
     if (ref || inviter) {
-      const response = NextResponse.next();
+      const response = nextWithPlanDiscount();
 
       if (ref) {
         response.cookies.set("pendingReferralCode", ref, {
@@ -288,7 +336,7 @@ export default async function middleware(req: NextRequest) {
     // They need to see the referral page to sign up
     if (!hasWebAuth) {
       // Don't redirect, allow access to referral page
-      return end(NextResponse.next());
+      return end(nextWithPlanDiscount());
     }
 
     // For authenticated users, check plan
@@ -613,7 +661,7 @@ export default async function middleware(req: NextRequest) {
     }
   }
 
-  const response = end(NextResponse.next());
+  const response = end(nextWithPlanDiscount());
   if (setReferralCreateCooldown) {
     response.cookies.set(REFERRAL_CREATE_COOLDOWN_COOKIE, "1", {
       path: "/",

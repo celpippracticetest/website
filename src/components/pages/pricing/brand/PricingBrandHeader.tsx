@@ -18,11 +18,13 @@ const CHIPS: { label: string; glyph: string }[] = [
 type PricingBrandHeaderProps = {
   titleTag?: "h1" | "h2";
   headingId?: string;
+  discountPercent?: number;
 };
 
 export function PricingBrandHeader({
   titleTag = "h1",
   headingId,
+  discountPercent = 0,
 }: PricingBrandHeaderProps = {}) {
   const TitleTag = titleTag;
 
@@ -37,6 +39,12 @@ export function PricingBrandHeader({
         </span>
         Pick the Plan That Fits You
       </TitleTag>
+
+      {discountPercent > 0 ? (
+        <p className="mt-3 mb-0 rounded-full bg-[#fff1e8] px-3.5 py-1 text-[13px] font-bold text-[#e07a45]">
+          {discountPercent}% off all plans
+        </p>
+      ) : null}
 
       <div className="mt-3.5 flex items-center gap-2.5">
         <div className="flex">

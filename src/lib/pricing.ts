@@ -4,6 +4,7 @@ import type {
   PlanBillingInterval,
   SerializedPlan,
 } from "@/types/pricing";
+import { applySitewideDiscount } from "@/lib/sitewidePlanDiscount";
 
 function getPlanText(plan: Pick<SerializedPlan, "title" | "planTitle" | "type">) {
   return `${plan.title} ${plan.planTitle} ${plan.type}`.toLowerCase();
@@ -103,16 +104,26 @@ export function isInrPlanCurrency(currency?: string | null) {
   return currency?.trim().toLowerCase() === "inr";
 }
 
-export function formatPlanCardPrice(price: string, currency?: string | null) {
+export function formatPlanCardPrice(
+  price: string,
+  currency?: string | null,
+  discountPercent = 0,
+) {
+  const listPrice = parsePrice(price);
+  const numericValue =
+    discountPercent > 0
+      ? applySitewideDiscount(listPrice, discountPercent)
+      : listPrice;
   if (isInrPlanCurrency(currency)) {
-    const numericValue = parsePrice(price);
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
       currency: "INR",
       maximumFractionDigits: numericValue % 1 === 0 ? 0 : 2,
     }).format(numericValue);
   }
-  return `$ ${price}`;
+  const text =
+    numericValue % 1 === 0 ? String(numericValue) : numericValue.toFixed(2);
+  return `$ ${text}`;
 }
 
 export function isWeeklyPlan(plan: SerializedPlan) {

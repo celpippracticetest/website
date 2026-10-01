@@ -8,6 +8,10 @@ import { appUserAdmin, currentUser } from "@/lib/auth/server-auth";
 import { logger, captureException, trackAPICall } from "@/lib/sentry-logger";
 import { getDb } from "@/lib/appDocumentsClient";
 import { isPricingAbLayout } from "@/lib/pricingAbTest";
+import {
+  isPlanDiscountAbVariant,
+  PLAN_DISCOUNT_AB_COOKIE,
+} from "@/lib/planDiscountAb";
 import { isHomeAbExperimentVariant, isHomeAbVariant } from "@/lib/homeAbTest";
 import {
   buildCheckoutCancelUrl,
@@ -15,6 +19,8 @@ import {
   safeStripeProductId,
 } from "@/lib/checkoutCancelUrl";
 import { resolveCampaignPromoFromRequest } from "@/lib/campaignPromo";
+import { resolveCheckoutDiscount } from "@/lib/sitewidePlanCoupon";
+import { SITEWIDE_PLAN_DISCOUNT_PERCENT } from "@/lib/sitewidePlanDiscount";
 import {
   FINAL_OFFER_CHALLENGE_SOURCE,
   isValidFinalOfferChallengeCombo,
@@ -83,24 +89,6 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   return signedCheckoutResponse(req);
-}
-
-async function resolveFinalOfferCouponId(): Promise<string> {
-  const configuredCouponId = process.env.STRIPE_FINAL_OFFER_COUPON_ID?.trim();
-  if (configuredCouponId) {
-    return configuredCouponId;
-  }
-
-  const coupon = await stripe.coupons.create({
-    percent_off: 20,
-    duration: "once",
-    // Stripe coupon `name` max length is 40 characters.
-    name: "Final offer 20% off 1st period",
-    metadata: {
-      source: "onboarding_final_chance",
-    },
-  });
-  return coupon.id;
 }
 
 async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
@@ -775,17 +763,38 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
       },
     });
 
+    const unitAmountCents =
+      typeof priceObject.unit_amount === "number" ? priceObject.unit_amount : null;
+    const configuredFinalOfferCoupon =
+      isOnboardingFinalOffer && mode === "subscription"
+        ? process.env.STRIPE_FINAL_OFFER_COUPON_ID?.trim() || null
+        : null;
+    const planDiscountRaw = req.cookies.get(PLAN_DISCOUNT_AB_COOKIE)?.value;
+    const planDiscountVariant = isPlanDiscountAbVariant(planDiscountRaw)
+      ? planDiscountRaw
+      : "a";
+    const planDiscountMeta = { plan_discount_ab: planDiscountVariant };
+    const checkoutDiscount = await resolveCheckoutDiscount({
+      promotionCode,
+      unitAmountCents,
+      alternateCouponId: configuredFinalOfferCoupon,
+      alternateCouponSource: "onboarding_final_offer",
+      applySitewide: planDiscountVariant === "b",
+    });
+    const sitewideDiscountApplied = checkoutDiscount.kind === "sitewide";
+    const gaClientId = `uid.${String(user.id).replace(/[^A-Za-z0-9._-]/g, "").slice(0, 64)}`;
+
     let checkoutDiscounts: Array<{ promotion_code?: string; coupon?: string }> = [];
-    if (promotionCode) {
-      checkoutDiscounts = [{ promotion_code: promotionCode }];
+    if (checkoutDiscount.kind === "promotion") {
+      checkoutDiscounts = [{ promotion_code: checkoutDiscount.promotionCode }];
       void sendGa4Events({
-        clientId: `uid.${String(user.id).replace(/[^A-Za-z0-9._-]/g, "").slice(0, 64)}`,
+        clientId: gaClientId,
         userId: user.id,
         events: [
           {
             name: "promo_code_apply",
             params: {
-              coupon: promotionCode,
+              coupon: checkoutDiscount.promotionCode,
               result: "applied",
               referral_discount: referralDiscountApplied,
               partner_discount: partnerDiscountApplied,
@@ -794,19 +803,35 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
           },
         ],
       });
-    } else if (isOnboardingFinalOffer && mode === "subscription") {
-      const couponId = await resolveFinalOfferCouponId();
-      checkoutDiscounts = [{ coupon: couponId }];
+    } else if (checkoutDiscount.kind === "coupon") {
+      checkoutDiscounts = [{ coupon: checkoutDiscount.couponId }];
       void sendGa4Events({
-        clientId: `uid.${String(user.id).replace(/[^A-Za-z0-9._-]/g, "").slice(0, 64)}`,
+        clientId: gaClientId,
         userId: user.id,
         events: [
           {
             name: "promo_code_apply",
             params: {
-              coupon: couponId,
+              coupon: checkoutDiscount.couponId,
               result: "applied",
-              source: "onboarding_final_offer",
+              source: checkoutDiscount.source,
+            },
+          },
+        ],
+      });
+    } else if (checkoutDiscount.kind === "sitewide") {
+      checkoutDiscounts = [{ coupon: checkoutDiscount.couponId }];
+      void sendGa4Events({
+        clientId: gaClientId,
+        userId: user.id,
+        events: [
+          {
+            name: "promo_code_apply",
+            params: {
+              coupon: checkoutDiscount.couponId,
+              result: "applied",
+              source: "sitewide_plan_discount",
+              discount_pct: SITEWIDE_PLAN_DISCOUNT_PERCENT,
             },
           },
         ],
@@ -850,6 +875,7 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
         ...attributionSnapshot,
         ...pricingAbMeta,
         ...homeAbMeta,
+        ...planDiscountMeta,
         ...(referralDiscountApplied && {
           referral_discount_applied:
             userMetadata?.referralDiscount || "referral",
@@ -862,6 +888,9 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
               : "",
         }),
         ...(campaignPromoKey && { campaign_promo: campaignPromoKey }),
+        ...(sitewideDiscountApplied && {
+          sitewide_discount_percent: String(SITEWIDE_PLAN_DISCOUNT_PERCENT),
+        }),
         ...ga4CheckoutMeta,
         ...metaCheckoutMeta,
       }),
@@ -886,6 +915,7 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
             ...attributionSnapshot,
             ...pricingAbMeta,
             ...homeAbMeta,
+            ...planDiscountMeta,
             ...(referralDiscountApplied && {
               referral_discount_applied:
                 userMetadata?.referralDiscount || "referral",
@@ -898,6 +928,9 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
                   : "",
             }),
             ...(campaignPromoKey && { campaign_promo: campaignPromoKey }),
+            ...(sitewideDiscountApplied && {
+              sitewide_discount_percent: String(SITEWIDE_PLAN_DISCOUNT_PERCENT),
+            }),
           }),
         },
       }),

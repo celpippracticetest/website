@@ -16,11 +16,14 @@ type PlanTint = {
 type PricingBrandPlanCardProps = {
   name: string;
   price: string;
+  compareAtPrice?: string | null;
   priceSuffix: string;
   perWeekEquivalent?: string;
   saveLabel?: string | null;
+  saleLabel?: string | null;
   plan?: SerializedPlan | null;
   pricingCheckoutFields?: Record<string, string>;
+  discountPercent?: number;
   features: readonly string[];
   highlighted?: boolean;
   badge?: string;
@@ -30,11 +33,14 @@ type PricingBrandPlanCardProps = {
 export function PricingBrandPlanCard({
   name,
   price,
+  compareAtPrice,
   priceSuffix,
   perWeekEquivalent = "",
   saveLabel,
+  saleLabel,
   plan,
   pricingCheckoutFields,
+  discountPercent = 0,
   features,
   highlighted = false,
   badge,
@@ -57,13 +63,22 @@ export function PricingBrandPlanCard({
       legacyType: plan.type,
       itemName: plan.planTitle || plan.title || name,
       itemPrice: plan.price,
+      discountPercent,
       extraFields: pricingCheckoutFields,
       attributionFields: attribution,
       currency: plan.currency,
       isLoaded,
       isSignedIn,
     });
-  }, [attribution, isLoaded, isSignedIn, name, plan, pricingCheckoutFields]);
+  }, [
+    attribution,
+    discountPercent,
+    isLoaded,
+    isSignedIn,
+    name,
+    plan,
+    pricingCheckoutFields,
+  ]);
 
   return (
     <article
@@ -90,6 +105,11 @@ export function PricingBrandPlanCard({
         >
           {name}
         </span>
+        {saleLabel ? (
+          <span className="rounded-full bg-[#fff1e8] px-[9px] py-[3px] text-[11px] font-bold text-[#e07a45]">
+            {saleLabel}
+          </span>
+        ) : null}
         {saveLabel ? (
           <span className="rounded-full bg-[#e9f9ef] px-[9px] py-[3px] text-[11px] font-bold text-[#2e9e5b]">
             {saveLabel}
@@ -97,7 +117,12 @@ export function PricingBrandPlanCard({
         ) : null}
       </div>
 
-      <div className="mt-5 flex items-baseline gap-1.5">
+      <div className="mt-5 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+        {compareAtPrice ? (
+          <span className="text-[18px] font-semibold text-[#98a2b3] line-through">
+            {compareAtPrice}
+          </span>
+        ) : null}
         <span className="text-[34px] font-extrabold tracking-[-0.02em] text-[#111827]">
           {price}
         </span>

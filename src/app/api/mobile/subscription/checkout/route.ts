@@ -8,6 +8,8 @@ import { stripe } from "@/lib/stripe";
 import { stripeCheckoutPaymentMethodParams } from "@/lib/stripeCheckoutPaymentMethods";
 import { getRequestCountry } from "@/lib/clientIpGeo";
 import { resolveStripePriceForCountry } from "@/lib/stripeRegionalPricing";
+import { resolveCheckoutDiscount } from "@/lib/sitewidePlanCoupon";
+import { SITEWIDE_PLAN_DISCOUNT_PERCENT } from "@/lib/sitewidePlanDiscount";
 import {
   ACQUISITION_ATTRIBUTION_COOKIE,
   flatAcquisitionFromCookie,
@@ -310,6 +312,13 @@ export async function POST(request: NextRequest) {
         : {};
     const { promotionCode, referralDiscountApplied, partnerDiscountApplied } =
       await resolvePromotionCode(request, userId, email, publicMetadata);
+    const unitAmountCents =
+      typeof price.unit_amount === "number" ? price.unit_amount : null;
+    const checkoutDiscount = await resolveCheckoutDiscount({
+      promotionCode,
+      unitAmountCents,
+    });
+    const sitewideDiscountApplied = checkoutDiscount.kind === "sitewide";
     const baseUrl = getBaseAppUrl(request);
     const acqCk = flatAcquisitionFromCookie(
       request.cookies.get(ACQUISITION_ATTRIBUTION_COOKIE)?.value
@@ -446,10 +455,9 @@ export async function POST(request: NextRequest) {
         `${getMobileReturnUrl(baseUrl, "success")}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: getMobileReturnUrl(baseUrl, "cancel"),
       automatic_tax: { enabled: true },
-      ...(promotionCode ? {} : { allow_promotion_codes: true }),
-      ...(promotionCode
-        ? { discounts: [{ promotion_code: promotionCode }] }
-        : {}),
+      ...(checkoutDiscount.kind === "promotion"
+        ? { discounts: [{ promotion_code: checkoutDiscount.promotionCode }] }
+        : { discounts: [{ coupon: checkoutDiscount.couponId }] }),
       metadata: {
         user_id: userId,
         plan_name: toMetadataValue(product.name),
@@ -465,6 +473,9 @@ export async function POST(request: NextRequest) {
           : "",
         origin: "mobile_app",
         app_platform: appPlatform,
+        ...(sitewideDiscountApplied
+          ? { sitewide_discount_percent: String(SITEWIDE_PLAN_DISCOUNT_PERCENT) }
+          : {}),
         ...ga4CheckoutMeta,
         ...attributionMetadata,
         ...attributionSnapshot,

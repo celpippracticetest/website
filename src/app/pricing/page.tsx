@@ -10,6 +10,11 @@ import {
   parsePricingStylePreviewQuery,
 } from "@/lib/pricingAbTest";
 import { getActivePlansCatalog } from "@/lib/plansCatalog";
+import {
+  isPlanDiscountAbVariant,
+  PLAN_DISCOUNT_AB_COOKIE,
+  planDiscountPercent,
+} from "@/lib/planDiscountAb";
 
 /** Geo pricing must not be CDN-cached as a single CAD HTML payload. */
 export const dynamic = "force-dynamic";
@@ -49,6 +54,10 @@ export default async function PricingPage({ searchParams }: PricingPageProps) {
   const previewLayout = parsePricingStylePreviewQuery(s);
   const pricingAbParticipatesInExperiment = previewLayout === null;
   const pricingAbLayout = previewLayout ?? assignedLayout;
+  const planDiscountRaw = cookieStore.get(PLAN_DISCOUNT_AB_COOKIE)?.value;
+  const planDiscountPercentValue = planDiscountPercent(
+    isPlanDiscountAbVariant(planDiscountRaw) ? planDiscountRaw : "a",
+  );
 
   const requestHeaders = await headers();
   const plansWithStripePricing = await getActivePlansCatalog({
@@ -62,6 +71,7 @@ export default async function PricingPage({ searchParams }: PricingPageProps) {
         plans={plansWithStripePricing}
         pricingAbLayout={pricingAbLayout}
         pricingAbParticipatesInExperiment={pricingAbParticipatesInExperiment}
+        planDiscountPercent={planDiscountPercentValue}
       />
     </>
   );

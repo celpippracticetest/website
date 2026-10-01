@@ -28,6 +28,7 @@ type PricingBrandPlansSectionProps = {
   pricingCheckoutFields?: Record<string, string>;
   featuredPlan?: FeaturedPlanName;
   showPerWeek?: boolean;
+  discountPercent?: number;
 };
 
 function findSectionPlan(
@@ -42,6 +43,7 @@ export function PricingBrandPlansSection({
   pricingCheckoutFields,
   featuredPlan = "Monthly",
   showPerWeek = true,
+  discountPercent = 0,
 }: PricingBrandPlansSectionProps) {
   const grouped = useMemo(() => groupPlansByDuration(plans), [plans]);
 
@@ -51,14 +53,17 @@ export function PricingBrandPlansSection({
 
   const weeklyDisplay = getPlanPriceDisplay(weeklyPlan, "weekly", {
     showPerWeek,
+    discountPercent,
   });
   const monthlyDisplay = getPlanPriceDisplay(monthlyPlan, "monthly", {
     weeklyPlan,
     showPerWeek,
+    discountPercent,
   });
   const quarterlyDisplay = getPlanPriceDisplay(quarterlyPlan, "quarterly", {
     weeklyPlan,
     showPerWeek,
+    discountPercent,
   });
 
   const cards = [
@@ -89,11 +94,14 @@ export function PricingBrandPlansSection({
               key={name}
               name={name}
               price={display.price}
+              compareAtPrice={display.compareAtPrice}
               priceSuffix={display.priceSuffix}
               perWeekEquivalent={display.perWeekEquivalent}
               saveLabel={display.saveLabel}
+              saleLabel={display.saleLabel}
               plan={plan}
               pricingCheckoutFields={pricingCheckoutFields}
+              discountPercent={discountPercent}
               features={PAID_FEATURES}
               highlighted={featured}
               badge={featured ? getFeaturedBadge(name) : undefined}

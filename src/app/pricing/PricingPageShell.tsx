@@ -11,10 +11,12 @@ export default function PricingPageShell({
   plans,
   pricingAbLayout,
   pricingAbParticipatesInExperiment,
+  planDiscountPercent = 0,
 }: {
   plans: SerializedPlan[];
   pricingAbLayout: PricingAbLayout;
   pricingAbParticipatesInExperiment: boolean;
+  planDiscountPercent?: number;
 }) {
   return (
     <div className="min-h-screen bg-[#eef2f8]">
@@ -44,6 +46,7 @@ export default function PricingPageShell({
         plans={plans}
         pricingAbLayout={pricingAbLayout}
         pricingAbParticipatesInExperiment={pricingAbParticipatesInExperiment}
+        planDiscountPercent={planDiscountPercent}
       />
     </div>
   );
