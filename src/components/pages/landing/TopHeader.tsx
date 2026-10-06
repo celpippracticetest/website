@@ -186,15 +186,20 @@ const TopHeader = () => {
                     href="/pricing"
                     aria-label="Pricing"
                     className={cn(
-                      "relative z-[1] flex items-center gap-[6px] h-[40px] screen744:!h-[44px] px-[12px] min-[380px]:px-[14px] screen744:!px-[16px]",
-                      "bg-[#C4453A] text-white text-[14px] font-semibold whitespace-nowrap shadow-[3px_3px_0_0_#759CFF]",
+                      "group/pricing relative z-[1] flex items-center gap-[6px] h-[40px] screen744:!h-[44px] px-[12px] min-[380px]:px-[14px] screen744:!px-[16px]",
+                      "bg-[#C4453A] text-white text-[14px] font-semibold whitespace-nowrap",
+                      "shadow-[inset_0_1px_0_rgba(255,255,255,0.22),3px_3px_0_0_#759CFF]",
                       "transition-[border-radius,background-color,transform,box-shadow] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
-                      "hover:bg-[#B23B31] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[0_0_0_0_#759CFF] active:duration-100",
+                      "hover:bg-[#B83E34] hover:-translate-y-[2px] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.22),4px_5px_0_0_#759CFF]",
+                      "active:translate-x-[2px] active:translate-y-[2px] active:shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_0_0_0_#759CFF] active:duration-100",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C4453A] focus-visible:ring-offset-2",
                       "motion-reduce:transition-none",
-                      showStart ? "rounded-l-[22px] rounded-r-[0px]" : "rounded-[22px]"
+                      showStart ? "rounded-l-[22px] rounded-r-[6px]" : "rounded-[22px]"
                     )}
                   >
-                    <CrownIcon />
+                    <span className="flex origin-bottom group-hover/pricing:animate-crown-wiggle motion-reduce:!animate-none">
+                      <CrownIcon />
+                    </span>
                     <span className="max-[379px]:hidden">Pricing</span>
                   </Link>
                 )}
@@ -208,25 +213,34 @@ const TopHeader = () => {
                     )}
                   >
                     {/* Extra padding keeps the offset shadow and press motion from being clipped. */}
-                    <div className="min-w-0 overflow-hidden -my-[6px] py-[6px] -mr-[6px] pr-[6px]">
+                    <div className="min-w-0 overflow-hidden -my-[8px] py-[8px] -mr-[8px] pr-[8px]">
                       <Link
                         href="/practice-overview"
                         tabIndex={showStart ? undefined : -1}
                         onClick={() => handleStart("header")}
                         className={cn(
-                          "flex items-center justify-center h-[40px] screen744:!h-[44px] px-[14px] min-[380px]:px-[16px] screen744:!px-[20px]",
-                          "bg-[#2554D6] text-white text-[14px] screen744:!text-[15px] screen1280:!text-[16px] font-medium whitespace-nowrap shadow-[3px_3px_0_0_#759CFF]",
-                          "transition-[transform,background-color,box-shadow] duration-[650ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
-                          "hover:bg-[#1F48BD] active:shadow-[0_0_0_0_#759CFF] active:duration-100",
+                          "group/start flex items-center justify-center gap-[6px] h-[40px] screen744:!h-[44px] px-[14px] min-[380px]:px-[16px] screen744:!pl-[20px] screen744:!pr-[16px]",
+                          "bg-[#2554D6] text-white text-[14px] screen744:!text-[15px] screen1280:!text-[16px] font-medium whitespace-nowrap",
+                          "shadow-[inset_0_1px_0_rgba(255,255,255,0.2),3px_3px_0_0_#759CFF]",
+                          "transition-[transform,background-color,box-shadow,border-radius] duration-[650ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+                          "hover:bg-[#1F48BD] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.2),4px_5px_0_0_#759CFF]",
+                          "active:shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_0_0_0_#759CFF] active:duration-100",
+                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2554D6] focus-visible:ring-offset-2",
                           "motion-reduce:transition-none",
-                          showPricing ? "rounded-r-[22px] rounded-l-[0px]" : "rounded-[22px]",
+                          showPricing ? "ml-[4px] rounded-r-[22px] rounded-l-[6px]" : "rounded-[22px]",
                           showStart
-                            ? "translate-x-0 active:translate-x-[2px] active:translate-y-[2px]"
+                            ? "translate-x-0 hover:-translate-y-[2px] active:translate-x-[2px] active:translate-y-[2px]"
                             : "-translate-x-[24px]"
                         )}
                       >
                         <span className="screen744:!hidden">Start Free</span>
                         <span className="hidden screen744:!inline">Start Free Practice</span>
+                        <svg
+                          width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+                          className="hidden screen744:!block transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/start:translate-x-[3px]"
+                        >
+                          <path d="M5 12h14M13 6l6 6-6 6" />
+                        </svg>
                       </Link>
                     </div>
                   </div>
