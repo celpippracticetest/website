@@ -57,7 +57,31 @@ const Logo = () => (
   </Link>
 );
 
-const isActivePath = (pathname: string | null, href: string) =>
+// Each word rolls up in order on hover of the closest `group/start` parent;
+// an identical copy slides in from below so the label never disappears.
+const RollingWords = ({ text }: { text: string }) => (
+  <span className="inline-flex gap-[0.28em]">
+    {text.split(" ").map((word, index) => (
+      <span key={word} className="relative inline-flex overflow-hidden leading-[1.25]">
+        <span
+          style={{ transitionDelay: `${index * 60}ms` }}
+          className="inline-block transition-transform duration-[450ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/start:-translate-y-full motion-reduce:transition-none motion-reduce:group-hover/start:translate-y-0"
+        >
+          {word}
+        </span>
+        <span
+          aria-hidden="true"
+          style={{ transitionDelay: `${index * 60}ms` }}
+          className="absolute inset-0 inline-block translate-y-full transition-transform duration-[450ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/start:translate-y-0 motion-reduce:hidden"
+        >
+          {word}
+        </span>
+      </span>
+    ))}
+  </span>
+);
+
+const isActivePath =(pathname: string | null, href: string) =>
   !!pathname && href.startsWith("/") && (pathname === href || pathname.startsWith(`${href}/`));
 
 const TopHeader = () => {
@@ -233,8 +257,12 @@ const TopHeader = () => {
                             : "-translate-x-[24px]"
                         )}
                       >
-                        <span className="screen744:!hidden">Start Free</span>
-                        <span className="hidden screen744:!inline">Start Free Practice</span>
+                        <span className="flex screen744:!hidden">
+                          <RollingWords text="Start Free" />
+                        </span>
+                        <span className="hidden screen744:!flex">
+                          <RollingWords text="Start Free Practice" />
+                        </span>
                         <svg
                           width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
                           className="hidden screen744:!block transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/start:translate-x-[3px]"
