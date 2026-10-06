@@ -88,6 +88,11 @@ const TopHeader = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [pastHero, setPastHero] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  // The menu stays mounted while it animates out: `menuRendered` controls
+  // mounting, `menuVisible` drives the enter/exit transition classes.
+  const [menuRendered, setMenuRendered] = useState(false);
+  const [menuVisible, setMenuVisible] = useState(false);
   const pathname = usePathname();
   const { user, isLoaded, isSignedIn } = useHybridWebUser();
   const { trackCTA } = useEventTracker();
@@ -96,11 +101,30 @@ const TopHeader = () => {
   const authReady = mounted && isLoaded;
   const showSignedOut = authReady && !isSignedIn;
   const showPricing = authReady && !hasActivePlan;
-  const showStart = showSignedOut && pastHero;
+  // On mobile the open menu already has a Start Free Practice button.
+  const showStart = showSignedOut && pastHero && !(isMenuOpen && isMobile);
 
   useEffect(() => {
     setMounted(true);
+    const query = window.matchMedia("(max-width: 743px)");
+    const update = () => setIsMobile(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
   }, []);
+
+  useEffect(() => {
+    if (isMenuOpen) {
+      setMenuRendered(true);
+      let frame = requestAnimationFrame(() => {
+        frame = requestAnimationFrame(() => setMenuVisible(true));
+      });
+      return () => cancelAnimationFrame(frame);
+    }
+    setMenuVisible(false);
+    const timer = setTimeout(() => setMenuRendered(false), 450);
+    return () => clearTimeout(timer);
+  }, [isMenuOpen]);
 
   // Pages without a hero always show the full button group.
   useEffect(() => {
@@ -314,10 +338,14 @@ const TopHeader = () => {
       </header>
 
       {/* Mobile & tablet menu */}
-      {isMenuOpen && (
+      {menuRendered && (
         <div className="screen1280:!hidden">
           <div
-            className="fixed inset-0 z-[48] bg-[rgba(33,46,66,0.45)] screen744:!bg-[rgba(33,46,66,0.35)] animate-in fade-in duration-300"
+            className={cn(
+              "fixed inset-0 z-[48] bg-[rgba(33,46,66,0.45)] screen744:!bg-[rgba(33,46,66,0.35)] backdrop-blur-[2px]",
+              "transition-opacity duration-[400ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
+              menuVisible ? "opacity-100" : "opacity-0 pointer-events-none"
+            )}
             onClick={closeMenu}
             aria-hidden="true"
           />
@@ -326,39 +354,62 @@ const TopHeader = () => {
             role="dialog"
             aria-modal="true"
             aria-label="Menu"
-            className="fixed z-[49] top-0 inset-x-0 pt-[68px] rounded-b-[24px] bg-white shadow-[0_24px_48px_-16px_rgba(33,46,66,0.35)] screen744:!top-[84px] screen744:!left-auto screen744:!right-[24px] screen744:!w-[300px] screen744:!pt-[8px] screen744:!pb-[8px] screen744:!rounded-[20px] screen744:!border screen744:!border-[#E3EBFF] animate-in fade-in slide-in-from-top-3 duration-300 ease-out"
+            className={cn(
+              "fixed z-[49] top-0 inset-x-0 pt-[68px] rounded-b-[24px] bg-white shadow-[0_24px_48px_-16px_rgba(33,46,66,0.35)]",
+              "screen744:!top-[84px] screen744:!left-auto screen744:!right-[24px] screen744:!w-[300px] screen744:!pt-[8px] screen744:!pb-[8px] screen744:!rounded-[20px] screen744:!border screen744:!border-[#E3EBFF]",
+              "origin-top screen744:!origin-top-right will-change-[transform,opacity]",
+              "transition-[opacity,transform] duration-[450ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
+              menuVisible
+                ? "opacity-100 translate-y-0 scale-100"
+                : "opacity-0 -translate-y-[16px] scale-[0.98] pointer-events-none"
+            )}
           >
             <nav aria-label="Main" className="flex flex-col px-[20px] pt-[4px] pb-[8px] border-t border-[#E3EBFF] screen744:!px-[8px] screen744:!py-0 screen744:!border-t-0">
               {navLinks.map((link, index) => {
                 const active = isActivePath(pathname, link.href);
                 return (
-                  <Link
+                  // Wrapper handles the staggered entrance so the link's own
+                  // hover transitions are never delayed.
+                  <div
                     key={link.label}
-                    href={link.href}
-                    onClick={closeMenu}
-                    aria-current={active ? "page" : undefined}
-                    style={{ animationDelay: `${60 + index * 40}ms` }}
+                    style={{ transitionDelay: menuVisible ? `${80 + index * 45}ms` : "0ms" }}
                     className={cn(
-                      "group flex items-center justify-between h-[52px] px-[12px] screen744:!px-[16px] rounded-[12px] text-[16px]",
-                      "animate-in fade-in slide-in-from-top-1 fill-mode-both duration-300",
-                      "transition-[background-color,color,transform] duration-200 hover:bg-[#F4F7FF] hover:text-[#2554D6] active:scale-[0.98] active:bg-[#E3EBFF]",
-                      active ? "text-[#2554D6] font-semibold bg-[#F4F7FF]" : "text-[#212E42]"
+                      "transition-[opacity,transform] duration-[400ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
+                      menuVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-[8px]"
                     )}
                   >
-                    {link.label}
-                    <svg
-                      width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
-                      className="opacity-0 -translate-x-[6px] transition-[opacity,transform] duration-200 group-hover:opacity-100 group-hover:translate-x-0"
+                    <Link
+                      href={link.href}
+                      onClick={closeMenu}
+                      aria-current={active ? "page" : undefined}
+                      className={cn(
+                        "group flex items-center justify-between h-[52px] px-[12px] screen744:!px-[16px] rounded-[12px] text-[16px]",
+                        "transition-[background-color,color,transform] duration-200 hover:bg-[#F4F7FF] hover:text-[#2554D6] active:scale-[0.98] active:bg-[#E3EBFF]",
+                        active ? "text-[#2554D6] font-semibold bg-[#F4F7FF]" : "text-[#212E42]"
+                      )}
                     >
-                      <path d="M5 12h14M13 6l6 6-6 6" />
-                    </svg>
-                  </Link>
+                      {link.label}
+                      <svg
+                        width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+                        className="opacity-0 -translate-x-[6px] transition-[opacity,transform] duration-200 group-hover:opacity-100 group-hover:translate-x-0"
+                      >
+                        <path d="M5 12h14M13 6l6 6-6 6" />
+                      </svg>
+                    </Link>
+                  </div>
                 );
               })}
             </nav>
 
             {showSignedOut && (
-              <div className="flex flex-col gap-[4px] px-[20px] pt-[8px] pb-[24px] border-t border-[#EDEEF0] screen744:!hidden">
+              <div
+                style={{ transitionDelay: menuVisible ? `${80 + navLinks.length * 45}ms` : "0ms" }}
+                className={cn(
+                  "flex flex-col gap-[4px] px-[20px] pt-[8px] pb-[24px] border-t border-[#EDEEF0] screen744:!hidden",
+                  "transition-[opacity,transform] duration-[400ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
+                  menuVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-[8px]"
+                )}
+              >
                 <Link
                   href="/practice-overview"
                   onClick={() => handleStart("mobile_menu")}
