@@ -107,6 +107,7 @@ const Hero = () => {
       </div>
 
       <section
+        id="home-hero"
         style={{
           background:
             "linear-gradient(-45deg, #CEDCFF70, #DAFFFA70, #FFB78A70, #CEDCFF70)",

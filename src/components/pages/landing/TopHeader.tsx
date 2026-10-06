@@ -3,10 +3,12 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import AuthButtons from "./AuthButtons";
 import { useEventTracker } from "@/hooks/useTracking";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
+import { cn } from "@/lib/utils";
 
 const navLinks = [
   { label: "Practice", href: "/practice-overview" },
@@ -16,6 +18,10 @@ const navLinks = [
   { label: "Blog", href: "https://blog.celpippracticetest.com" },
 ];
 
+// Section the header watches: the "Start Free Practice" button only joins the
+// Pricing button once this element has scrolled out of view.
+const HERO_ID = "home-hero";
+
 const CrownIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <path d="M3 7l4 4 5-7 5 7 4-4-2 12H5z" />
@@ -23,21 +29,12 @@ const CrownIcon = () => (
   </svg>
 );
 
-const PricingPill = ({ onClick }: { onClick?: () => void }) => (
-  <Link
-    href="/pricing"
-    onClick={onClick}
-    className="flex items-center h-[44px]"
-  >
-    <span className="flex items-center gap-[6px] h-[34px] px-[14px] rounded-full bg-[#C4453A] text-white text-[14px] font-semibold shadow-[2.5px_2.5px_0_0_#759CFF] transition-transform duration-200 hover:-translate-y-[1px]">
-      <CrownIcon />
-      Pricing
-    </span>
-  </Link>
-);
-
 const Logo = () => (
-  <Link href="/" aria-label="CELPIP Practice Test home" className="flex items-center h-[44px] shrink-0">
+  <Link
+    href="/"
+    aria-label="CELPIP Practice Test home"
+    className="flex items-center h-[44px] shrink-0 transition-opacity duration-200 hover:opacity-80 active:opacity-60"
+  >
     <Image
       src="/images/header-logo-left.png"
       alt=""
@@ -53,25 +50,49 @@ const Logo = () => (
       width={84}
       height={40}
       className="w-[84px] h-auto"
+      style={{ height: "auto" }}
       priority
       sizes="84px"
     />
   </Link>
 );
 
+const isActivePath = (pathname: string | null, href: string) =>
+  !!pathname && href.startsWith("/") && (pathname === href || pathname.startsWith(`${href}/`));
+
 const TopHeader = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [pastHero, setPastHero] = useState(false);
+  const pathname = usePathname();
   const { user, isLoaded, isSignedIn } = useHybridWebUser();
   const { trackCTA } = useEventTracker();
 
   const hasActivePlan = hasPaidPracticeAccess(user?.publicMetadata?.plan);
   const authReady = mounted && isLoaded;
   const showSignedOut = authReady && !isSignedIn;
+  const showPricing = authReady && !hasActivePlan;
+  const showStart = showSignedOut && pastHero;
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Pages without a hero always show the full button group.
+  useEffect(() => {
+    const hero = document.getElementById(HERO_ID);
+    if (!hero) {
+      setPastHero(true);
+      return;
+    }
+    setPastHero(false);
+    const observer = new IntersectionObserver(
+      ([entry]) => setPastHero(!entry.isIntersecting),
+      { rootMargin: "-80px 0px 0px 0px", threshold: 0 }
+    );
+    observer.observe(hero);
+    return () => observer.disconnect();
+  }, [pathname]);
 
   // Lock page scroll and allow Escape to close while the menu is open.
   useEffect(() => {
@@ -102,51 +123,115 @@ const TopHeader = () => {
   return (
     <>
       <header className="fixed top-0 inset-x-0 z-[50] flex justify-center pointer-events-none">
-        <div className="pointer-events-auto w-full screen744:!mx-[24px] screen1280:!mx-0 max-w-[1176px] h-[68px] screen744:!h-[72px] screen1280:!h-[80px] pl-[18px] pr-[10px] screen744:!pl-[28px] screen744:!pr-[16px] screen1280:!px-[40px] flex items-center justify-between border border-t-0 border-[#E3EBFF] rounded-b-[24px] screen744:!rounded-b-[28px] screen1280:!rounded-b-[32px] backdrop-blur-[8px] bg-[linear-gradient(90deg,rgba(255,255,255,0.8)_0%,rgba(255,255,255,0.45)_100%)] screen1280:!bg-[linear-gradient(90deg,rgba(255,255,255,0.75)_0%,rgba(255,255,255,0.35)_100%)]">
+        <div className="pointer-events-auto w-full screen744:!mx-[24px] screen1280:!mx-0 max-w-[1176px] h-[68px] screen744:!h-[72px] screen1280:!h-[80px] pl-[14px] pr-[6px] min-[380px]:pl-[18px] min-[380px]:pr-[10px] screen744:!pl-[28px] screen744:!pr-[16px] screen1280:!px-[40px] flex items-center justify-between gap-[8px] border border-t-0 border-[#E3EBFF] rounded-b-[24px] screen744:!rounded-b-[28px] screen1280:!rounded-b-[32px] backdrop-blur-[8px] bg-[linear-gradient(90deg,rgba(255,255,255,0.8)_0%,rgba(255,255,255,0.45)_100%)] screen1280:!bg-[linear-gradient(90deg,rgba(255,255,255,0.75)_0%,rgba(255,255,255,0.35)_100%)]">
           <Logo />
 
           {/* Desktop navigation */}
           <nav aria-label="Main" className="hidden screen1280:!flex items-center">
-            {navLinks.map((link, index) => (
-              <React.Fragment key={link.label}>
-                {index > 0 && <span className="w-px h-[35px] bg-[#D5D6D8]" aria-hidden="true" />}
-                <Link
-                  href={link.href}
-                  className="flex items-center h-[44px] px-[20px] text-[14px] text-[#37465C] hover:text-[#2554D6] transition-colors"
-                >
-                  {link.label}
-                </Link>
-              </React.Fragment>
-            ))}
-            {!hasActivePlan && (
-              <span className="ml-[12px]">
-                <PricingPill />
-              </span>
-            )}
+            {navLinks.map((link, index) => {
+              const active = isActivePath(pathname, link.href);
+              return (
+                <React.Fragment key={link.label}>
+                  {index > 0 && <span className="w-px h-[35px] bg-[#D5D6D8]" aria-hidden="true" />}
+                  <Link
+                    href={link.href}
+                    aria-current={active ? "page" : undefined}
+                    className={cn(
+                      "group relative flex items-center h-[44px] px-[20px] text-[14px] rounded-full outline-none",
+                      "transition-[color,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                      "hover:text-[#2554D6] focus-visible:text-[#2554D6] active:scale-[0.96] motion-reduce:transition-none",
+                      active ? "text-[#2554D6] font-semibold" : "text-[#37465C]"
+                    )}
+                  >
+                    {link.label}
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        "absolute left-1/2 bottom-[6px] h-[2px] -translate-x-1/2 rounded-full bg-[#2554D6]",
+                        "transition-[width,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
+                        active
+                          ? "w-[calc(100%-40px)] opacity-100"
+                          : "w-0 opacity-0 group-hover:w-[calc(100%-40px)] group-hover:opacity-100 group-focus-visible:w-[calc(100%-40px)] group-focus-visible:opacity-100"
+                      )}
+                    />
+                  </Link>
+                </React.Fragment>
+              );
+            })}
           </nav>
 
           <div className="flex items-center gap-[6px] screen744:!gap-[14px] screen1280:!gap-[18px]">
             {!authReady && (
-              <span className="w-[100px] screen744:!w-[200px] h-[40px] screen1280:!h-[47px] rounded-full bg-white/60 animate-pulse" />
+              <span className="w-[96px] screen744:!w-[110px] h-[40px] screen744:!h-[44px] rounded-full bg-white/60 animate-pulse" />
             )}
 
             {showSignedOut && (
-              <>
-                <Link
-                  href="/sign-in"
-                  className="hidden screen744:!flex items-center h-[44px] px-[4px] text-[14px] font-semibold text-[#2554D6] hover:text-[#1B3FA8] transition-colors"
-                >
-                  Sign in
-                </Link>
-                <Link
-                  href="/practice-overview"
-                  onClick={() => handleStart("header")}
-                  className="flex items-center justify-center h-[40px] px-[16px] screen744:!h-[44px] screen744:!px-[20px] screen1280:!h-[47px] screen1280:!w-[200px] rounded-full bg-[#2554D6] text-white text-[14px] screen744:!text-[15px] screen1280:!text-[16px] font-medium whitespace-nowrap shadow-[3px_3px_0_0_#759CFF] screen744:!shadow-[3.7px_3.9px_0_0_#759CFF] transition-all duration-200 hover:-translate-y-[2px] active:translate-y-[2px] active:shadow-none"
-                >
-                  <span className="screen744:!hidden">Start Free</span>
-                  <span className="hidden screen744:!inline">Start Free Practice</span>
-                </Link>
-              </>
+              <Link
+                href="/sign-in"
+                className="group relative hidden screen744:!flex items-center h-[44px] px-[4px] text-[14px] font-semibold text-[#2554D6] transition-[color,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:text-[#1B3FA8] active:scale-[0.96] motion-reduce:transition-none"
+              >
+                Sign in
+                <span
+                  aria-hidden="true"
+                  className="absolute left-1/2 bottom-[8px] h-[2px] w-0 -translate-x-1/2 rounded-full bg-current opacity-0 transition-[width,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:w-[calc(100%-8px)] group-hover:opacity-100"
+                />
+              </Link>
+            )}
+
+            {/* Pricing + Start Free Practice button group */}
+            {(showPricing || showSignedOut) && (
+              <div className="flex items-center">
+                {showPricing && (
+                  <Link
+                    href="/pricing"
+                    aria-label="Pricing"
+                    className={cn(
+                      "relative z-[1] flex items-center gap-[6px] h-[40px] screen744:!h-[44px] px-[12px] min-[380px]:px-[14px] screen744:!px-[16px]",
+                      "bg-[#C4453A] text-white text-[14px] font-semibold whitespace-nowrap shadow-[3px_3px_0_0_#759CFF]",
+                      "transition-[border-radius,background-color,transform,box-shadow] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                      "hover:bg-[#B23B31] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[0_0_0_0_#759CFF] active:duration-100",
+                      "motion-reduce:transition-none",
+                      showStart ? "rounded-l-[22px] rounded-r-[0px]" : "rounded-[22px]"
+                    )}
+                  >
+                    <CrownIcon />
+                    <span className="max-[379px]:hidden">Pricing</span>
+                  </Link>
+                )}
+
+                {showSignedOut && (
+                  <div
+                    aria-hidden={!showStart}
+                    className={cn(
+                      "grid transition-[grid-template-columns,opacity] duration-[650ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
+                      showStart ? "grid-cols-[1fr] opacity-100" : "grid-cols-[0fr] opacity-0"
+                    )}
+                  >
+                    {/* Extra padding keeps the offset shadow and press motion from being clipped. */}
+                    <div className="min-w-0 overflow-hidden -my-[6px] py-[6px] -mr-[6px] pr-[6px]">
+                      <Link
+                        href="/practice-overview"
+                        tabIndex={showStart ? undefined : -1}
+                        onClick={() => handleStart("header")}
+                        className={cn(
+                          "flex items-center justify-center h-[40px] screen744:!h-[44px] px-[14px] min-[380px]:px-[16px] screen744:!px-[20px]",
+                          "bg-[#2554D6] text-white text-[14px] screen744:!text-[15px] screen1280:!text-[16px] font-medium whitespace-nowrap shadow-[3px_3px_0_0_#759CFF]",
+                          "transition-[transform,background-color,box-shadow] duration-[650ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+                          "hover:bg-[#1F48BD] active:shadow-[0_0_0_0_#759CFF] active:duration-100",
+                          "motion-reduce:transition-none",
+                          showPricing ? "rounded-r-[22px] rounded-l-[0px]" : "rounded-[22px]",
+                          showStart
+                            ? "translate-x-0 active:translate-x-[2px] active:translate-y-[2px]"
+                            : "-translate-x-[24px]"
+                        )}
+                      >
+                        <span className="screen744:!hidden">Start Free</span>
+                        <span className="hidden screen744:!inline">Start Free Practice</span>
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
 
             {authReady && isSignedIn && (
@@ -161,17 +246,26 @@ const TopHeader = () => {
               aria-expanded={isMenuOpen}
               aria-controls="site-menu"
               onClick={() => setIsMenuOpen((open) => !open)}
-              className="screen1280:!hidden flex items-center justify-center w-[44px] h-[44px] text-[#1E293B]"
+              className="screen1280:!hidden relative flex items-center justify-center w-[44px] h-[44px] rounded-full text-[#1E293B] transition-[background-color,transform] duration-200 hover:bg-white/70 active:scale-90"
             >
-              {isMenuOpen ? (
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M6 6l12 12M18 6L6 18" />
-                </svg>
-              ) : (
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M4 7h16M4 12h16M4 17h16" />
-                </svg>
-              )}
+              <svg
+                width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+                className={cn(
+                  "absolute transition-[opacity,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                  isMenuOpen ? "opacity-0 rotate-90 scale-75" : "opacity-100 rotate-0 scale-100"
+                )}
+              >
+                <path d="M4 7h16M4 12h16M4 17h16" />
+              </svg>
+              <svg
+                width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+                className={cn(
+                  "absolute transition-[opacity,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                  isMenuOpen ? "opacity-100 rotate-0 scale-100" : "opacity-0 -rotate-90 scale-75"
+                )}
+              >
+                <path d="M6 6l12 12M18 6L6 18" />
+              </svg>
             </button>
           </div>
         </div>
@@ -181,7 +275,7 @@ const TopHeader = () => {
       {isMenuOpen && (
         <div className="screen1280:!hidden">
           <div
-            className="fixed inset-0 z-[48] bg-[rgba(33,46,66,0.45)] screen744:!bg-[rgba(33,46,66,0.35)] animate-in fade-in duration-200"
+            className="fixed inset-0 z-[48] bg-[rgba(33,46,66,0.45)] screen744:!bg-[rgba(33,46,66,0.35)] animate-in fade-in duration-300"
             onClick={closeMenu}
             aria-hidden="true"
           />
@@ -190,39 +284,50 @@ const TopHeader = () => {
             role="dialog"
             aria-modal="true"
             aria-label="Menu"
-            className="fixed z-[49] top-0 inset-x-0 pt-[68px] rounded-b-[24px] bg-white shadow-[0_24px_48px_-16px_rgba(33,46,66,0.35)] screen744:!top-[84px] screen744:!left-auto screen744:!right-[24px] screen744:!w-[300px] screen744:!pt-[8px] screen744:!pb-[4px] screen744:!rounded-[20px] screen744:!border screen744:!border-[#E3EBFF] animate-in fade-in slide-in-from-top-2 duration-200"
+            className="fixed z-[49] top-0 inset-x-0 pt-[68px] rounded-b-[24px] bg-white shadow-[0_24px_48px_-16px_rgba(33,46,66,0.35)] screen744:!top-[84px] screen744:!left-auto screen744:!right-[24px] screen744:!w-[300px] screen744:!pt-[8px] screen744:!pb-[8px] screen744:!rounded-[20px] screen744:!border screen744:!border-[#E3EBFF] animate-in fade-in slide-in-from-top-3 duration-300 ease-out"
           >
-            <nav aria-label="Main" className="flex flex-col px-[20px] pt-[4px] border-t border-[#E3EBFF] screen744:!px-0 screen744:!pt-0 screen744:!border-t-0">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.label}
-                  href={link.href}
-                  onClick={closeMenu}
-                  className="flex items-center h-[52px] px-[2px] screen744:!px-[24px] text-[16px] text-[#212E42] border-b border-[#EDEEF0] hover:text-[#2554D6] transition-colors"
-                >
-                  {link.label}
-                </Link>
-              ))}
-              {!hasActivePlan && (
-                <div className="flex items-center h-[64px] px-[2px] screen744:!px-[24px]">
-                  <PricingPill onClick={closeMenu} />
-                </div>
-              )}
+            <nav aria-label="Main" className="flex flex-col px-[20px] pt-[4px] pb-[8px] border-t border-[#E3EBFF] screen744:!px-[8px] screen744:!py-0 screen744:!border-t-0">
+              {navLinks.map((link, index) => {
+                const active = isActivePath(pathname, link.href);
+                return (
+                  <Link
+                    key={link.label}
+                    href={link.href}
+                    onClick={closeMenu}
+                    aria-current={active ? "page" : undefined}
+                    style={{ animationDelay: `${60 + index * 40}ms` }}
+                    className={cn(
+                      "group flex items-center justify-between h-[52px] px-[12px] screen744:!px-[16px] rounded-[12px] text-[16px]",
+                      "animate-in fade-in slide-in-from-top-1 fill-mode-both duration-300",
+                      "transition-[background-color,color,transform] duration-200 hover:bg-[#F4F7FF] hover:text-[#2554D6] active:scale-[0.98] active:bg-[#E3EBFF]",
+                      active ? "text-[#2554D6] font-semibold bg-[#F4F7FF]" : "text-[#212E42]"
+                    )}
+                  >
+                    {link.label}
+                    <svg
+                      width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+                      className="opacity-0 -translate-x-[6px] transition-[opacity,transform] duration-200 group-hover:opacity-100 group-hover:translate-x-0"
+                    >
+                      <path d="M5 12h14M13 6l6 6-6 6" />
+                    </svg>
+                  </Link>
+                );
+              })}
             </nav>
 
             {showSignedOut && (
-              <div className="flex flex-col gap-[4px] px-[20px] pt-[8px] pb-[24px] screen744:!hidden">
+              <div className="flex flex-col gap-[4px] px-[20px] pt-[8px] pb-[24px] border-t border-[#EDEEF0] screen744:!hidden">
                 <Link
                   href="/practice-overview"
                   onClick={() => handleStart("mobile_menu")}
-                  className="flex items-center justify-center h-[52px] rounded-full bg-[#2554D6] text-white text-[16px] font-medium shadow-[3.7px_3.9px_0_0_#759CFF]"
+                  className="flex items-center justify-center h-[52px] rounded-full bg-[#2554D6] text-white text-[16px] font-medium shadow-[3.7px_3.9px_0_0_#759CFF] transition-[transform,box-shadow,background-color] duration-200 hover:bg-[#1F48BD] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[0_0_0_0_#759CFF]"
                 >
                   Start Free Practice
                 </Link>
                 <Link
                   href="/sign-in"
                   onClick={closeMenu}
-                  className="flex items-center justify-center h-[48px] text-[16px] font-semibold text-[#2554D6]"
+                  className="flex items-center justify-center h-[48px] rounded-full text-[16px] font-semibold text-[#2554D6] transition-colors duration-200 hover:bg-[#F4F7FF] active:bg-[#E3EBFF]"
                 >
                   Sign in
                 </Link>
