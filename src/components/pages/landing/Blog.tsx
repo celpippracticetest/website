@@ -1,84 +1,120 @@
 import React from "react";
-import Image from "next/image";
+import Link from "next/link";
+import { useInView } from "react-intersection-observer";
+import { cn } from "@/lib/utils";
 
-const Blog = () => {
-    const blogs = [
-        {
-            id: 1,
-            title: "Lorem Ipsum",
-            description:
-                "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's",
-            image: "/images/hero.png", // Placeholder
-            readTime: "5 min read",
-        },
-        {
-            id: 2,
-            title: "Lorem Ipsum",
-            description:
-                "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's",
-            image: "/images/hero.png", // Placeholder
-            readTime: "5 min read",
-        },
-        {
-            id: 3,
-            title: "Lorem Ipsum",
-            description:
-                "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's",
-            image: "/images/hero.png", // Placeholder
-            readTime: "5 min read",
-        },
-    ];
+/** Serializable post summary passed from the server page. */
+export type HomeBlogPost = {
+  id: string;
+  slug: string;
+  title: string;
+  category: string | null;
+  readTime: string;
+  date: string | null;
+  cover: { url: string; alt: string } | null;
+};
 
-    return (
-        <section aria-labelledby="blog-heading" className="mt-[80px] screen1280:!mt-[104px] mb-[80px]">
-            <div className="max-w-[1440px] mx-auto px-[20px] screen1280:!px-[40px]">
-                <h2
-                    id="blog-heading"
-                    className="text-center text-[24px] screen744:!text-[32px] font-medium text-text1 mb-[40px]"
-                >
-                    Go To Blog
-                </h2>
+const ArrowIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/see:translate-x-[3px]">
+    <path d="M5 12h14M13 6l6 6-6 6" />
+  </svg>
+);
 
-                <div className="grid grid-cols-1 screen744:!grid-cols-2 screen1280:!grid-cols-3 gap-[24px]">
-                    {blogs.map((blog) => (
-                        <div
-                            key={blog.id}
-                            className="border border-[#E0E0E0] rounded-[24px] p-[16px] flex flex-col gap-[16px] bg-[#F8F9FC]"
-                        >
-                            <div className="relative w-full h-[200px] rounded-[16px] overflow-hidden">
-                                <Image
-                                    src={blog.image}
-                                    alt={blog.title}
-                                    fill
-                                    className="object-cover"
-                                />
-                            </div>
-                            <div className="flex flex-col gap-[8px]">
-                                <h3 className="text-[20px] font-medium text-text1">
-                                    {blog.title}
-                                </h3>
-                                <p className="text-[16px] text-[#5F6D7E] leading-[24px]">
-                                    {blog.description}
-                                </p>
-                            </div>
-                            <div className="flex justify-between items-center mt-auto pt-[8px]">
-                                <button className="bg-[#4379EE] text-white px-[24px] py-[10px] rounded-[30px] text-[14px] font-medium hover:bg-blue-600 transition-colors">
-                                    Read More
-                                </button>
-                                <span className="text-[#5F6D7E] text-[14px]">{blog.readTime}</span>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+const Meta = ({ post }: { post: HomeBlogPost }) => (
+  <div className="text-[12px] screen744:!text-[13px] font-semibold text-[#5B6B82]">
+    {post.category ? `${post.category} · ` : ""}
+    {post.readTime}
+  </div>
+);
 
-                <div className="flex justify-center mt-[40px]">
-                    <button className="border border-[#5F6D7E] text-[#5F6D7E] px-[32px] py-[12px] rounded-[30px] text-[16px] font-medium hover:bg-gray-50 transition-colors">
-                        Show more
-                    </button>
-                </div>
-            </div>
-        </section>
-    );
+const Blog = ({ posts }: { posts: HomeBlogPost[] }) => {
+  const { ref, inView } = useInView({ threshold: 0.15, triggerOnce: true });
+
+  if (posts.length === 0) return null;
+
+  return (
+    <section
+      ref={ref}
+      aria-labelledby="blog-heading"
+      className="mx-auto w-full max-w-[1236px] px-[20px] pt-[44px] screen744:!px-[48px] screen744:!pt-[64px] screen1280:!px-[40px] screen1440:!px-0 screen1280:!pt-[88px] flex flex-col gap-[10px] screen1280:!gap-[24px]"
+    >
+      <div className="flex flex-col items-center screen1280:!flex-row screen1280:!items-end screen1280:!justify-between">
+        <div className="flex flex-col items-center screen1280:!items-start gap-[0px] screen1280:!gap-[6px]">
+          <h2
+            id="blog-heading"
+            className="m-0 text-[24px] leading-[31px] screen744:!text-[30px] screen744:!leading-[38px] screen1280:!text-[32px] screen1280:!leading-[40px] font-semibold text-[#212E42] text-center"
+          >
+            CELPIP Tips and Guides
+          </h2>
+          <p className="m-0 mt-[8px] screen1280:!mt-0 mb-[8px] screen1280:!mb-0 text-center text-[15px] leading-[23px] screen1280:!text-[17px] screen1280:!leading-[26px] text-[#37465C]">
+            Strategies and templates from our latest articles.
+          </p>
+        </div>
+        <Link
+          href="/blog"
+          className="group/see hidden screen1280:!flex items-center gap-[6px] h-[44px] text-[15px] font-semibold text-[#2554D6] transition-colors hover:text-[#1B3FA8]"
+        >
+          See all articles
+          <ArrowIcon />
+        </Link>
+      </div>
+
+      <div className="grid grid-cols-1 screen744:!grid-cols-2 screen1280:!grid-cols-4 gap-[10px] screen744:!gap-[14px] screen1280:!gap-[20px]">
+        {posts.map((post, index) => (
+          // Wrapper owns the staggered entrance so hover effects are never delayed.
+          <article
+            key={post.id}
+            style={{ transitionDelay: inView ? `${index * 90}ms` : "0ms" }}
+            className={cn(
+              "flex transition-[transform,opacity] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
+              inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-[16px]",
+            )}
+          >
+            <Link
+              href={`/blog/${post.slug}`}
+              className={cn(
+                "group grow flex items-center gap-[14px] p-[12px] rounded-[16px] bg-white border border-[#E8EEFB] overflow-hidden",
+                "screen744:!flex-col screen744:!items-stretch screen744:!gap-0 screen744:!p-0 screen1280:!rounded-[18px]",
+                "transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-[4px] hover:border-[#C9D5F5] hover:shadow-[0_16px_32px_-20px_rgba(37,84,214,0.4)]",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2554D6] focus-visible:ring-offset-2 motion-reduce:transition-none",
+              )}
+            >
+              <div className="shrink-0 w-[120px] h-[65px] rounded-[10px] overflow-hidden bg-[#EEF3FF] screen744:!w-full screen744:!h-[150px] screen744:!rounded-none screen744:!border-b screen744:!border-[#E8EEFB]">
+                {post.cover ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- CMS images come from arbitrary hosts, same as /blog
+                  <img
+                    src={post.cover.url}
+                    alt=""
+                    loading="lazy"
+                    className="block w-full h-full object-cover transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.04]"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-[linear-gradient(115deg,#FCE3D5_0%,#F7F0EC_45%,#E6F6FB_100%)]" />
+                )}
+              </div>
+              <div className="flex flex-col gap-[4px] screen744:!gap-[8px] screen744:!px-[20px] screen744:!pt-[18px] screen744:!pb-[20px]">
+                <Meta post={post} />
+                <h3 className="m-0 text-[15px] leading-[21px] screen1280:!text-[17px] screen1280:!leading-[24px] font-semibold text-[#212E42] line-clamp-2 transition-colors duration-300 group-hover:text-[#2554D6]">
+                  {post.title}
+                </h3>
+                {post.date && (
+                  <div className="screen744:!mt-[4px] text-[12px] screen744:!text-[13px] text-[#5B6B82]">{post.date}</div>
+                )}
+              </div>
+            </Link>
+          </article>
+        ))}
+      </div>
+
+      <Link
+        href="/blog"
+        className="group/see flex screen1280:!hidden items-center justify-center gap-[6px] h-[44px] text-[15px] font-semibold text-[#2554D6] transition-colors hover:text-[#1B3FA8]"
+      >
+        See all articles
+        <ArrowIcon />
+      </Link>
+    </section>
+  );
 };
 
 export default Blog;

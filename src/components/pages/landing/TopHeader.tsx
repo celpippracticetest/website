@@ -15,7 +15,7 @@ const navLinks = [
   { label: "Mock Exams", href: "/exam-overview" },
   { label: "Learning", href: "/learning" },
   { label: "Words", href: "/words" },
-  { label: "Blog", href: "https://blog.celpippracticetest.com" },
+  { label: "Blog", href: "/blog" },
 ];
 
 // The hero's own "Start Your Free Practice" button. The header's Start button

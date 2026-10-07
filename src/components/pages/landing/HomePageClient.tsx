@@ -4,7 +4,7 @@ import { ErrorBoundary } from "react-error-boundary";
 import dynamic from "next/dynamic";
 import Practice from "./Practice";
 import SkillsSection from "./SkillsSection";
-import Blog from "./Blog";
+import Blog, { type HomeBlogPost } from "./Blog";
 import FAQ from "./FAQ";
 import { useChunkErrorHandler } from "@/hooks/useChunkErrorHandler";
 
@@ -34,7 +34,11 @@ function ErrorFallback() {
   );
 }
 
-export default function HomePageClient() {
+export default function HomePageClient({
+  blogPosts = [],
+}: {
+  blogPosts?: HomeBlogPost[];
+}) {
   const shouldReload = useChunkErrorHandler();
   if (shouldReload) return null;
   return (
@@ -45,8 +49,8 @@ export default function HomePageClient() {
           <SkillsSection />
           <UserResponseReview />
           <Comments />
+          <Blog posts={blogPosts} />
           <Practice />
-          {/* <Blog /> */}
           <FAQ />
         </main>
         <Footer />
