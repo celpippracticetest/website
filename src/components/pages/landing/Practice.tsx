@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useInView } from "react-intersection-observer";
 import { cn } from "@/lib/utils";
 import { trackCTAClick } from "@/lib/analytics";
+import RollingWords from "./RollingWords";
 
 const Practice = () => {
   const { ref, inView } = useInView({ threshold: 0.3, triggerOnce: true });
@@ -14,7 +15,9 @@ const Practice = () => {
       aria-labelledby="cta-heading"
       className="mx-auto w-full max-w-[1236px] px-[20px] pt-[110px] screen744:!px-[48px] screen744:!pt-[130px] screen1280:!px-[40px] screen1440:!px-0 screen1280:!pt-[120px]"
     >
+      {/* The header hides its own Start button while this card is on screen. */}
       <div
+        id="home-cta"
         className={cn(
           "relative flex flex-col items-center text-center rounded-[28px] px-[22px] pt-[96px] pb-[28px]",
           "screen744:!rounded-[36px] screen744:!px-[48px] screen744:!pt-[112px] screen744:!pb-[36px]",
@@ -60,7 +63,7 @@ const Practice = () => {
               })
             }
             className={cn(
-              "group/cta flex items-center justify-center gap-[8px] h-[54px] w-full screen744:!w-[290px] screen744:!h-[55px] screen1280:!w-[260px] rounded-full",
+              "group/start flex items-center justify-center gap-[8px] h-[54px] w-full screen744:!w-[290px] screen744:!h-[55px] screen1280:!w-[260px] rounded-full",
               "bg-white text-[#2554D6] text-[17px] screen1280:!text-[18px] font-semibold whitespace-nowrap shadow-[3.7px_3.9px_0_0_#B8431B]",
               "transition-[transform,box-shadow,background-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
               "hover:-translate-y-[2px] hover:shadow-[5px_6px_0_0_#B8431B] hover:bg-[#F4F7FF]",
@@ -71,11 +74,11 @@ const Practice = () => {
           >
             <svg
               width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
-              className="transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/cta:rotate-90"
+              className="transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/start:rotate-90"
             >
               <path d="M12 5v14M5 12h14" />
             </svg>
-            Start Free Practice
+            <RollingWords text="Start Free Practice" />
           </Link>
           <div className="flex items-center gap-[6px] screen1280:!gap-[8px] text-[14px] screen1280:!text-[16px] font-semibold text-white">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="screen1280:!w-[18px] screen1280:!h-[18px]">

@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import AuthButtons from "./AuthButtons";
+import RollingWords from "./RollingWords";
 import { useEventTracker } from "@/hooks/useTracking";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
@@ -22,6 +23,9 @@ const navLinks = [
 // only appears once this has scrolled out of view (the hero ends here — the
 // skill cards below it are not part of the hero).
 const HERO_ID = "home-hero";
+// The "Ready to reach your target CLB?" banner has its own Start button, so the
+// header's one hides while the banner is on screen.
+const CTA_BANNER_ID = "home-cta";
 
 const CrownIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -58,30 +62,6 @@ const Logo = () => (
   </Link>
 );
 
-// Each word rolls up in order on hover of the closest `group/start` parent;
-// an identical copy slides in from below so the label never disappears.
-const RollingWords = ({ text }: { text: string }) => (
-  <span className="inline-flex gap-[0.28em]">
-    {text.split(" ").map((word, index) => (
-      <span key={word} className="relative inline-flex overflow-hidden leading-[1.25]">
-        <span
-          style={{ transitionDelay: `${index * 60}ms` }}
-          className="inline-block transition-transform duration-[450ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/start:-translate-y-full motion-reduce:transition-none motion-reduce:group-hover/start:translate-y-0"
-        >
-          {word}
-        </span>
-        <span
-          aria-hidden="true"
-          style={{ transitionDelay: `${index * 60}ms` }}
-          className="absolute inset-0 inline-block translate-y-full transition-transform duration-[450ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/start:translate-y-0 motion-reduce:hidden"
-        >
-          {word}
-        </span>
-      </span>
-    ))}
-  </span>
-);
-
 const isActivePath =(pathname: string | null, href: string) =>
   !!pathname && href.startsWith("/") && (pathname === href || pathname.startsWith(`${href}/`));
 
@@ -89,6 +69,7 @@ const TopHeader = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [pastHero, setPastHero] = useState(false);
+  const [ctaBannerVisible, setCtaBannerVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   // The menu stays mounted while it animates out: `menuRendered` controls
   // mounting, `menuVisible` drives the enter/exit transition classes.
@@ -103,7 +84,7 @@ const TopHeader = () => {
   const showSignedOut = authReady && !isSignedIn;
   const showPricing = authReady && !hasActivePlan;
   // On mobile the open menu already has a Start Free Practice button.
-  const showStart = showSignedOut && pastHero && !(isMenuOpen && isMobile);
+  const showStart = showSignedOut && pastHero && !ctaBannerVisible && !(isMenuOpen && isMobile);
 
   useEffect(() => {
     setMounted(true);
@@ -140,6 +121,18 @@ const TopHeader = () => {
       { rootMargin: "-80px 0px 0px 0px", threshold: 0 }
     );
     observer.observe(hero);
+    return () => observer.disconnect();
+  }, [pathname]);
+
+  useEffect(() => {
+    setCtaBannerVisible(false);
+    const banner = document.getElementById(CTA_BANNER_ID);
+    if (!banner) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setCtaBannerVisible(entry.isIntersecting),
+      { rootMargin: "-80px 0px 0px 0px", threshold: 0 }
+    );
+    observer.observe(banner);
     return () => observer.disconnect();
   }, [pathname]);
 
@@ -414,9 +407,15 @@ const TopHeader = () => {
                 <Link
                   href="/practice-overview"
                   onClick={() => handleStart("mobile_menu")}
-                  className="flex items-center justify-center h-[52px] rounded-full bg-[#2554D6] text-white text-[16px] font-medium shadow-[3.7px_3.9px_0_0_#759CFF] transition-[transform,box-shadow,background-color] duration-200 hover:bg-[#1F48BD] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[0_0_0_0_#759CFF]"
+                  className="group/start flex items-center justify-center gap-[6px] h-[52px] rounded-full bg-[#2554D6] text-white text-[16px] font-medium shadow-[3.7px_3.9px_0_0_#759CFF] transition-[transform,box-shadow,background-color] duration-200 hover:bg-[#1F48BD] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[0_0_0_0_#759CFF]"
                 >
-                  Start Free Practice
+                  <RollingWords text="Start Free Practice" />
+                  <svg
+                    width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+                    className="transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/start:translate-x-[3px]"
+                  >
+                    <path d="M5 12h14M13 6l6 6-6 6" />
+                  </svg>
                 </Link>
                 <Link
                   href="/sign-in"

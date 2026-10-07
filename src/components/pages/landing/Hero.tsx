@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useButtonVisibleStore } from "@/store/buttonVisible.store";
 import { useInView } from "react-intersection-observer";
 import TopHeader from "./TopHeader";
+import RollingWords from "./RollingWords";
 import { Button } from "@/components/v2/Button";
 import { cn } from "@/lib/utils";
 import { trackCTAClick } from "@/lib/analytics";
@@ -120,6 +121,7 @@ const Hero = () => {
         <Button
           size="lg"
           href="/practice-overview"
+          className="group/start"
           aria-label="Start your free CELPIP practice"
           onClick={() =>
             trackCTAClick("Start Your Free Practice", "hero_sticky", {
@@ -128,8 +130,12 @@ const Hero = () => {
           }
         >
           <SvgPlus />
-          <span className="hidden sm:!flex">Start Your Free Practice</span>
-          <span className="flex sm:!hidden">Free Practice</span>
+          <span className="hidden sm:!flex">
+            <RollingWords text="Start Your Free Practice" />
+          </span>
+          <span className="flex sm:!hidden">
+            <RollingWords text="Free Practice" />
+          </span>
         </Button>
       </div>
 
@@ -174,7 +180,7 @@ const Hero = () => {
                   })
                 }
                 className={cn(
-                  "group/cta flex items-center justify-center gap-[8px] h-[54px] screen744:!h-[55px] screen744:!w-[270px] screen1280:!w-[260px] rounded-full",
+                  "group/start flex items-center justify-center gap-[8px] h-[54px] screen744:!h-[55px] screen744:!w-[270px] screen1280:!w-[260px] rounded-full",
                   "bg-[#2554D6] text-white text-[17px] screen744:!text-[18px] font-medium whitespace-nowrap",
                   "shadow-[3.7px_3.9px_0_0_#759CFF]",
                   "transition-[transform,background-color,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
@@ -186,11 +192,11 @@ const Hero = () => {
               >
                 <svg
                   width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
-                  className="transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/cta:rotate-90"
+                  className="transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/start:rotate-90"
                 >
                   <path d="M12 5v14M5 12h14" />
                 </svg>
-                Start Free Practice
+                <RollingWords text="Start Free Practice" />
               </Link>
               <Link
                 href="/exam-overview"
