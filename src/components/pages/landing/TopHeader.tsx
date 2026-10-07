@@ -187,7 +187,7 @@ const TopHeader = () => {
       items[next].focus();
     };
     const onResize = () => {
-      if (window.innerWidth >= 1280) setIsMenuOpen(false);
+      if (window.innerWidth >= 1024) setIsMenuOpen(false);
     };
     window.addEventListener("keydown", onKey);
     window.addEventListener("resize", onResize);
@@ -219,7 +219,7 @@ const TopHeader = () => {
           <Logo />
 
           {/* Desktop navigation */}
-          <nav aria-label="Main" className="hidden screen1280:!flex items-center">
+          <nav aria-label="Main" className="hidden screen1024:!flex items-center">
             {navLinks.map((link, index) => {
               const active = isActivePath(pathname, link.href);
               return (
@@ -229,7 +229,7 @@ const TopHeader = () => {
                     href={link.href}
                     aria-current={active ? "page" : undefined}
                     className={cn(
-                      "group relative flex items-center h-[44px] px-[20px] text-[14px] rounded-full",
+                      "group relative flex items-center h-[44px] px-[12px] screen1280:!px-[20px] text-[14px] rounded-full",
                       "transition-[color,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
                       "hover:text-[#2554D6] data-[play]:text-[#2554D6] focus-visible:text-[#2554D6] active:scale-[0.96] motion-reduce:transition-none",
                       active ? "text-[#2554D6] font-semibold" : "text-[#37465C]"
@@ -242,8 +242,8 @@ const TopHeader = () => {
                         "absolute left-1/2 bottom-[6px] h-[2px] -translate-x-1/2 rounded-full bg-[#2554D6]",
                         "transition-[width,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
                         active
-                          ? "w-[calc(100%-40px)] opacity-100"
-                          : "w-0 opacity-0 group-hover:w-[calc(100%-40px)] group-data-[play]:w-[calc(100%-40px)] group-hover:opacity-100 group-data-[play]:opacity-100 group-focus-visible:w-[calc(100%-40px)] group-focus-visible:opacity-100"
+                          ? "w-[calc(100%-24px)] screen1280:!w-[calc(100%-40px)] opacity-100"
+                          : "w-0 opacity-0 group-hover:w-[calc(100%-24px)] group-data-[play]:w-[calc(100%-24px)] group-focus-visible:w-[calc(100%-24px)] screen1280:group-hover:!w-[calc(100%-40px)] screen1280:group-data-[play]:!w-[calc(100%-40px)] screen1280:group-focus-visible:!w-[calc(100%-40px)] group-hover:opacity-100 group-data-[play]:opacity-100 group-focus-visible:opacity-100"
                       )}
                     />
                   </Link>
@@ -257,7 +257,7 @@ const TopHeader = () => {
               <span className="w-[96px] screen744:!w-[110px] h-[40px] screen744:!h-[44px] rounded-full bg-white/60 animate-pulse" />
             )}
 
-            {/* Pricing, Log in and the CTA (Start Free / Continue Practice) — separate buttons */}
+            {/* Pricing, Sign In and the CTA (Start Free / Continue Practice) — separate buttons */}
             {authReady && (
               <div className="flex items-center">
                 {showPricing && (
@@ -287,7 +287,7 @@ const TopHeader = () => {
                     href="/sign-in"
                     className="group relative hidden screen744:!flex items-center h-[44px] ml-[16px] screen1280:!ml-[20px] px-[4px] text-[14px] font-semibold text-[#2554D6] transition-[color,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:text-[#1B3FA8] data-[play]:text-[#1B3FA8] active:scale-[0.96] motion-reduce:transition-none"
                   >
-                    Log in
+                    Sign In
                     <span
                       aria-hidden="true"
                       className="absolute left-1/2 bottom-[8px] h-[2px] w-0 -translate-x-1/2 rounded-full bg-current opacity-0 transition-[width,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:w-[calc(100%-8px)] group-data-[play]:w-[calc(100%-8px)] group-hover:opacity-100 group-data-[play]:opacity-100"
@@ -357,7 +357,7 @@ const TopHeader = () => {
               aria-expanded={isMenuOpen}
               aria-controls="site-menu"
               onClick={() => setIsMenuOpen((open) => !open)}
-              className="screen1280:!hidden relative flex items-center justify-center w-[44px] h-[44px] rounded-full text-[#1E293B] transition-[background-color,transform] duration-200 hover:bg-white/70 data-[play]:bg-white/70 active:scale-90"
+              className="screen1024:!hidden relative flex items-center justify-center w-[44px] h-[44px] rounded-full text-[#1E293B] transition-[background-color,transform] duration-200 hover:bg-white/70 data-[play]:bg-white/70 active:scale-90"
             >
               <svg
                 width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
@@ -384,7 +384,7 @@ const TopHeader = () => {
 
       {/* Mobile & tablet menu */}
       {menuRendered && (
-        <div className="screen1280:!hidden [&_:is(a,button):focus-visible]:outline-3 [&_:is(a,button):focus-visible]:outline-solid [&_:is(a,button):focus-visible]:outline-[#759CFF] [&_:is(a,button):focus-visible]:outline-offset-2">
+        <div className="screen1024:!hidden [&_:is(a,button):focus-visible]:outline-3 [&_:is(a,button):focus-visible]:outline-solid [&_:is(a,button):focus-visible]:outline-[#759CFF] [&_:is(a,button):focus-visible]:outline-offset-2">
           <div
             className={cn(
               "fixed inset-0 z-[48] bg-[rgba(33,46,66,0.45)] screen744:!bg-[rgba(33,46,66,0.35)] backdrop-blur-[2px]",
@@ -497,7 +497,7 @@ const TopHeader = () => {
                   onClick={closeMenu}
                   className="flex items-center justify-center h-[48px] rounded-full text-[16px] font-semibold text-[#2554D6] transition-colors duration-200 hover:bg-[#F4F7FF] data-[play]:bg-[#F4F7FF] active:bg-[#E3EBFF]"
                 >
-                  Log in
+                  Sign In
                 </Link>
                 )}
               </div>

@@ -97,7 +97,7 @@ const Hero = () => {
             >
               <Link
                 ref={playOnView}
-                href="/writing"
+                href="/practice-overview"
                 onClick={() =>
                   trackCTAClick("Start Your Free Practice", "hero", {
                     itemId: "hero_primary_cta",

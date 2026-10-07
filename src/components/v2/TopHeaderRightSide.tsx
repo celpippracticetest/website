@@ -59,7 +59,7 @@ const TopHeaderRightSide = () => {
             <Link
               href="/sign-up"
               onClick={() =>
-                trackCTAClick("Sign Up / Login", "header", {
+                trackCTAClick("Sign Up / Sign In", "header", {
                   itemId: "header_sign_up",
                 })
               }
@@ -79,7 +79,7 @@ const TopHeaderRightSide = () => {
                 Sign Up
                 <span className="hidden screen744:!flex">
                   <span className="mx-1">/</span>
-                  Login
+                  Sign In
                 </span>
               </span>
             </Link>

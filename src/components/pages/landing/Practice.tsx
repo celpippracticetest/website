@@ -60,7 +60,7 @@ const Practice = () => {
         <div className="mt-[20px] screen744:!mt-[24px] screen1280:!mt-[26px] self-stretch screen744:!self-auto flex flex-col items-center gap-[12px] screen1280:!flex-row screen1280:!gap-[22px]">
           <Link
             ref={playOnView}
-            href="/writing"
+            href="/practice-overview"
             onClick={() =>
               trackCTAClick("Start Your Free Practice", "cta_banner", {
                 itemId: "cta_banner_start",

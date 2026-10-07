@@ -1,8 +1,6 @@
 import dynamic from "next/dynamic";
 import type { Metadata } from "next";
-import { getPublishedBlogPostBySlug } from "@/lib/blog/public";
-import { HOMEPAGE_FEATURED_POSTS } from "@/data/homepage-blog";
-import { getBlogCoverImage } from "@/lib/blog/coverImage";
+import { getPublishedBlogPosts } from "@/lib/blog/public";
 import { buildWebSiteJsonLd } from "@/lib/seo/siteSchema";
 import { buildHomepageFaqJsonLd } from "@/data/homepage-faqs";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -15,7 +13,7 @@ const HomePageClient = dynamic(
   },
 );
 
-// Same cadence as /blog so CMS cover/date changes reach the homepage within the hour.
+// Same cadence as /blog so new articles reach the homepage within the hour.
 export const revalidate = 3600;
 
 const HOME_TITLE = "CELPIP Practice Test Online | Instant Scoring, Expert Tips";
@@ -56,28 +54,35 @@ function formatDate(value?: Date | string | null): string | null {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 }
 
+function estimateReadTime(contentHtml?: string): string {
+  if (!contentHtml) return "3 min read";
+  const words = contentHtml.replace(/<[^>]*>/g, " ").split(/\s+/).filter(Boolean).length;
+  return `${Math.max(1, Math.ceil(words / 200))} min read`;
+}
+
+const HOME_BLOG_POST_COUNT = 4;
+// Posts without a featured image are skipped, so read a few extra to fill the section.
+const HOME_BLOG_CANDIDATES = 24;
+
 export default async function HomePage() {
   const baseUrl = (process.env.APP_BASE_URL || "https://celpippracticetest.com").replace(/\/$/, "");
-  // The featured articles from the design: card copy from src/data/homepage-blog,
-  // cover and publish date live from the CMS. Missing/unpublished posts are skipped.
-  const featured = await Promise.all(
-    HOMEPAGE_FEATURED_POSTS.map(async (item) => ({ item, post: await getPublishedBlogPostBySlug(item.slug) })),
-  );
-  const blogPosts: HomeBlogPost[] = featured.flatMap(({ item, post }) =>
-    post
-      ? [
-          {
-            id: post.id,
-            slug: item.slug,
-            title: item.title,
-            category: item.category,
-            readTime: item.readTime,
-            date: formatDate(post.publishedAt ?? post.createdAt) ?? item.fallbackDate,
-            cover: getBlogCoverImage(post),
-          },
-        ]
-      : [],
-  );
+  // The latest published articles that have a featured image (newest first).
+  const { items } = await getPublishedBlogPosts(0, HOME_BLOG_CANDIDATES);
+  const blogPosts: HomeBlogPost[] = items
+    .filter((post) => post.featuredImage?.url?.trim())
+    .slice(0, HOME_BLOG_POST_COUNT)
+    .map((post) => ({
+      id: post.id,
+      slug: post.slug,
+      title: post.title,
+      category: post.categories[0] ?? null,
+      readTime: estimateReadTime(post.contentHtml),
+      date: formatDate(post.publishedAt ?? post.createdAt),
+      cover: {
+        url: post.featuredImage!.url.trim(),
+        alt: post.featuredImage?.alt?.trim() || post.title,
+      },
+    }));
 
   // Organization comes from the root layout; the homepage adds WebSite + FAQPage
   // (the FAQ entries come from the same data the accordion renders).

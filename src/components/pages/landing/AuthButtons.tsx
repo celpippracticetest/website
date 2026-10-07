@@ -124,7 +124,7 @@ const AuthButtons = () => {
             className="max-[744px]:hidden min-[744px]:flex"
             href="/sign-up"
             onClick={() =>
-              trackCTAClick("Sign Up / Login", "header_desktop", {
+              trackCTAClick("Sign Up / Sign In", "header_desktop", {
                 itemId: "header_sign_up",
               })
             }
@@ -132,7 +132,7 @@ const AuthButtons = () => {
             <span id="sign-up-button" className="flex">
               Sign Up
               <span className="mx-1">/</span>
-              Login
+              Sign In
             </span>
           </Button>
         </>
