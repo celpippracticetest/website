@@ -251,7 +251,7 @@ const TopHeader = () => {
                     href="/pricing"
                     aria-label={pricingLabel}
                     className={cn(
-                      "group/pricing relative z-[1] flex items-center gap-[6px] h-[40px] screen744:!h-[44px] px-[12px] min-[380px]:px-[14px] screen744:!px-[16px] rounded-[22px]",
+                      "group/pricing relative z-[1] hidden screen744:!flex items-center gap-[6px] h-[40px] screen744:!h-[44px] px-[12px] min-[380px]:px-[14px] screen744:!px-[16px] rounded-[22px]",
                       "bg-[#C4453A] text-white text-[14px] font-semibold whitespace-nowrap",
                       "shadow-[inset_0_1px_0_rgba(255,255,255,0.22),3px_3px_0_0_#759CFF]",
                       "transition-[background-color,transform,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
@@ -429,6 +429,29 @@ const TopHeader = () => {
                   </div>
                 );
               })}
+              {/* Mobile keeps Pricing inside the menu (design); tablet/desktop show it in the bar. */}
+              {showPricing && (
+                <div
+                  style={{ transitionDelay: menuVisible ? `${80 + navLinks.length * 45}ms` : "0ms" }}
+                  className={cn(
+                    "screen744:!hidden flex items-center h-[64px] px-[2px]",
+                    "transition-[opacity,transform] duration-[400ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
+                    menuVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-[8px]"
+                  )}
+                >
+                  <Link
+                    ref={playOnView}
+                    href="/pricing"
+                    onClick={closeMenu}
+                    className="group/pricing flex items-center gap-[6px] h-[34px] px-[14px] rounded-full bg-[#C4453A] text-white text-[14px] font-semibold shadow-[2.5px_2.5px_0_0_#759CFF] transition-[background-color,transform,box-shadow] duration-200 hover:bg-[#B83E34] data-[play]:bg-[#B83E34] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[0_0_0_0_#759CFF]"
+                  >
+                    <span className="flex origin-bottom group-hover/pricing:animate-crown-wiggle group-data-[play]/pricing:animate-crown-wiggle motion-reduce:!animate-none">
+                      <CrownIcon />
+                    </span>
+                    {pricingLabel}
+                  </Link>
+                </div>
+              )}
             </nav>
 
             {authReady && (
