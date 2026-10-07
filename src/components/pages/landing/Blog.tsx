@@ -83,14 +83,17 @@ const Blog = ({ posts }: { posts: HomeBlogPost[] }) => {
                 " motion-reduce:transition-none",
               )}
             >
-              <div className="shrink-0 w-[120px] h-[65px] rounded-[10px] overflow-hidden bg-[#EEF3FF] screen1280:!w-full screen1280:!h-[150px] screen1280:!rounded-none screen1280:!border-b screen1280:!border-[#E8EEFB]">
+              <div className="relative shrink-0 w-[120px] h-[65px] rounded-[10px] overflow-hidden bg-[#EEF3FF] screen1280:!w-full screen1280:!h-[150px] screen1280:!rounded-none screen1280:!border-b screen1280:!border-[#E8EEFB]">
                 {post.cover ? (
+                  // Absolutely filled with a forced height: globals.css sets height:auto on
+                  // plain <img> (unlayered, so it beats h-full), which collapsed unloaded
+                  // covers to 0px and let the browser skip them. Only 4 small covers, so eager.
                   // eslint-disable-next-line @next/next/no-img-element -- CMS images come from arbitrary hosts, same as /blog
                   <img
                     src={post.cover.url}
                     alt=""
-                    loading="lazy"
-                    className="block w-full h-full object-cover transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.04] group-data-[play]:scale-[1.04]"
+                    decoding="async"
+                    className="absolute inset-0 block w-full !h-full object-cover transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.04] group-data-[play]:scale-[1.04]"
                   />
                 ) : (
                   <div className="w-full h-full bg-[linear-gradient(115deg,#FCE3D5_0%,#F7F0EC_45%,#E6F6FB_100%)]" />
