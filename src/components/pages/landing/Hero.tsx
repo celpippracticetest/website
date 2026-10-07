@@ -61,10 +61,11 @@ const Hero = () => {
 
   return (
     <div className="flex flex-col ">
-      <section className="relative w-full pt-[68px] screen744:!pt-[72px] screen1280:!pt-[80px] bg-[linear-gradient(180deg,rgba(244,247,255,0)_70%,#F4F7FF_100%),linear-gradient(115deg,#FCE3D5_0%,#F7F0EC_40%,#E6F6FB_100%)]">
+      {/* At least one full screen tall, so the first view is only the hero (the skills section starts below the fold). */}
+      <section className="relative w-full min-h-svh flex flex-col pt-[68px] screen744:!pt-[72px] screen1280:!pt-[80px] bg-[linear-gradient(180deg,rgba(244,247,255,0)_70%,#F4F7FF_100%),linear-gradient(115deg,#FCE3D5_0%,#F7F0EC_40%,#E6F6FB_100%)]">
         <TopHeader />
 
-        <div className="mx-auto w-full max-w-[1236px] px-[20px] pt-[36px] screen744:!px-[48px] screen744:!pt-[56px] screen1280:!px-[40px] screen1440:!px-0 screen1280:!pt-[24px] screen1280:!pb-[40px] screen1280:!min-h-[560px] flex flex-col screen1280:!flex-row screen1280:!items-center screen1280:!justify-between screen1280:!gap-[24px]">
+        <div className="flex-1 justify-center mx-auto w-full max-w-[1236px] px-[20px] pt-[36px] pb-[32px] screen744:!pb-[48px] screen744:!px-[48px] screen744:!pt-[56px] screen1280:!px-[40px] screen1440:!px-0 screen1280:!pt-[24px] screen1280:!pb-[40px] screen1280:!min-h-[560px] flex flex-col screen1280:!flex-row screen1280:!items-center screen1280:!justify-between screen1280:!gap-[24px]">
           {/* Copy + CTAs */}
           <div className="flex flex-col screen1280:!w-[620px] screen1280:!shrink-0">
             <h1
