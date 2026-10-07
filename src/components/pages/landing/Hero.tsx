@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useButtonVisibleStore } from "@/store/buttonVisible.store";
 import TopHeader from "./TopHeader";
 import RollingWords from "./RollingWords";
 import { cn } from "@/lib/utils";
@@ -48,29 +47,6 @@ const heroFeatures = HOMEPAGE_HERO_STATS.map((stat, index) => ({
 }));
 
 const Hero = () => {
-  const isInFooter = useButtonVisibleStore((state) => state.isInFooter);
-  const [pastHeroCta, setPastHeroCta] = useState(false);
-  const [ctaBannerVisible, setCtaBannerVisible] = useState(false);
-  // Mobile-only sticky CTA (per handoff): shows once the hero CTA has scrolled
-  // away, and steps aside for the CTA banner and the footer.
-  const showSticky = pastHeroCta && !ctaBannerVisible && !isInFooter;
-
-  useEffect(() => {
-    const observers: IntersectionObserver[] = [];
-    const watch = (id: string, onChange: (visible: boolean) => void) => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      const observer = new IntersectionObserver(([entry]) => onChange(entry.isIntersecting), {
-        rootMargin: "-68px 0px 0px 0px",
-      });
-      observer.observe(el);
-      observers.push(observer);
-    };
-    watch("home-hero", (visible) => setPastHeroCta(!visible && window.scrollY > 0));
-    watch("home-cta", setCtaBannerVisible);
-    return () => observers.forEach((observer) => observer.disconnect());
-  }, []);
-
   useEffect(() => {
     if (window.location.hash === "#plans") {
       const el = document.getElementById("plans");
@@ -85,42 +61,6 @@ const Hero = () => {
 
   return (
     <div className="flex flex-col ">
-      <div
-        aria-hidden={!showSticky}
-        className={cn(
-          "screen744:!hidden fixed inset-x-0 bottom-0 z-[40] flex justify-center px-[20px] pt-[16px] pb-[calc(16px+env(safe-area-inset-bottom))]",
-          "bg-[linear-gradient(180deg,rgba(244,247,255,0)_0%,rgba(244,247,255,0.92)_40%)]",
-          "transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
-          showSticky ? "opacity-100 translate-y-0" : "opacity-0 translate-y-[16px] pointer-events-none",
-        )}
-      >
-        <Link
-          href="/writing"
-          tabIndex={showSticky ? undefined : -1}
-          onClick={() =>
-            trackCTAClick("Start Your Free Practice", "hero_sticky", {
-              itemId: "hero_sticky_cta",
-            })
-          }
-          className={cn(
-            "group/start flex w-full items-center justify-center gap-[8px] h-[54px] rounded-full",
-            "bg-[#2554D6] text-white text-[17px] font-medium whitespace-nowrap shadow-[3.7px_3.9px_0_0_#759CFF]",
-            "transition-[transform,background-color,box-shadow] duration-200",
-            "hover:bg-[#1E46B8] data-[play]:bg-[#1E46B8] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[0_0_0_0_#759CFF]",
-            "motion-reduce:transition-none",
-          )}
-        >
-          <svg
-            width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
-            className="transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/start:rotate-90 group-data-[play]/start:rotate-90"
-          >
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-          <RollingWords text="Start Your Free Practice" />
-        </Link>
-      </div>
-
-
       <section className="relative w-full pt-[68px] screen744:!pt-[72px] screen1280:!pt-[80px] bg-[linear-gradient(180deg,rgba(244,247,255,0)_70%,#F4F7FF_100%),linear-gradient(115deg,#FCE3D5_0%,#F7F0EC_40%,#E6F6FB_100%)]">
         <TopHeader />
 
