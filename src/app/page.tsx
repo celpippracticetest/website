@@ -1,6 +1,7 @@
 import dynamic from "next/dynamic";
 import type { Metadata } from "next";
-import { getPublishedBlogPosts } from "@/lib/blog/public";
+import { getPublishedBlogPostBySlug } from "@/lib/blog/public";
+import { HOMEPAGE_FEATURED_POSTS } from "@/data/homepage-blog";
 import { getBlogCoverImage } from "@/lib/blog/coverImage";
 import { buildWebSiteJsonLd } from "@/lib/seo/siteSchema";
 import { buildHomepageFaqJsonLd } from "@/data/homepage-faqs";
@@ -14,7 +15,7 @@ const HomePageClient = dynamic(
   },
 );
 
-// Same cadence as /blog so new articles reach the homepage within the hour.
+// Same cadence as /blog so CMS cover/date changes reach the homepage within the hour.
 export const revalidate = 3600;
 
 const HOME_TITLE = "CELPIP Practice Test Online | Instant Scoring, Expert Tips";
@@ -52,27 +53,31 @@ function formatDate(value?: Date | string | null): string | null {
   if (!value) return null;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return null;
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-}
-
-function estimateReadTime(contentHtml?: string): string {
-  if (!contentHtml) return "3 min read";
-  const words = contentHtml.replace(/<[^>]*>/g, " ").split(/\s+/).filter(Boolean).length;
-  return `${Math.max(1, Math.ceil(words / 200))} min read`;
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 }
 
 export default async function HomePage() {
   const baseUrl = (process.env.APP_BASE_URL || "https://celpippracticetest.com").replace(/\/$/, "");
-  const { items } = await getPublishedBlogPosts(0, 4);
-  const blogPosts: HomeBlogPost[] = items.slice(0, 4).map((post) => ({
-    id: post.id,
-    slug: post.slug,
-    title: post.title,
-    category: post.categories[0] ?? null,
-    readTime: estimateReadTime(post.contentHtml),
-    date: formatDate(post.publishedAt ?? post.createdAt),
-    cover: getBlogCoverImage(post),
-  }));
+  // The featured articles from the design: card copy from src/data/homepage-blog,
+  // cover and publish date live from the CMS. Missing/unpublished posts are skipped.
+  const featured = await Promise.all(
+    HOMEPAGE_FEATURED_POSTS.map(async (item) => ({ item, post: await getPublishedBlogPostBySlug(item.slug) })),
+  );
+  const blogPosts: HomeBlogPost[] = featured.flatMap(({ item, post }) =>
+    post
+      ? [
+          {
+            id: post.id,
+            slug: item.slug,
+            title: item.title,
+            category: item.category,
+            readTime: item.readTime,
+            date: formatDate(post.publishedAt ?? post.createdAt) ?? item.fallbackDate,
+            cover: getBlogCoverImage(post),
+          },
+        ]
+      : [],
+  );
 
   // Organization comes from the root layout; the homepage adds WebSite + FAQPage
   // (the FAQ entries come from the same data the accordion renders).
