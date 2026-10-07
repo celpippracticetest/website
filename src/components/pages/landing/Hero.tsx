@@ -107,7 +107,6 @@ const Hero = () => {
       </div>
 
       <section
-        id="home-hero"
         style={{
           background:
             "linear-gradient(-45deg, #CEDCFF70, #DAFFFA70, #FFB78A70, #CEDCFF70)",
@@ -202,7 +201,9 @@ const Hero = () => {
               <div className="font-inter font-semibold text-xs leading-5 tracking-normal text-center screen744:!hidden flex justify-center">
                 60 mock exams · 3,000+ questions · Instant AI scoring
               </div>
-              <div className="flex screen744:!justify-start justify-center">
+              {/* The header watches this CTA: once it scrolls away, the header's
+                  Start Free Practice button appears. */}
+              <div id="home-hero" className="flex screen744:!justify-start justify-center">
                 <Button
                   href="/practice-overview"
                   size="lg"

@@ -18,8 +18,9 @@ const navLinks = [
   { label: "Blog", href: "https://blog.celpippracticetest.com" },
 ];
 
-// Section the header watches: the "Start Free Practice" button only joins the
-// Pricing button once this element has scrolled out of view.
+// The hero's own "Start Your Free Practice" button. The header's Start button
+// only appears once this has scrolled out of view (the hero ends here — the
+// skill cards below it are not part of the hero).
 const HERO_ID = "home-hero";
 
 const CrownIcon = () => (
@@ -213,7 +214,7 @@ const TopHeader = () => {
               <span className="w-[96px] screen744:!w-[110px] h-[40px] screen744:!h-[44px] rounded-full bg-white/60 animate-pulse" />
             )}
 
-            {/* Pricing, Start Free Practice (revealed after the hero) and Sign in — separate buttons */}
+            {/* Pricing, Sign in and Start Free Practice — separate buttons */}
             {(showPricing || showSignedOut) && (
               <div className="flex items-center">
                 {showPricing && (
@@ -238,6 +239,20 @@ const TopHeader = () => {
                   </Link>
                 )}
 
+                {showSignedOut && (
+                  <Link
+                    href="/sign-in"
+                    className="group relative hidden screen744:!flex items-center h-[44px] ml-[16px] screen1280:!ml-[20px] px-[4px] text-[14px] font-semibold text-[#2554D6] transition-[color,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:text-[#1B3FA8] active:scale-[0.96] motion-reduce:transition-none"
+                  >
+                    Sign in
+                    <span
+                      aria-hidden="true"
+                      className="absolute left-1/2 bottom-[8px] h-[2px] w-0 -translate-x-1/2 rounded-full bg-current opacity-0 transition-[width,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:w-[calc(100%-8px)] group-hover:opacity-100"
+                    />
+                  </Link>
+                )}
+
+                {/* Rightmost: revealed once the hero's own Start button scrolls away. */}
                 {showSignedOut && (
                   <div
                     aria-hidden={!showStart}
@@ -282,19 +297,6 @@ const TopHeader = () => {
                       </Link>
                     </div>
                   </div>
-                )}
-
-                {showSignedOut && (
-                  <Link
-                    href="/sign-in"
-                    className="group relative hidden screen744:!flex items-center h-[44px] ml-[16px] screen1280:!ml-[20px] px-[4px] text-[14px] font-semibold text-[#2554D6] transition-[color,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:text-[#1B3FA8] active:scale-[0.96] motion-reduce:transition-none"
-                  >
-                    Sign in
-                    <span
-                      aria-hidden="true"
-                      className="absolute left-1/2 bottom-[8px] h-[2px] w-0 -translate-x-1/2 rounded-full bg-current opacity-0 transition-[width,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:w-[calc(100%-8px)] group-hover:opacity-100"
-                    />
-                  </Link>
                 )}
               </div>
             )}
