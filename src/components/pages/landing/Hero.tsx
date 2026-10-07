@@ -1,94 +1,74 @@
 "use client";
 
-import React, { useEffect } from "react";
-import dynamic from "next/dynamic";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useButtonVisibleStore } from "@/store/buttonVisible.store";
-import { useInView } from "react-intersection-observer";
 import TopHeader from "./TopHeader";
 import RollingWords from "./RollingWords";
-import { Button } from "@/components/v2/Button";
 import { cn } from "@/lib/utils";
 import { trackCTAClick } from "@/lib/analytics";
+import { HOMEPAGE_HERO_STATS, HOMEPAGE_USER_COUNT } from "@/data/homepage-content";
 
-const SvgPlus = dynamic(() => import("../../icons/Plus"), { ssr: false });
-
-const heroFeatures = [
-  {
-    label: (
-      <>
-        <b className="font-bold">60</b> mock exams
-      </>
-    ),
-    icon: (
-      <>
-        <rect x="3" y="4" width="18" height="17" rx="3" />
-        <path d="M3 9h18M8 2v4M16 2v4" />
-        <circle cx="12" cy="15" r="2.5" />
-      </>
-    ),
-  },
-  {
-    label: (
-      <>
-        <b className="font-bold">3,000+</b> sample tests
-      </>
-    ),
-    icon: (
-      <>
-        <rect x="3" y="3" width="18" height="18" rx="4" />
-        <path d="M7 9l2 2 3-3M7 15l2 2 3-3M14 10h3M14 16h3" />
-      </>
-    ),
-  },
-  {
-    label: (
-      <>
-        AI scoring out of <b className="font-bold">12</b>
-      </>
-    ),
-    icon: (
-      <>
-        <rect x="4" y="8" width="16" height="12" rx="3" />
-        <path d="M12 4v4M9 13h.01M15 13h.01M9 17h6" />
-      </>
-    ),
-  },
-  {
-    label: <>Guides and tips</>,
-    icon: (
-      <>
-        <path d="M12 3l9 5-9 5-9-5z" />
-        <path d="M7 10.5V16c0 1.5 2.2 3 5 3s5-1.5 5-3v-5.5" />
-      </>
-    ),
-  },
+// Icons for HOMEPAGE_HERO_STATS, matched by position.
+const heroStatIcons = [
+  <>
+    <rect x="3" y="4" width="18" height="17" rx="3" />
+    <path d="M3 9h18M8 2v4M16 2v4" />
+    <circle cx="12" cy="15" r="2.5" />
+  </>,
+  <>
+    <rect x="3" y="3" width="18" height="18" rx="4" />
+    <path d="M7 9l2 2 3-3M7 15l2 2 3-3M14 10h3M14 16h3" />
+  </>,
+  <>
+    <rect x="4" y="8" width="16" height="12" rx="3" />
+    <path d="M12 4v4M9 13h.01M15 13h.01M9 17h6" />
+  </>,
+  <>
+    <path d="M12 3l9 5-9 5-9-5z" />
+    <path d="M7 10.5V16c0 1.5 2.2 3 5 3s5-1.5 5-3v-5.5" />
+  </>,
 ];
 
+const heroFeatures = HOMEPAGE_HERO_STATS.map((stat, index) => ({
+  label: !stat.value ? (
+    <>{stat.label}</>
+  ) : stat.valueFirst ? (
+    <>
+      <b className="font-bold">{stat.value}</b> {stat.label}
+    </>
+  ) : (
+    <>
+      {stat.label} <b className="font-bold">{stat.value}</b>
+    </>
+  ),
+  icon: heroStatIcons[index],
+}));
+
 const Hero = () => {
-  const { ref } = useInView();
-  const { setVisible, isVisible, isInFooter } = useButtonVisibleStore(
-    (state) => state,
-  );
+  const isInFooter = useButtonVisibleStore((state) => state.isInFooter);
+  const [pastHeroCta, setPastHeroCta] = useState(false);
+  const [ctaBannerVisible, setCtaBannerVisible] = useState(false);
+  // Mobile-only sticky CTA (per handoff): shows once the hero CTA has scrolled
+  // away, and steps aside for the CTA banner and the footer.
+  const showSticky = pastHeroCta && !ctaBannerVisible && !isInFooter;
 
   useEffect(() => {
-    const onScroll = () => {
-      const scrollY = window.scrollY;
-
-      if (scrollY > 100 && !isInFooter) {
-        setVisible(false);
-      } else if (scrollY > 100 && isInFooter) {
-        setVisible(false);
-      } else if (scrollY < 100) {
-        setVisible(false);
-      }
+    const observers: IntersectionObserver[] = [];
+    const watch = (id: string, onChange: (visible: boolean) => void) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const observer = new IntersectionObserver(([entry]) => onChange(entry.isIntersecting), {
+        rootMargin: "-68px 0px 0px 0px",
+      });
+      observer.observe(el);
+      observers.push(observer);
     };
-    window.addEventListener("scroll", onScroll);
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [isInFooter]);
-
-  useEffect(() => {}, [isInFooter]);
+    watch("home-hero", (visible) => setPastHeroCta(!visible && window.scrollY > 0));
+    watch("home-cta", setCtaBannerVisible);
+    return () => observers.forEach((observer) => observer.disconnect());
+  }, []);
 
   useEffect(() => {
     if (window.location.hash === "#plans") {
@@ -103,41 +83,42 @@ const Hero = () => {
   }, []);
 
   return (
-    <div ref={ref} className="flex flex-col ">
+    <div className="flex flex-col ">
       <div
-        className={`w-full
-    flex bg-[linear-gradient(180deg,_rgba(255,_255,_255,_0.4)_0%,_rgba(255,_255,_255,_0.8)_100%)]
-    backdrop-blur-[1px]
-    shadow-[0_0_100px_0px_rgba(255,255,255,0.8)]
-    ${
-      isVisible
-        ? "opacity-100 translate-y-0"
-        : "opacity-0 translate-y-[12px] pointer-events-none"
-    }
-    flex justify-center fixed z-[10] h-[128px] items-center
-    left-1/2 -translate-x-1/2 transition-all duration-500
-    ease-in-out transform bottom-0`}
+        aria-hidden={!showSticky}
+        className={cn(
+          "screen744:!hidden fixed inset-x-0 bottom-0 z-[40] flex justify-center px-[20px] pt-[16px] pb-[calc(16px+env(safe-area-inset-bottom))]",
+          "bg-[linear-gradient(180deg,rgba(244,247,255,0)_0%,rgba(244,247,255,0.92)_40%)]",
+          "transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
+          showSticky ? "opacity-100 translate-y-0" : "opacity-0 translate-y-[16px] pointer-events-none",
+        )}
       >
-        <Button
-          size="lg"
-          href="/practice-overview"
-          className="group/start"
-          aria-label="Start your free CELPIP practice"
+        <Link
+          href="/writing"
+          tabIndex={showSticky ? undefined : -1}
           onClick={() =>
             trackCTAClick("Start Your Free Practice", "hero_sticky", {
               itemId: "hero_sticky_cta",
             })
           }
+          className={cn(
+            "group/start flex w-full items-center justify-center gap-[8px] h-[54px] rounded-full",
+            "bg-[#2554D6] text-white text-[17px] font-medium whitespace-nowrap shadow-[3.7px_3.9px_0_0_#759CFF]",
+            "transition-[transform,background-color,box-shadow] duration-200",
+            "hover:bg-[#1E46B8] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[0_0_0_0_#759CFF]",
+            "motion-reduce:transition-none",
+          )}
         >
-          <SvgPlus />
-          <span className="hidden sm:!flex">
-            <RollingWords text="Start Your Free Practice" />
-          </span>
-          <span className="flex sm:!hidden">
-            <RollingWords text="Free Practice" />
-          </span>
-        </Button>
+          <svg
+            width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+            className="transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/start:rotate-90"
+          >
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          <RollingWords text="Start Your Free Practice" />
+        </Link>
       </div>
+
 
       <section className="relative w-full pt-[68px] screen744:!pt-[72px] screen1280:!pt-[80px] bg-[linear-gradient(180deg,rgba(244,247,255,0)_70%,#F4F7FF_100%),linear-gradient(115deg,#FCE3D5_0%,#F7F0EC_40%,#E6F6FB_100%)]">
         <TopHeader />
@@ -173,14 +154,14 @@ const Hero = () => {
               className="mt-[28px] screen744:!mt-[32px] screen1280:!mt-[40px] flex flex-col gap-[12px] screen744:!flex-row screen744:!items-center screen744:!gap-[16px] animate-in fade-in slide-in-from-bottom-3 duration-700 fill-mode-both motion-reduce:animate-none"
             >
               <Link
-                href="/practice-overview"
+                href="/writing"
                 onClick={() =>
                   trackCTAClick("Start Your Free Practice", "hero", {
                     itemId: "hero_primary_cta",
                   })
                 }
                 className={cn(
-                  "group/start flex items-center justify-center gap-[8px] h-[54px] screen744:!h-[55px] screen744:!w-[270px] screen1280:!w-[260px] rounded-full",
+                  "group/start flex items-center justify-center gap-[8px] h-[54px] screen744:!h-[55px] screen744:!min-w-[270px] screen1280:!min-w-[260px] screen744:!px-[24px] rounded-full",
                   "bg-[#2554D6] text-white text-[17px] screen744:!text-[18px] font-medium whitespace-nowrap",
                   "shadow-[3.7px_3.9px_0_0_#759CFF]",
                   "transition-[transform,background-color,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
@@ -196,7 +177,7 @@ const Hero = () => {
                 >
                   <path d="M12 5v14M5 12h14" />
                 </svg>
-                <RollingWords text="Start Free Practice" />
+                <RollingWords text="Start Your Free Practice" />
               </Link>
               <Link
                 href="/exam-overview"
@@ -233,7 +214,7 @@ const Hero = () => {
                   className="w-[50px] h-[21px] screen1280:!w-[57px] screen1280:!h-[24px]"
                   priority
                 />
-                Trusted by 70k+ test-takers
+                Trusted by {HOMEPAGE_USER_COUNT} test-takers
               </div>
               <span className="hidden screen1280:!block w-px h-[18px] bg-[#D5D6D8]" aria-hidden="true" />
               <div className="flex items-center gap-[8px] screen1280:!gap-[6px] pl-[2px] screen1280:!pl-0">
@@ -271,7 +252,7 @@ const Hero = () => {
             >
               <Image
                 src="/images/hero.png"
-                alt="CELPIP Practice Test beaver mascot waving"
+                alt="CELPIP Practice Test beaver mascot"
                 width={300}
                 height={363}
                 priority
