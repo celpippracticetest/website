@@ -1,8 +1,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
-import { JsonLd } from "@/components/seo/JsonLd";
 import { cn } from "@/lib/utils";
-import { HOMEPAGE_FAQS, buildHomepageFaqJsonLd } from "@/data/homepage-faqs";
+import { HOMEPAGE_FAQS } from "@/data/homepage-faqs";
 
 // Turns the "See Pricing" mention into a real link; other answers render as text.
 const renderAnswer = (answer: string) => {
@@ -28,7 +27,6 @@ const FAQ = () => {
       aria-labelledby="faq-heading"
       className="mx-auto w-full max-w-[1000px] px-[20px] pt-[44px] screen744:!px-[48px] screen744:!pt-[64px] screen1280:!px-0 screen1280:!pt-[88px] flex flex-col"
     >
-      <JsonLd data={buildHomepageFaqJsonLd()} />
       <h2
         id="faq-heading"
         className="m-0 mb-[20px] screen1280:!mb-[32px] text-center text-[24px] leading-[31px] screen744:!text-[30px] screen744:!leading-[38px] screen1280:!text-[32px] screen1280:!leading-[40px] font-semibold text-[#212E42]"
