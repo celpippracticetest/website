@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useInView } from "react-intersection-observer";
 import { cn } from "@/lib/utils";
 import { trackCTAClick } from "@/lib/analytics";
+import { playOnView } from "@/hooks/usePlayOnView";
 import RollingWords from "./RollingWords";
 
 const Practice = () => {
@@ -35,12 +36,14 @@ const Practice = () => {
           )}
         >
           <Image
+            ref={playOnView}
+            data-play-delay={200}
             src="/images/hero.png"
             alt=""
             width={250}
             height={302}
             sizes="(max-width: 743px) 140px, (max-width: 1279px) 170px, 250px"
-            className="w-full h-full object-cover object-top transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-rotate-3 hover:-translate-y-[4px]"
+            className="w-full h-full object-cover object-top transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-rotate-3 data-[play]:-rotate-3 hover:-translate-y-[4px] data-[play]:-translate-y-[4px]"
           />
         </div>
 
@@ -56,17 +59,18 @@ const Practice = () => {
 
         <div className="mt-[20px] screen744:!mt-[24px] screen1280:!mt-[26px] self-stretch screen744:!self-auto flex flex-col items-center gap-[12px] screen1280:!flex-row screen1280:!gap-[22px]">
           <Link
-            href="/practice-overview"
+            ref={playOnView}
+            href="/writing"
             onClick={() =>
-              trackCTAClick("Start Free Practice", "cta_banner", {
+              trackCTAClick("Start Your Free Practice", "cta_banner", {
                 itemId: "cta_banner_start",
               })
             }
             className={cn(
-              "group/start flex items-center justify-center gap-[8px] h-[54px] w-full screen744:!w-[290px] screen744:!h-[55px] screen1280:!w-[260px] rounded-full",
+              "group/start flex items-center justify-center gap-[8px] h-[54px] w-full screen744:!w-auto screen744:!min-w-[290px] screen744:!px-[24px] screen744:!h-[55px] screen1280:!min-w-[260px] rounded-full",
               "bg-white text-[#2554D6] text-[17px] screen1280:!text-[18px] font-semibold whitespace-nowrap shadow-[3.7px_3.9px_0_0_#B8431B]",
               "transition-[transform,box-shadow,background-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
-              "hover:-translate-y-[2px] hover:shadow-[5px_6px_0_0_#B8431B] hover:bg-[#F4F7FF]",
+              "hover:-translate-y-[2px] data-[play]:-translate-y-[2px] hover:shadow-[5px_6px_0_0_#B8431B] data-[play]:shadow-[5px_6px_0_0_#B8431B] hover:bg-[#F4F7FF] data-[play]:bg-[#F4F7FF]",
               "active:translate-x-[2px] active:translate-y-[2px] active:shadow-[0_0_0_0_#B8431B] active:duration-100",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#E2592B]",
               "motion-reduce:transition-none",
@@ -74,11 +78,11 @@ const Practice = () => {
           >
             <svg
               width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
-              className="transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/start:rotate-90"
+              className="transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/start:rotate-90 group-data-[play]/start:rotate-90"
             >
               <path d="M12 5v14M5 12h14" />
             </svg>
-            <RollingWords text="Start Free Practice" />
+            <RollingWords text="Start Your Free Practice" />
           </Link>
           <div className="flex items-center gap-[6px] screen1280:!gap-[8px] text-[14px] screen1280:!text-[16px] font-semibold text-white">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="screen1280:!w-[18px] screen1280:!h-[18px]">

@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { playOnView } from "@/hooks/usePlayOnView";
 
 type Skill = {
   title: string;
@@ -118,18 +119,20 @@ const AiBadge = () => (
 );
 
 const ArrowIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/see:translate-x-[3px]">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/see:translate-x-[3px] group-data-[play]/see:translate-x-[3px]">
     <path d="M5 12h14M13 6l6 6-6 6" />
   </svg>
 );
 
-const FullCard = ({ skill, className }: { skill: Skill; className?: string }) => (
+const FullCard = ({ skill, className, index = 0 }: { skill: Skill; className?: string; index?: number }) => (
   <Link
+    ref={playOnView}
+    data-play-delay={index * 120}
     href={skill.href}
     className={cn(
       "group relative bg-white border border-[#E8EEFB] rounded-[16px] shadow-[0_1px_2px_rgba(33,46,66,0.04)] outline-none",
       "transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
-      "hover:-translate-y-[4px] hover:border-[#C9D5F5] hover:shadow-[0_14px_28px_-16px_rgba(37,84,214,0.35)] active:-translate-y-[1px] active:duration-100",
+      "hover:-translate-y-[4px] data-[play]:-translate-y-[4px] hover:border-[#C9D5F5] data-[play]:border-[#C9D5F5] hover:shadow-[0_14px_28px_-16px_rgba(37,84,214,0.35)] data-[play]:shadow-[0_14px_28px_-16px_rgba(37,84,214,0.35)] active:-translate-y-[1px] active:duration-100",
       "focus-visible:ring-2 focus-visible:ring-[#2554D6] focus-visible:ring-offset-2",
       "flex flex-col gap-[10px] screen744:!gap-[12px] screen1280:!gap-[14px] h-[130px] p-[14px] screen744:!h-[156px] screen744:!p-[16px] screen1280:!h-[152px] screen1280:!px-[16px] screen1280:!py-[18px]",
       className,
@@ -137,7 +140,7 @@ const FullCard = ({ skill, className }: { skill: Skill; className?: string }) =>
   >
     <span
       className={cn(
-        "flex shrink-0 items-center justify-center rounded-[8px] transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-110 group-hover:-rotate-3 motion-reduce:transition-none",
+        "flex shrink-0 items-center justify-center rounded-[8px] transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-110 group-data-[play]:scale-110 group-hover:-rotate-3 group-data-[play]:-rotate-3 motion-reduce:transition-none",
         "w-[36px] h-[36px] p-[7px] screen1280:!w-[40px] screen1280:!h-[40px] screen1280:!p-[8px]",
         skill.tile,
       )}
@@ -146,7 +149,7 @@ const FullCard = ({ skill, className }: { skill: Skill; className?: string }) =>
     </span>
     {skill.aiScored && <AiBadge />}
     <span className="flex flex-col gap-[3px] screen1280:!gap-[4px]">
-      <h3 className="m-0 text-[15px] leading-[20px] screen1280:!text-[16px] screen1280:!leading-[22px] font-semibold text-[#212E42] transition-colors duration-300 group-hover:text-[#2554D6]">
+      <h3 className="m-0 text-[15px] leading-[20px] screen1280:!text-[16px] screen1280:!leading-[22px] font-semibold text-[#212E42] transition-colors duration-300 group-hover:text-[#2554D6] group-data-[play]:text-[#2554D6]">
         {skill.title}
       </h3>
       <span className="text-[12px] leading-[17px] screen1280:!text-[13px] screen1280:!leading-[18px] text-[#5B6B82]">
@@ -156,27 +159,29 @@ const FullCard = ({ skill, className }: { skill: Skill; className?: string }) =>
   </Link>
 );
 
-const CompactCard = ({ skill }: { skill: Skill }) => (
+const CompactCard = ({ skill, index = 0 }: { skill: Skill; index?: number }) => (
   <Link
+    ref={playOnView}
+    data-play-delay={index * 120}
     href={skill.href}
     className={cn(
       "group relative bg-white border border-[#E8EEFB] rounded-[16px] shadow-[0_1px_2px_rgba(33,46,66,0.04)] outline-none",
       "transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
-      "hover:-translate-y-[4px] hover:border-[#C9D5F5] hover:shadow-[0_14px_28px_-16px_rgba(37,84,214,0.35)] active:-translate-y-[1px] active:duration-100",
+      "hover:-translate-y-[4px] data-[play]:-translate-y-[4px] hover:border-[#C9D5F5] data-[play]:border-[#C9D5F5] hover:shadow-[0_14px_28px_-16px_rgba(37,84,214,0.35)] data-[play]:shadow-[0_14px_28px_-16px_rgba(37,84,214,0.35)] active:-translate-y-[1px] active:duration-100",
       "focus-visible:ring-2 focus-visible:ring-[#2554D6] focus-visible:ring-offset-2",
       "flex flex-col items-center justify-center gap-[8px] h-[88px] px-[6px] py-[12px]",
     )}
   >
     <span
       className={cn(
-        "flex shrink-0 items-center justify-center rounded-[8px] transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-110 group-hover:-rotate-3 motion-reduce:transition-none",
+        "flex shrink-0 items-center justify-center rounded-[8px] transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-110 group-data-[play]:scale-110 group-hover:-rotate-3 group-data-[play]:-rotate-3 motion-reduce:transition-none",
         "w-[32px] h-[32px] p-[6px]",
         skill.tile,
       )}
     >
       {skill.icon}
     </span>
-    <h3 className="m-0 text-[13px] leading-[18px] font-semibold text-[#212E42] transition-colors duration-300 group-hover:text-[#2554D6]">
+    <h3 className="m-0 text-[13px] leading-[18px] font-semibold text-[#212E42] transition-colors duration-300 group-hover:text-[#2554D6] group-data-[play]:text-[#2554D6]">
       {skill.title}
     </h3>
   </Link>
@@ -197,7 +202,8 @@ const SkillsSection = () => {
         </h2>
         <Link
           href="/practice-overview"
-          className="group/see hidden screen1280:!flex items-center gap-[6px] h-[44px] text-[15px] font-semibold text-[#2554D6] transition-colors hover:text-[#1B3FA8]"
+          ref={playOnView}
+          className="group/see hidden screen1280:!flex items-center gap-[6px] h-[44px] text-[15px] font-semibold text-[#2554D6] transition-colors hover:text-[#1B3FA8] data-[play]:text-[#1B3FA8]"
         >
           See all practice
           <ArrowIcon />
@@ -206,25 +212,26 @@ const SkillsSection = () => {
 
       {/* Desktop: one row of seven cards */}
       <div className="hidden screen1280:!grid grid-cols-7 gap-[14px]">
-        {[...mainSkills, ...toolSkills].map((skill) => (
-          <FullCard key={skill.title} skill={skill} />
+        {[...mainSkills, ...toolSkills].map((skill, index) => (
+          <FullCard key={skill.title} skill={skill} index={index} />
         ))}
       </div>
 
       {/* Mobile & tablet: skills, then compact tool cards */}
       <div className="grid screen1280:!hidden grid-cols-2 screen744:!grid-cols-4 gap-[10px] screen744:!gap-[12px]">
-        {mainSkills.map((skill) => (
-          <FullCard key={skill.title} skill={skill} />
+        {mainSkills.map((skill, index) => (
+          <FullCard key={skill.title} skill={skill} index={index} />
         ))}
       </div>
       <div className="grid screen1280:!hidden grid-cols-3 gap-[10px]">
-        {toolSkills.map((skill) => (
-          <CompactCard key={skill.title} skill={skill} />
+        {toolSkills.map((skill, index) => (
+          <CompactCard key={skill.title} skill={skill} index={index} />
         ))}
       </div>
       <Link
         href="/practice-overview"
-        className="group/see flex screen1280:!hidden items-center justify-center gap-[6px] h-[44px] text-[15px] font-semibold text-[#2554D6] transition-colors hover:text-[#1B3FA8]"
+        ref={playOnView}
+        className="group/see flex screen1280:!hidden items-center justify-center gap-[6px] h-[44px] text-[15px] font-semibold text-[#2554D6] transition-colors hover:text-[#1B3FA8] data-[play]:text-[#1B3FA8]"
       >
         See all practice
         <ArrowIcon />

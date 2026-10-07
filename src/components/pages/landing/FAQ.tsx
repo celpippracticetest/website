@@ -11,7 +11,7 @@ const renderAnswer = (answer: string) => {
   return (
     <>
       {before}See{" "}
-      <Link href="/pricing" className="font-semibold text-[#2554D6] underline-offset-2 hover:underline">
+      <Link href="/pricing" className="font-semibold text-[#2554D6] underline-offset-2 hover:underline data-[play]:underline">
         Pricing
       </Link>
       {after}
@@ -48,7 +48,7 @@ const FAQ = () => {
                 "rounded-[14px] border overflow-hidden transition-[background-color,border-color,box-shadow] duration-300",
                 open
                   ? "bg-white border-[#C9D5F5] shadow-[0_10px_28px_-20px_rgba(37,84,214,0.45)]"
-                  : "bg-white/70 border-[#E3E8F2] hover:bg-white hover:border-[#C9D5F5]",
+                  : "bg-white/70 border-[#E3E8F2] hover:bg-white data-[play]:bg-white hover:border-[#C9D5F5] data-[play]:border-[#C9D5F5]",
               )}
             >
               <h3 className="m-0">
@@ -69,7 +69,7 @@ const FAQ = () => {
                   <span
                     className={cn(
                       "flex shrink-0 items-center justify-center w-[28px] h-[28px] rounded-full transition-[transform,background-color,color] duration-200 ease-out motion-reduce:transition-none",
-                      open ? "rotate-180 bg-[#EEF3FF] text-[#2554D6]" : "text-[#37465C] group-hover:bg-[#EEF3FF] group-hover:text-[#2554D6]",
+                      open ? "rotate-180 bg-[#EEF3FF] text-[#2554D6]" : "text-[#37465C] group-hover:bg-[#EEF3FF] group-data-[play]:bg-[#EEF3FF] group-hover:text-[#2554D6] group-data-[play]:text-[#2554D6]",
                     )}
                   >
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -101,7 +101,7 @@ const FAQ = () => {
 
       <p className="m-0 mt-[14px] screen1280:!mt-[24px] text-center text-[14px] screen1280:!text-[15px] text-[#5B6B82]">
         Still have a question?{" "}
-        <Link href="/contact-us" className="font-semibold text-[#2554D6] underline-offset-2 hover:underline">
+        <Link href="/contact-us" className="font-semibold text-[#2554D6] underline-offset-2 hover:underline data-[play]:underline">
           Contact us
         </Link>
       </p>

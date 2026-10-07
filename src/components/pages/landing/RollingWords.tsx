@@ -13,14 +13,14 @@ const RollingWords = ({ text }: { text: string }) => (
       <span key={`${word}-${index}`} className="relative inline-flex overflow-hidden leading-[1.25]">
         <span
           style={{ transitionDelay: `${index * 60}ms` }}
-          className="inline-block transition-transform duration-[450ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/start:-translate-y-full motion-reduce:transition-none motion-reduce:group-hover/start:translate-y-0"
+          className="inline-block transition-transform duration-[450ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/start:-translate-y-full group-data-[play]/start:-translate-y-full motion-reduce:transition-none motion-reduce:group-hover/start:translate-y-0"
         >
           {word}
         </span>
         <span
           aria-hidden="true"
           style={{ transitionDelay: `${index * 60}ms` }}
-          className="absolute inset-0 inline-block translate-y-full transition-transform duration-[450ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/start:translate-y-0 motion-reduce:hidden"
+          className="absolute inset-0 inline-block translate-y-full transition-transform duration-[450ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/start:translate-y-0 group-data-[play]/start:translate-y-0 motion-reduce:hidden"
         >
           {word}
         </span>

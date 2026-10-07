@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useInView } from "react-intersection-observer";
 import { useButtonVisibleStore } from "@/store/buttonVisible.store";
 import { getStoreUrl } from "@/lib/mobile/appVersionPolicy";
+import { playOnView } from "@/hooks/usePlayOnView";
 
 const columns = [
   {
@@ -60,7 +61,7 @@ const Footer = (_props: { isSignedIn?: boolean }) => {
             <Link
               href="/"
               aria-label="CELPIP Practice Test home"
-              className="flex items-center h-[44px] self-start transition-opacity duration-200 hover:opacity-80"
+              className="flex items-center h-[44px] self-start transition-opacity duration-200 hover:opacity-80 data-[play]:opacity-80"
             >
               <Image
                 src="/images/header-logo-left.png"
@@ -82,12 +83,13 @@ const Footer = (_props: { isSignedIn?: boolean }) => {
               Free CELPIP practice tests with instant AI scoring for Writing and Speaking.
             </p>
             <a
+              ref={playOnView}
               href={getStoreUrl("android")}
               target="_blank"
               rel="noopener noreferrer"
-              className="group self-start flex items-center gap-[8px] h-[44px] px-[16px] rounded-full bg-white border border-[#C9D5F5] text-[#2554D6] text-[14px] font-semibold transition-[transform,border-color,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-[2px] hover:border-[#2554D6] hover:shadow-[0_10px_20px_-14px_rgba(37,84,214,0.6)] active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2554D6] focus-visible:ring-offset-2"
+              className="group self-start flex items-center gap-[8px] h-[44px] px-[16px] rounded-full bg-white border border-[#C9D5F5] text-[#2554D6] text-[14px] font-semibold transition-[transform,border-color,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-[2px] data-[play]:-translate-y-[2px] hover:border-[#2554D6] data-[play]:border-[#2554D6] hover:shadow-[0_10px_20px_-14px_rgba(37,84,214,0.6)] data-[play]:shadow-[0_10px_20px_-14px_rgba(37,84,214,0.6)] active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2554D6] focus-visible:ring-offset-2"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="transition-transform duration-300 group-hover:-rotate-6">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="transition-transform duration-300 group-hover:-rotate-6 group-data-[play]:-rotate-6">
                 <rect x="6" y="2" width="12" height="20" rx="3" />
                 <path d="M11 18h2" />
               </svg>
@@ -109,7 +111,7 @@ const Footer = (_props: { isSignedIn?: boolean }) => {
                   <Link
                     key={link.href}
                     href={link.href}
-                    className="self-start flex items-center min-h-[32px] text-[15px] text-[#37465C] transition-[color,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:text-[#2554D6] hover:translate-x-[3px]"
+                    className="self-start flex items-center min-h-[32px] text-[15px] text-[#37465C] transition-[color,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:text-[#2554D6] data-[play]:text-[#2554D6] hover:translate-x-[3px] data-[play]:translate-x-[3px]"
                   >
                     {link.label}
                   </Link>
@@ -132,7 +134,7 @@ const Footer = (_props: { isSignedIn?: boolean }) => {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="flex items-center min-h-[32px] screen1280:!min-h-0 text-[#37465C] transition-colors duration-200 hover:text-[#2554D6] hover:underline underline-offset-2"
+                  className="flex items-center min-h-[32px] screen1280:!min-h-0 text-[#37465C] transition-colors duration-200 hover:text-[#2554D6] data-[play]:text-[#2554D6] hover:underline data-[play]:underline underline-offset-2"
                 >
                   {link.label}
                 </Link>

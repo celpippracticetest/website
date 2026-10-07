@@ -3,6 +3,7 @@ import Image from "next/image";
 import { useInView } from "react-intersection-observer";
 import { HOMEPAGE_TESTIMONIALS, type HomepageTestimonial } from "@/data/homepage-testimonials";
 import { cn } from "@/lib/utils";
+import { playOnView } from "@/hooks/usePlayOnView";
 
 // Carlos leads as the featured review; the rest keep their data order.
 const FEATURED_NAME = "Carlos";
@@ -71,11 +72,13 @@ const Comments = () => {
       <div className="mt-[20px] screen744:!mt-[20px] screen1280:!mt-[32px] grid grid-cols-1 screen744:!grid-cols-2 screen1280:!grid-cols-3 gap-[12px] screen744:!gap-[14px] screen1280:!gap-[20px]">
         {/* Featured review */}
         <figure
+          ref={playOnView}
+          data-play-delay={150}
           className={cn(
             "m-0 flex flex-col gap-[14px] p-[22px] rounded-[20px] screen1280:!rounded-[18px] border border-[#DCE5FA]",
             "bg-[linear-gradient(160deg,#FFFFFF_0%,#F2F6FF_100%)] shadow-[0_16px_36px_-22px_rgba(37,84,214,0.35)]",
             "screen744:!col-span-2 screen1280:!col-span-1 screen1280:!row-span-2 screen1280:!justify-between",
-            "transition-[transform,opacity,box-shadow] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] hover:shadow-[0_22px_44px_-22px_rgba(37,84,214,0.45)] motion-reduce:transition-none",
+            "transition-[transform,opacity,box-shadow] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] hover:shadow-[0_22px_44px_-22px_rgba(37,84,214,0.45)] data-[play]:shadow-[0_22px_44px_-22px_rgba(37,84,214,0.45)] motion-reduce:transition-none",
             inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-[16px]",
           )}
         >
@@ -98,7 +101,7 @@ const Comments = () => {
               inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-[16px]",
             )}
           >
-            <figure className="m-0 h-full flex flex-col gap-[12px] screen1280:!gap-[14px] p-[18px] screen1280:!p-[22px] rounded-[16px] screen1280:!rounded-[18px] bg-white border border-[#E8EEFB] transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-[3px] hover:border-[#C9D5F5] hover:shadow-[0_14px_28px_-18px_rgba(37,84,214,0.35)] motion-reduce:transition-none">
+            <figure ref={playOnView} data-play-delay={300 + index * 150} className="m-0 h-full flex flex-col gap-[12px] screen1280:!gap-[14px] p-[18px] screen1280:!p-[22px] rounded-[16px] screen1280:!rounded-[18px] bg-white border border-[#E8EEFB] transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-[3px] data-[play]:-translate-y-[3px] hover:border-[#C9D5F5] data-[play]:border-[#C9D5F5] hover:shadow-[0_14px_28px_-18px_rgba(37,84,214,0.35)] data-[play]:shadow-[0_14px_28px_-18px_rgba(37,84,214,0.35)] motion-reduce:transition-none">
               <Author person={person} small />
               <blockquote className="m-0 text-[14px] leading-[21px] screen1280:!text-[15px] screen1280:!leading-[23px] text-[#37465C]">
                 {person.comment}

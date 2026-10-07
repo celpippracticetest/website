@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import AuthButtons from "./AuthButtons";
 import RollingWords from "./RollingWords";
+import { playOnView, playOnce } from "@/hooks/usePlayOnView";
 import { useEventTracker } from "@/hooks/useTracking";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
@@ -38,7 +39,7 @@ const Logo = () => (
   <Link
     href="/"
     aria-label="CELPIP Practice Test home"
-    className="flex items-center h-[44px] shrink-0 transition-opacity duration-200 hover:opacity-80 active:opacity-60"
+    className="flex items-center h-[44px] shrink-0 transition-opacity duration-200 hover:opacity-80 data-[play]:opacity-80 active:opacity-60"
   >
     <Image
       src="/images/header-logo-left.png"
@@ -78,6 +79,7 @@ const TopHeader = () => {
   const pathname = usePathname();
   const { user, isLoaded, isSignedIn } = useHybridWebUser();
   const { trackCTA } = useEventTracker();
+  const startRef = useRef<HTMLAnchorElement>(null);
 
   const hasActivePlan = hasPaidPracticeAccess(user?.publicMetadata?.plan);
   const authReady = mounted && isLoaded;
@@ -94,6 +96,11 @@ const TopHeader = () => {
     query.addEventListener("change", update);
     return () => query.removeEventListener("change", update);
   }, []);
+
+  // Touch screens can't hover: play the word roll once each time the button slides in.
+  useEffect(() => {
+    if (showStart && startRef.current) playOnce(startRef.current, 700);
+  }, [showStart]);
 
   useEffect(() => {
     if (isMenuOpen) {
@@ -181,7 +188,7 @@ const TopHeader = () => {
                     className={cn(
                       "group relative flex items-center h-[44px] px-[20px] text-[14px] rounded-full outline-none",
                       "transition-[color,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
-                      "hover:text-[#2554D6] focus-visible:text-[#2554D6] active:scale-[0.96] motion-reduce:transition-none",
+                      "hover:text-[#2554D6] data-[play]:text-[#2554D6] focus-visible:text-[#2554D6] active:scale-[0.96] motion-reduce:transition-none",
                       active ? "text-[#2554D6] font-semibold" : "text-[#37465C]"
                     )}
                   >
@@ -193,7 +200,7 @@ const TopHeader = () => {
                         "transition-[width,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
                         active
                           ? "w-[calc(100%-40px)] opacity-100"
-                          : "w-0 opacity-0 group-hover:w-[calc(100%-40px)] group-hover:opacity-100 group-focus-visible:w-[calc(100%-40px)] group-focus-visible:opacity-100"
+                          : "w-0 opacity-0 group-hover:w-[calc(100%-40px)] group-data-[play]:w-[calc(100%-40px)] group-hover:opacity-100 group-data-[play]:opacity-100 group-focus-visible:w-[calc(100%-40px)] group-focus-visible:opacity-100"
                       )}
                     />
                   </Link>
@@ -212,6 +219,7 @@ const TopHeader = () => {
               <div className="flex items-center">
                 {showPricing && (
                   <Link
+                    ref={playOnView}
                     href="/pricing"
                     aria-label="Pricing"
                     className={cn(
@@ -219,13 +227,13 @@ const TopHeader = () => {
                       "bg-[#C4453A] text-white text-[14px] font-semibold whitespace-nowrap",
                       "shadow-[inset_0_1px_0_rgba(255,255,255,0.22),3px_3px_0_0_#759CFF]",
                       "transition-[background-color,transform,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
-                      "hover:bg-[#B83E34] hover:-translate-y-[2px] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.22),4px_5px_0_0_#759CFF]",
+                      "hover:bg-[#B83E34] data-[play]:bg-[#B83E34] hover:-translate-y-[2px] data-[play]:-translate-y-[2px] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.22),4px_5px_0_0_#759CFF] data-[play]:shadow-[inset_0_1px_0_rgba(255,255,255,0.22),4px_5px_0_0_#759CFF]",
                       "active:translate-x-[2px] active:translate-y-[2px] active:shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_0_0_0_#759CFF] active:duration-100",
                       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C4453A] focus-visible:ring-offset-2",
                       "motion-reduce:transition-none"
                     )}
                   >
-                    <span className="flex origin-bottom group-hover/pricing:animate-crown-wiggle motion-reduce:!animate-none">
+                    <span className="flex origin-bottom group-hover/pricing:animate-crown-wiggle group-data-[play]/pricing:animate-crown-wiggle motion-reduce:!animate-none">
                       <CrownIcon />
                     </span>
                     <span className="max-[379px]:hidden">Pricing</span>
@@ -235,12 +243,12 @@ const TopHeader = () => {
                 {showSignedOut && (
                   <Link
                     href="/sign-in"
-                    className="group relative hidden screen744:!flex items-center h-[44px] ml-[16px] screen1280:!ml-[20px] px-[4px] text-[14px] font-semibold text-[#2554D6] transition-[color,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:text-[#1B3FA8] active:scale-[0.96] motion-reduce:transition-none"
+                    className="group relative hidden screen744:!flex items-center h-[44px] ml-[16px] screen1280:!ml-[20px] px-[4px] text-[14px] font-semibold text-[#2554D6] transition-[color,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:text-[#1B3FA8] data-[play]:text-[#1B3FA8] active:scale-[0.96] motion-reduce:transition-none"
                   >
                     Sign in
                     <span
                       aria-hidden="true"
-                      className="absolute left-1/2 bottom-[8px] h-[2px] w-0 -translate-x-1/2 rounded-full bg-current opacity-0 transition-[width,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:w-[calc(100%-8px)] group-hover:opacity-100"
+                      className="absolute left-1/2 bottom-[8px] h-[2px] w-0 -translate-x-1/2 rounded-full bg-current opacity-0 transition-[width,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:w-[calc(100%-8px)] group-data-[play]:w-[calc(100%-8px)] group-hover:opacity-100 group-data-[play]:opacity-100"
                     />
                   </Link>
                 )}
@@ -259,6 +267,7 @@ const TopHeader = () => {
                     <div className="min-w-0 overflow-hidden -my-[8px] py-[8px] -mr-[8px] pr-[8px] pl-[8px] screen744:!pl-[12px]">
                       <Link
                         href="/practice-overview"
+                        ref={startRef}
                         tabIndex={showStart ? undefined : -1}
                         onClick={() => handleStart("header")}
                         className={cn(
@@ -266,12 +275,12 @@ const TopHeader = () => {
                           "bg-[#2554D6] text-white text-[14px] screen744:!text-[15px] screen1280:!text-[16px] font-medium whitespace-nowrap",
                           "shadow-[inset_0_1px_0_rgba(255,255,255,0.2),3px_3px_0_0_#759CFF]",
                           "transition-[transform,background-color,box-shadow] duration-[650ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
-                          "hover:bg-[#1F48BD] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.2),4px_5px_0_0_#759CFF]",
+                          "hover:bg-[#1F48BD] data-[play]:bg-[#1F48BD] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.2),4px_5px_0_0_#759CFF] data-[play]:shadow-[inset_0_1px_0_rgba(255,255,255,0.2),4px_5px_0_0_#759CFF]",
                           "active:shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_0_0_0_#759CFF] active:duration-100",
                           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2554D6] focus-visible:ring-offset-2",
                           "motion-reduce:transition-none",
                           showStart
-                            ? "translate-x-0 hover:-translate-y-[2px] active:translate-x-[2px] active:translate-y-[2px]"
+                            ? "translate-x-0 hover:-translate-y-[2px] data-[play]:-translate-y-[2px] active:translate-x-[2px] active:translate-y-[2px]"
                             : "-translate-x-[24px]"
                         )}
                       >
@@ -283,7 +292,7 @@ const TopHeader = () => {
                         </span>
                         <svg
                           width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
-                          className="hidden screen744:!block transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/start:translate-x-[3px]"
+                          className="hidden screen744:!block transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/start:translate-x-[3px] group-data-[play]/start:translate-x-[3px]"
                         >
                           <path d="M5 12h14M13 6l6 6-6 6" />
                         </svg>
@@ -306,7 +315,7 @@ const TopHeader = () => {
               aria-expanded={isMenuOpen}
               aria-controls="site-menu"
               onClick={() => setIsMenuOpen((open) => !open)}
-              className="screen1280:!hidden relative flex items-center justify-center w-[44px] h-[44px] rounded-full text-[#1E293B] transition-[background-color,transform] duration-200 hover:bg-white/70 active:scale-90"
+              className="screen1280:!hidden relative flex items-center justify-center w-[44px] h-[44px] rounded-full text-[#1E293B] transition-[background-color,transform] duration-200 hover:bg-white/70 data-[play]:bg-white/70 active:scale-90"
             >
               <svg
                 width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
@@ -378,14 +387,14 @@ const TopHeader = () => {
                       aria-current={active ? "page" : undefined}
                       className={cn(
                         "group flex items-center justify-between h-[52px] px-[12px] screen744:!px-[16px] rounded-[12px] text-[16px]",
-                        "transition-[background-color,color,transform] duration-200 hover:bg-[#F4F7FF] hover:text-[#2554D6] active:scale-[0.98] active:bg-[#E3EBFF]",
+                        "transition-[background-color,color,transform] duration-200 hover:bg-[#F4F7FF] data-[play]:bg-[#F4F7FF] hover:text-[#2554D6] data-[play]:text-[#2554D6] active:scale-[0.98] active:bg-[#E3EBFF]",
                         active ? "text-[#2554D6] font-semibold bg-[#F4F7FF]" : "text-[#212E42]"
                       )}
                     >
                       {link.label}
                       <svg
                         width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
-                        className="opacity-0 -translate-x-[6px] transition-[opacity,transform] duration-200 group-hover:opacity-100 group-hover:translate-x-0"
+                        className="opacity-0 -translate-x-[6px] transition-[opacity,transform] duration-200 group-hover:opacity-100 group-data-[play]:opacity-100 group-hover:translate-x-0 group-data-[play]:translate-x-0"
                       >
                         <path d="M5 12h14M13 6l6 6-6 6" />
                       </svg>
@@ -407,12 +416,12 @@ const TopHeader = () => {
                 <Link
                   href="/practice-overview"
                   onClick={() => handleStart("mobile_menu")}
-                  className="group/start flex items-center justify-center gap-[6px] h-[52px] rounded-full bg-[#2554D6] text-white text-[16px] font-medium shadow-[3.7px_3.9px_0_0_#759CFF] transition-[transform,box-shadow,background-color] duration-200 hover:bg-[#1F48BD] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[0_0_0_0_#759CFF]"
+                  className="group/start flex items-center justify-center gap-[6px] h-[52px] rounded-full bg-[#2554D6] text-white text-[16px] font-medium shadow-[3.7px_3.9px_0_0_#759CFF] transition-[transform,box-shadow,background-color] duration-200 hover:bg-[#1F48BD] data-[play]:bg-[#1F48BD] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[0_0_0_0_#759CFF]"
                 >
                   <RollingWords text="Start Free Practice" />
                   <svg
                     width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
-                    className="transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/start:translate-x-[3px]"
+                    className="transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/start:translate-x-[3px] group-data-[play]/start:translate-x-[3px]"
                   >
                     <path d="M5 12h14M13 6l6 6-6 6" />
                   </svg>
@@ -420,7 +429,7 @@ const TopHeader = () => {
                 <Link
                   href="/sign-in"
                   onClick={closeMenu}
-                  className="flex items-center justify-center h-[48px] rounded-full text-[16px] font-semibold text-[#2554D6] transition-colors duration-200 hover:bg-[#F4F7FF] active:bg-[#E3EBFF]"
+                  className="flex items-center justify-center h-[48px] rounded-full text-[16px] font-semibold text-[#2554D6] transition-colors duration-200 hover:bg-[#F4F7FF] data-[play]:bg-[#F4F7FF] active:bg-[#E3EBFF]"
                 >
                   Sign in
                 </Link>

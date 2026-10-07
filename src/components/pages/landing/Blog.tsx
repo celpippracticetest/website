@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { useInView } from "react-intersection-observer";
 import { cn } from "@/lib/utils";
+import { playOnView } from "@/hooks/usePlayOnView";
 
 /** Serializable post summary passed from the server page. */
 export type HomeBlogPost = {
@@ -15,7 +16,7 @@ export type HomeBlogPost = {
 };
 
 const ArrowIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/see:translate-x-[3px]">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/see:translate-x-[3px] group-data-[play]/see:translate-x-[3px]">
     <path d="M5 12h14M13 6l6 6-6 6" />
   </svg>
 );
@@ -52,7 +53,8 @@ const Blog = ({ posts }: { posts: HomeBlogPost[] }) => {
         </div>
         <Link
           href="/blog"
-          className="group/see hidden screen1280:!flex items-center gap-[6px] h-[44px] text-[15px] font-semibold text-[#2554D6] transition-colors hover:text-[#1B3FA8]"
+          ref={playOnView}
+          className="group/see hidden screen1280:!flex items-center gap-[6px] h-[44px] text-[15px] font-semibold text-[#2554D6] transition-colors hover:text-[#1B3FA8] data-[play]:text-[#1B3FA8]"
         >
           See all articles
           <ArrowIcon />
@@ -71,11 +73,13 @@ const Blog = ({ posts }: { posts: HomeBlogPost[] }) => {
             )}
           >
             <Link
+              ref={playOnView}
+              data-play-delay={index * 150}
               href={`/blog/${post.slug}`}
               className={cn(
                 "group grow flex items-center gap-[14px] p-[12px] rounded-[16px] bg-white border border-[#E8EEFB] overflow-hidden",
                 "screen744:!flex-col screen744:!items-stretch screen744:!gap-0 screen744:!p-0 screen1280:!rounded-[18px]",
-                "transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-[4px] hover:border-[#C9D5F5] hover:shadow-[0_16px_32px_-20px_rgba(37,84,214,0.4)]",
+                "transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-[4px] data-[play]:-translate-y-[4px] hover:border-[#C9D5F5] data-[play]:border-[#C9D5F5] hover:shadow-[0_16px_32px_-20px_rgba(37,84,214,0.4)] data-[play]:shadow-[0_16px_32px_-20px_rgba(37,84,214,0.4)]",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2554D6] focus-visible:ring-offset-2 motion-reduce:transition-none",
               )}
             >
@@ -86,7 +90,7 @@ const Blog = ({ posts }: { posts: HomeBlogPost[] }) => {
                     src={post.cover.url}
                     alt=""
                     loading="lazy"
-                    className="block w-full h-full object-cover transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.04]"
+                    className="block w-full h-full object-cover transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.04] group-data-[play]:scale-[1.04]"
                   />
                 ) : (
                   <div className="w-full h-full bg-[linear-gradient(115deg,#FCE3D5_0%,#F7F0EC_45%,#E6F6FB_100%)]" />
@@ -94,7 +98,7 @@ const Blog = ({ posts }: { posts: HomeBlogPost[] }) => {
               </div>
               <div className="flex flex-col gap-[4px] screen744:!gap-[8px] screen744:!px-[20px] screen744:!pt-[18px] screen744:!pb-[20px]">
                 <Meta post={post} />
-                <h3 className="m-0 text-[15px] leading-[21px] screen1280:!text-[17px] screen1280:!leading-[24px] font-semibold text-[#212E42] line-clamp-2 transition-colors duration-300 group-hover:text-[#2554D6]">
+                <h3 className="m-0 text-[15px] leading-[21px] screen1280:!text-[17px] screen1280:!leading-[24px] font-semibold text-[#212E42] line-clamp-2 transition-colors duration-300 group-hover:text-[#2554D6] group-data-[play]:text-[#2554D6]">
                   {post.title}
                 </h3>
                 {post.date && (
@@ -108,7 +112,8 @@ const Blog = ({ posts }: { posts: HomeBlogPost[] }) => {
 
       <Link
         href="/blog"
-        className="group/see flex screen1280:!hidden items-center justify-center gap-[6px] h-[44px] text-[15px] font-semibold text-[#2554D6] transition-colors hover:text-[#1B3FA8]"
+        ref={playOnView}
+        className="group/see flex screen1280:!hidden items-center justify-center gap-[6px] h-[44px] text-[15px] font-semibold text-[#2554D6] transition-colors hover:text-[#1B3FA8] data-[play]:text-[#1B3FA8]"
       >
         See all articles
         <ArrowIcon />
