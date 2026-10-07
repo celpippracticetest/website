@@ -78,12 +78,12 @@ const Blog = ({ posts }: { posts: HomeBlogPost[] }) => {
               href={`/blog/${post.slug}`}
               className={cn(
                 "group grow flex items-center gap-[14px] p-[12px] rounded-[16px] bg-white border border-[#E8EEFB] overflow-hidden",
-                "screen744:!flex-col screen744:!items-stretch screen744:!gap-0 screen744:!p-0 screen1280:!rounded-[18px]",
+                "screen1280:!flex-col screen1280:!items-stretch screen1280:!gap-0 screen1280:!p-0 screen1280:!rounded-[18px]",
                 "transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-[4px] data-[play]:-translate-y-[4px] hover:border-[#C9D5F5] data-[play]:border-[#C9D5F5] hover:shadow-[0_16px_32px_-20px_rgba(37,84,214,0.4)] data-[play]:shadow-[0_16px_32px_-20px_rgba(37,84,214,0.4)]",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2554D6] focus-visible:ring-offset-2 motion-reduce:transition-none",
               )}
             >
-              <div className="shrink-0 w-[120px] h-[65px] rounded-[10px] overflow-hidden bg-[#EEF3FF] screen744:!w-full screen744:!h-[150px] screen744:!rounded-none screen744:!border-b screen744:!border-[#E8EEFB]">
+              <div className="shrink-0 w-[120px] h-[65px] rounded-[10px] overflow-hidden bg-[#EEF3FF] screen1280:!w-full screen1280:!h-[150px] screen1280:!rounded-none screen1280:!border-b screen1280:!border-[#E8EEFB]">
                 {post.cover ? (
                   // eslint-disable-next-line @next/next/no-img-element -- CMS images come from arbitrary hosts, same as /blog
                   <img
@@ -96,13 +96,13 @@ const Blog = ({ posts }: { posts: HomeBlogPost[] }) => {
                   <div className="w-full h-full bg-[linear-gradient(115deg,#FCE3D5_0%,#F7F0EC_45%,#E6F6FB_100%)]" />
                 )}
               </div>
-              <div className="flex flex-col gap-[4px] screen744:!gap-[8px] screen744:!px-[20px] screen744:!pt-[18px] screen744:!pb-[20px]">
+              <div className="flex flex-col gap-[4px] screen1280:!gap-[8px] screen1280:!px-[20px] screen1280:!pt-[18px] screen1280:!pb-[20px]">
                 <Meta post={post} />
                 <h3 className="m-0 text-[15px] leading-[21px] screen1280:!text-[17px] screen1280:!leading-[24px] font-semibold text-[#212E42] line-clamp-2 transition-colors duration-300 group-hover:text-[#2554D6] group-data-[play]:text-[#2554D6]">
                   {post.title}
                 </h3>
                 {post.date && (
-                  <div className="screen744:!mt-[4px] text-[12px] screen744:!text-[13px] text-[#5B6B82]">{post.date}</div>
+                  <div className="screen1280:!mt-[4px] text-[12px] screen744:!text-[13px] text-[#5B6B82]">{post.date}</div>
                 )}
               </div>
             </Link>

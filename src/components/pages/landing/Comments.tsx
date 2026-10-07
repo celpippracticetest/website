@@ -4,6 +4,7 @@ import { useInView } from "react-intersection-observer";
 import { HOMEPAGE_TESTIMONIALS, type HomepageTestimonial } from "@/data/homepage-testimonials";
 import { cn } from "@/lib/utils";
 import { playOnView } from "@/hooks/usePlayOnView";
+import { HOMEPAGE_USER_COUNT } from "@/data/homepage-content";
 
 // Carlos leads as the featured review; the rest keep their data order.
 const FEATURED_NAME = "Carlos";
@@ -61,7 +62,7 @@ const Comments = () => {
         id="reviews-heading"
         className="m-0 text-center text-[24px] leading-[31px] screen744:!text-[30px] screen744:!leading-[38px] screen1280:!text-[32px] screen1280:!leading-[40px] font-semibold text-[#212E42]"
       >
-        Join 70k+ Test-Takers Who Trust Us
+        Join {HOMEPAGE_USER_COUNT} Test-Takers Who Trust Us
       </h2>
       <p className="m-0 mt-[8px] text-center text-[15px] leading-[23px] screen1280:!text-[17px] screen1280:!leading-[26px] text-[#37465C]">
         What people say after practising with
