@@ -3,6 +3,7 @@
 import { ErrorBoundary } from "react-error-boundary";
 import dynamic from "next/dynamic";
 import Practice from "./Practice";
+import SkillsSection from "./SkillsSection";
 import Blog from "./Blog";
 import FAQ from "./FAQ";
 import { useChunkErrorHandler } from "@/hooks/useChunkErrorHandler";
@@ -41,6 +42,7 @@ export default function HomePageClient() {
       <div className="bg-[#F4F7FF]">
         <main>
           <Hero />
+          <SkillsSection />
           <UserResponseReview />
           <Comments />
           <Practice />

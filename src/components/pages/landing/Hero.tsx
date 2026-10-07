@@ -4,29 +4,14 @@ import React, { useEffect } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
-import ExamSectionCard from "./ExamSectionCard";
 import { useButtonVisibleStore } from "@/store/buttonVisible.store";
 import { useInView } from "react-intersection-observer";
 import TopHeader from "./TopHeader";
 import { Button } from "@/components/v2/Button";
-import { SvgLearning } from "@/components/icons";
-import SvgWord from "@/components/icons/Word";
 import { cn } from "@/lib/utils";
 import { trackCTAClick } from "@/lib/analytics";
 
 const SvgPlus = dynamic(() => import("../../icons/Plus"), { ssr: false });
-const SvgListening = dynamic(() => import("../../icons/Listening"), {
-  ssr: false,
-});
-const SvgSpeaking = dynamic(() => import("../../icons/Speaking"), {
-  ssr: false,
-});
-const SvgWriting = dynamic(() => import("../../icons/Writing"), { ssr: false });
-const SvgReading = dynamic(() => import("../../icons/Reading"), { ssr: false });
-const SvgMockExamsColorful = dynamic(
-  () => import("../../icons/MockExamsColorful"),
-  { ssr: false },
-);
 
 const heroFeatures = [
   {
@@ -294,72 +279,6 @@ const Hero = () => {
           </div>
         </div>
       </section>
-
-      {/* Navigation Cards (Desktop & Mobile Unified) */}
-      <div className="flex flex-col w-full overflow-hidden">
-        <div className="flex flex-row flex-wrap screen744:flex-nowrap px-[16px] screen744:!px-[42px] pt-[22px] pb-[60px] screen744:!pb-[40px] gap-[12px] screen744:!gap-[16px] screen1280:gap-[24px] w-full max-w-[1440px] mx-auto screen1024:justify-center">
-          {[
-            {
-              title: "Listening",
-              icon: <SvgListening className="text-[#1D4ED8]" />,
-              bgColor: "bg-primary5",
-              link: "/listening",
-            },
-            {
-              title: "Speaking",
-              icon: <SvgSpeaking className="text-[#BE123C]" />,
-              bgColor: "bg-secondary5",
-              link: "/speaking",
-            },
-            {
-              title: "Writing",
-              icon: <SvgWriting className="text-[#0D9488]" />,
-              bgColor: "bg-success5",
-              link: "/writing",
-            },
-            {
-              title: "Reading",
-              icon: <SvgReading className="text-[#B91C1C]" />,
-              bgColor: "bg-error5",
-              link: "/reading",
-            },
-            {
-              title: "Mock Exams",
-              icon: <SvgMockExamsColorful />,
-              bgColor: "bg-purple5",
-              link: "/exam-overview",
-            },
-            {
-              title: "Learning",
-              icon: <SvgLearning className="text-[#854D0E]" />,
-              bgColor: "bg-[#FEF9C3]",
-              link: "/learning",
-            },
-            {
-              title: "Words",
-              icon: <SvgWord className="text-[#0D8A72] w-[24px]" />,
-              bgColor: "bg-[#CCFBF1]",
-              link: "/words",
-            },
-          ].map((exam, index, array) => {
-            const isLast = index === array.length - 1;
-            return (
-              <ExamSectionCard
-                key={index}
-                title={exam.title}
-                icon={exam.icon}
-                bgColor={exam.bgColor}
-                isLast={isLast}
-                link={exam.link}
-                className={cn("screen744:!w-auto", {
-                  "!w-[calc(50%-6px)]": !isLast,
-                  "w-full": isLast,
-                })}
-              />
-            );
-          })}
-        </div>
-      </div>
     </div>
   );
 };
