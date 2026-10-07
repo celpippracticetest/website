@@ -2,69 +2,21 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { cn } from "@/lib/utils";
+import { HOMEPAGE_FAQS, buildHomepageFaqJsonLd } from "@/data/homepage-faqs";
 
-type Faq = { question: string; answer: string; render?: React.ReactNode };
-
-const faqs: Faq[] = [
-  {
-    question: "Is CELPIPPracticeTest.com free?",
-    answer:
-      "Yes. You can start practising for free, with no credit card required. A paid plan unlocks the full library of mock exams and more AI-scored Writing and Speaking tasks. See Pricing for current plans.",
-    render: (
-      <>
-        Yes. You can start practising for free, with no credit card required. A paid plan unlocks the full library of
-        mock exams and more AI-scored Writing and Speaking tasks. See{" "}
-        <Link href="/pricing" className="font-semibold text-[#2554D6] underline-offset-2 hover:underline">
-          Pricing
-        </Link>{" "}
-        for current plans.
-      </>
-    ),
-  },
-  {
-    question: "Can I take a full CELPIP mock test online?",
-    answer:
-      "Yes. Our full-length mock exams cover Listening, Reading, Writing and Speaking with the same task types and timing as the CELPIP-General test, so you can practise under test-day conditions.",
-  },
-  {
-    question: "How are Writing and Speaking answers scored?",
-    answer:
-      "AI scores your answers on the official CELPIP rating criteria, such as Content/Coherence, Vocabulary and Task Fulfillment. You get an estimated level out of 12 and clear tips to improve. Scores are estimates, not official results.",
-  },
-  {
-    question: "How do CELPIP scores convert to CLB levels?",
-    answer:
-      "CELPIP levels match CLB levels one to one from 4 to 9, and CELPIP 10 to 12 count as CLB 10. For example, a CELPIP 9 in a skill equals CLB 9 in that skill.",
-  },
-  {
-    question: "Do Listening and Reading come with answer keys?",
-    answer:
-      "Yes. Listening and Reading are scored instantly, with a full answer key so you can see why each answer is right or wrong.",
-  },
-  {
-    question: "Can I practise on my phone?",
-    answer: "Yes. The website works on any phone or tablet, and you can also practise with our Android app.",
-  },
-  {
-    question: "Is CELPIPPracticeTest.com affiliated with the official CELPIP test?",
-    answer:
-      "No. We are an independent platform and are not affiliated with or endorsed by Paragon Testing Enterprises. To book the official test, visit celpip.ca.",
-  },
-  {
-    question: "Is CELPIP or IELTS better for Canadian immigration?",
-    answer:
-      "Both CELPIP-General and IELTS General Training are accepted by IRCC for Express Entry and citizenship. CELPIP is fully computer-based, done in one sitting and uses Canadian English, which many test-takers prefer. Choose the format that suits you best.",
-  },
-];
-
-const faqSchema = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: faqs.map((faq) => ({
-    "@type": "Question",
-    name: faq.question,
-    acceptedAnswer: { "@type": "Answer", text: faq.answer },
-  })),
+// Turns the "See Pricing" mention into a real link; other answers render as text.
+const renderAnswer = (answer: string) => {
+  const [before, after] = answer.split("See Pricing");
+  if (after === undefined) return answer;
+  return (
+    <>
+      {before}See{" "}
+      <Link href="/pricing" className="font-semibold text-[#2554D6] underline-offset-2 hover:underline">
+        Pricing
+      </Link>
+      {after}
+    </>
+  );
 };
 
 const FAQ = () => {
@@ -76,7 +28,7 @@ const FAQ = () => {
       aria-labelledby="faq-heading"
       className="mx-auto w-full max-w-[1000px] px-[20px] pt-[44px] screen744:!px-[48px] screen744:!pt-[64px] screen1280:!px-0 screen1280:!pt-[88px] flex flex-col"
     >
-      <JsonLd data={faqSchema} />
+      <JsonLd data={buildHomepageFaqJsonLd()} />
       <h2
         id="faq-heading"
         className="m-0 mb-[20px] screen1280:!mb-[32px] text-center text-[24px] leading-[31px] screen744:!text-[30px] screen744:!leading-[38px] screen1280:!text-[32px] screen1280:!leading-[40px] font-semibold text-[#212E42]"
@@ -85,7 +37,7 @@ const FAQ = () => {
       </h2>
 
       <div className="flex flex-col gap-[10px] screen1280:!gap-[12px]">
-        {faqs.map((faq, index) => {
+        {HOMEPAGE_FAQS.map((faq, index) => {
           const open = openIndex === index;
           const panelId = `faq-panel-${index}`;
           const buttonId = `faq-button-${index}`;
@@ -116,7 +68,7 @@ const FAQ = () => {
                   {faq.question}
                   <span
                     className={cn(
-                      "flex shrink-0 items-center justify-center w-[28px] h-[28px] rounded-full transition-[transform,background-color,color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                      "flex shrink-0 items-center justify-center w-[28px] h-[28px] rounded-full transition-[transform,background-color,color] duration-200 ease-out motion-reduce:transition-none",
                       open ? "rotate-180 bg-[#EEF3FF] text-[#2554D6]" : "text-[#37465C] group-hover:bg-[#EEF3FF] group-hover:text-[#2554D6]",
                     )}
                   >
@@ -138,7 +90,7 @@ const FAQ = () => {
               >
                 <div className="overflow-hidden" inert={!open || undefined}>
                   <p className="m-0 px-[18px] pb-[18px] screen1280:!px-[24px] screen1280:!pb-[22px] text-[14px] leading-[22px] screen1280:!text-[16px] screen1280:!leading-[26px] text-[#37465C]">
-                    {faq.render ?? faq.answer}
+                    {renderAnswer(faq.answer)}
                   </p>
                 </div>
               </div>
