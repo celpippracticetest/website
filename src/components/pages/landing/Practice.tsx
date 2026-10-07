@@ -72,7 +72,6 @@ const Practice = () => {
               "transition-[transform,box-shadow,background-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
               "hover:-translate-y-[2px] data-[play]:-translate-y-[2px] hover:shadow-[5px_6px_0_0_#B8431B] data-[play]:shadow-[5px_6px_0_0_#B8431B] hover:bg-[#F4F7FF] data-[play]:bg-[#F4F7FF]",
               "active:translate-x-[2px] active:translate-y-[2px] active:shadow-[0_0_0_0_#B8431B] active:duration-100",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#E2592B]",
               "motion-reduce:transition-none",
             )}
           >

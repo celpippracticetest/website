@@ -130,10 +130,9 @@ const FullCard = ({ skill, className, index = 0 }: { skill: Skill; className?: s
     data-play-delay={index * 120}
     href={skill.href}
     className={cn(
-      "group relative bg-white border border-[#E8EEFB] rounded-[16px] shadow-[0_1px_2px_rgba(33,46,66,0.04)] outline-none",
+      "group relative bg-white border border-[#E8EEFB] rounded-[16px] shadow-[0_1px_2px_rgba(33,46,66,0.04)]",
       "transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
       "hover:-translate-y-[4px] data-[play]:-translate-y-[4px] hover:border-[#C9D5F5] data-[play]:border-[#C9D5F5] hover:shadow-[0_14px_28px_-16px_rgba(37,84,214,0.35)] data-[play]:shadow-[0_14px_28px_-16px_rgba(37,84,214,0.35)] active:-translate-y-[1px] active:duration-100",
-      "focus-visible:ring-2 focus-visible:ring-[#2554D6] focus-visible:ring-offset-2",
       "flex flex-col gap-[10px] screen744:!gap-[12px] screen1280:!gap-[14px] h-[130px] p-[14px] screen744:!h-[156px] screen744:!p-[16px] screen1280:!h-[152px] screen1280:!px-[16px] screen1280:!py-[18px]",
       className,
     )}
@@ -165,10 +164,9 @@ const CompactCard = ({ skill, index = 0 }: { skill: Skill; index?: number }) => 
     data-play-delay={index * 120}
     href={skill.href}
     className={cn(
-      "group relative bg-white border border-[#E8EEFB] rounded-[16px] shadow-[0_1px_2px_rgba(33,46,66,0.04)] outline-none",
+      "group relative bg-white border border-[#E8EEFB] rounded-[16px] shadow-[0_1px_2px_rgba(33,46,66,0.04)]",
       "transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
       "hover:-translate-y-[4px] data-[play]:-translate-y-[4px] hover:border-[#C9D5F5] data-[play]:border-[#C9D5F5] hover:shadow-[0_14px_28px_-16px_rgba(37,84,214,0.35)] data-[play]:shadow-[0_14px_28px_-16px_rgba(37,84,214,0.35)] active:-translate-y-[1px] active:duration-100",
-      "focus-visible:ring-2 focus-visible:ring-[#2554D6] focus-visible:ring-offset-2",
       "flex flex-col items-center justify-center gap-[8px] h-[88px] px-[6px] py-[12px]",
     )}
   >

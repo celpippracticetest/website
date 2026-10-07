@@ -167,9 +167,8 @@ const Hero = () => {
                   "bg-[#2554D6] text-white text-[17px] screen744:!text-[18px] font-medium whitespace-nowrap",
                   "shadow-[3.7px_3.9px_0_0_#759CFF]",
                   "transition-[transform,background-color,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
-                  "hover:bg-[#1F48BD] data-[play]:bg-[#1F48BD] hover:-translate-y-[2px] data-[play]:-translate-y-[2px] hover:shadow-[5px_6px_0_0_#759CFF] data-[play]:shadow-[5px_6px_0_0_#759CFF]",
+                  "hover:bg-[#1E46B8] data-[play]:bg-[#1E46B8]",
                   "active:translate-x-[2px] active:translate-y-[2px] active:shadow-[0_0_0_0_#759CFF] active:duration-100",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2554D6] focus-visible:ring-offset-2",
                   "motion-reduce:transition-none",
                 )}
               >
@@ -196,7 +195,6 @@ const Hero = () => {
                   "transition-[transform,background-color,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
                   "hover:bg-white data-[play]:bg-white hover:border-[#2554D6] data-[play]:border-[#2554D6] hover:-translate-y-[2px] data-[play]:-translate-y-[2px]",
                   "active:translate-y-0 active:scale-[0.98] active:duration-100",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2554D6] focus-visible:ring-offset-2",
                   "motion-reduce:transition-none",
                 )}
               >

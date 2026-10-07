@@ -60,8 +60,8 @@ const FAQ = () => {
                   onClick={() => setOpenIndex(open ? null : index)}
                   className={cn(
                     "group w-full flex items-center justify-between gap-[16px] min-h-[64px] px-[18px] py-[16px] screen1280:!min-h-[66px] screen1280:!px-[24px] screen1280:!py-[18px]",
-                    "text-left text-[15px] screen1280:!text-[17px] leading-[1.4] text-[#212E42] cursor-pointer outline-none",
-                    "focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#2554D6] rounded-[14px]",
+                    "text-left text-[15px] screen1280:!text-[17px] leading-[1.4] text-[#212E42] cursor-pointer",
+                    " rounded-[14px]",
                     open ? "font-semibold" : "font-medium",
                   )}
                 >

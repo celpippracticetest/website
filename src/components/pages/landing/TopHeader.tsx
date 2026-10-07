@@ -199,7 +199,7 @@ const TopHeader = () => {
 
   return (
     <>
-      <header className="fixed top-0 inset-x-0 z-[50] flex justify-center pointer-events-none">
+      <header className="fixed top-0 inset-x-0 z-[50] flex justify-center pointer-events-none [&_:is(a,button):focus-visible]:outline-3 [&_:is(a,button):focus-visible]:outline-solid [&_:is(a,button):focus-visible]:outline-[#759CFF] [&_:is(a,button):focus-visible]:outline-offset-2">
         <div className="pointer-events-auto w-full screen744:!mx-[24px] screen1280:!mx-0 max-w-[1156px] h-[68px] screen744:!h-[72px] screen1280:!h-[80px] pl-[14px] pr-[6px] min-[380px]:pl-[18px] min-[380px]:pr-[10px] screen744:!pl-[28px] screen744:!pr-[16px] screen1280:!px-[40px] flex items-center justify-between gap-[8px] border border-t-0 border-[#E3EBFF] rounded-b-[24px] screen744:!rounded-b-[28px] screen1280:!rounded-b-[32px] backdrop-blur-[8px] bg-[linear-gradient(90deg,rgba(255,255,255,0.8)_0%,rgba(255,255,255,0.45)_100%)] screen1280:!bg-[linear-gradient(90deg,rgba(255,255,255,0.75)_0%,rgba(255,255,255,0.35)_100%)]">
           <Logo />
 
@@ -214,7 +214,7 @@ const TopHeader = () => {
                     href={link.href}
                     aria-current={active ? "page" : undefined}
                     className={cn(
-                      "group relative flex items-center h-[44px] px-[20px] text-[14px] rounded-full outline-none",
+                      "group relative flex items-center h-[44px] px-[20px] text-[14px] rounded-full",
                       "transition-[color,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
                       "hover:text-[#2554D6] data-[play]:text-[#2554D6] focus-visible:text-[#2554D6] active:scale-[0.96] motion-reduce:transition-none",
                       active ? "text-[#2554D6] font-semibold" : "text-[#37465C]"
@@ -257,7 +257,6 @@ const TopHeader = () => {
                       "transition-[background-color,transform,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
                       "hover:bg-[#B83E34] data-[play]:bg-[#B83E34] hover:-translate-y-[2px] data-[play]:-translate-y-[2px] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.22),4px_5px_0_0_#759CFF] data-[play]:shadow-[inset_0_1px_0_rgba(255,255,255,0.22),4px_5px_0_0_#759CFF]",
                       "active:translate-x-[2px] active:translate-y-[2px] active:shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_0_0_0_#759CFF] active:duration-100",
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C4453A] focus-visible:ring-offset-2",
                       "motion-reduce:transition-none"
                     )}
                   >
@@ -303,12 +302,11 @@ const TopHeader = () => {
                           "bg-[#2554D6] text-white text-[14px] screen744:!text-[15px] screen1280:!text-[16px] font-medium whitespace-nowrap",
                           "shadow-[inset_0_1px_0_rgba(255,255,255,0.2),3px_3px_0_0_#759CFF]",
                           "transition-[transform,background-color,box-shadow] duration-[650ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
-                          "hover:bg-[#1F48BD] data-[play]:bg-[#1F48BD] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.2),4px_5px_0_0_#759CFF] data-[play]:shadow-[inset_0_1px_0_rgba(255,255,255,0.2),4px_5px_0_0_#759CFF]",
+                          "hover:bg-[#1E46B8] data-[play]:bg-[#1E46B8]",
                           "active:shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_0_0_0_#759CFF] active:duration-100",
-                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2554D6] focus-visible:ring-offset-2",
                           "motion-reduce:transition-none",
                           showStart
-                            ? "translate-x-0 hover:-translate-y-[2px] data-[play]:-translate-y-[2px] active:translate-x-[2px] active:translate-y-[2px]"
+                            ? "translate-x-0 active:translate-x-[2px] active:translate-y-[2px]"
                             : "-translate-x-[24px]"
                         )}
                       >
@@ -371,7 +369,7 @@ const TopHeader = () => {
 
       {/* Mobile & tablet menu */}
       {menuRendered && (
-        <div className="screen1280:!hidden">
+        <div className="screen1280:!hidden [&_:is(a,button):focus-visible]:outline-3 [&_:is(a,button):focus-visible]:outline-solid [&_:is(a,button):focus-visible]:outline-[#759CFF] [&_:is(a,button):focus-visible]:outline-offset-2">
           <div
             className={cn(
               "fixed inset-0 z-[48] bg-[rgba(33,46,66,0.45)] screen744:!bg-[rgba(33,46,66,0.35)] backdrop-blur-[2px]",
@@ -445,7 +443,7 @@ const TopHeader = () => {
                 <Link
                   href="/practice-overview"
                   onClick={() => handleStart("mobile_menu")}
-                  className="group/start flex items-center justify-center gap-[6px] h-[52px] rounded-full bg-[#2554D6] text-white text-[16px] font-medium shadow-[3.7px_3.9px_0_0_#759CFF] transition-[transform,box-shadow,background-color] duration-200 hover:bg-[#1F48BD] data-[play]:bg-[#1F48BD] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[0_0_0_0_#759CFF]"
+                  className="group/start flex items-center justify-center gap-[6px] h-[52px] rounded-full bg-[#2554D6] text-white text-[16px] font-medium shadow-[3.7px_3.9px_0_0_#759CFF] transition-[transform,box-shadow,background-color] duration-200 hover:bg-[#1E46B8] data-[play]:bg-[#1E46B8] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[0_0_0_0_#759CFF]"
                 >
                   <RollingWords text={ctaLabel.long} />
                   <svg

@@ -302,8 +302,8 @@ const UserResponseReview = () => {
               onClick={() => setActive(tab.id)}
               onKeyDown={(event) => onTabKeyDown(event, index)}
               className={cn(
-                "relative z-[1] h-[44px] rounded-full text-[13px] screen1280:!text-[16px] cursor-pointer outline-none",
-                "transition-[color,transform] duration-300 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-[#2554D6] focus-visible:ring-offset-2",
+                "relative z-[1] h-[44px] rounded-full text-[13px] screen1280:!text-[16px] cursor-pointer",
+                "transition-[color,transform] duration-300 active:scale-[0.97]",
                 selected ? "text-white font-semibold" : "text-[#37465C] font-medium hover:text-[#2554D6] data-[play]:text-[#2554D6]",
               )}
             >
@@ -350,7 +350,7 @@ const UserResponseReview = () => {
             ref={playOnView}
             href="/writing"
             onClick={() => trackCTAClick("Get My Free Score", "insights", { itemId: "insights_free_score" })}
-            className="flex items-center justify-center h-[52px] screen1280:!w-[220px] rounded-full bg-[#2554D6] text-white text-[16px] screen1280:!text-[17px] font-medium shadow-[3.7px_3.9px_0_0_#759CFF] transition-[transform,background-color,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-[#1F48BD] data-[play]:bg-[#1F48BD] hover:-translate-y-[2px] data-[play]:-translate-y-[2px] hover:shadow-[5px_6px_0_0_#759CFF] data-[play]:shadow-[5px_6px_0_0_#759CFF] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[0_0_0_0_#759CFF] active:duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2554D6] focus-visible:ring-offset-2 motion-reduce:transition-none"
+            className="flex items-center justify-center h-[52px] screen1280:!w-[220px] rounded-full bg-[#2554D6] text-white text-[16px] screen1280:!text-[17px] font-medium shadow-[3.7px_3.9px_0_0_#759CFF] transition-[transform,background-color,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-[#1E46B8] data-[play]:bg-[#1E46B8] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[0_0_0_0_#759CFF] active:duration-100 motion-reduce:transition-none"
           >
             Get My Free Score
           </Link>
@@ -392,7 +392,7 @@ const UserResponseReview = () => {
             ref={playOnView}
             href="/learning"
             onClick={() => trackCTAClick("Ask Your Question", "insights", { itemId: "insights_ai_tutor" })}
-            className="group/ask flex items-center justify-center gap-[8px] h-[52px] screen1280:!w-[240px] rounded-full bg-white border-[1.5px] border-[#C9D5F5] text-[#2554D6] text-[16px] screen1280:!text-[17px] font-medium transition-[transform,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:border-[#2554D6] data-[play]:border-[#2554D6] hover:-translate-y-[2px] data-[play]:-translate-y-[2px] active:translate-y-0 active:scale-[0.98] active:duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2554D6] focus-visible:ring-offset-2 motion-reduce:transition-none"
+            className="group/ask flex items-center justify-center gap-[8px] h-[52px] screen1280:!w-[240px] rounded-full bg-white border-[1.5px] border-[#C9D5F5] text-[#2554D6] text-[16px] screen1280:!text-[17px] font-medium transition-[transform,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:border-[#2554D6] data-[play]:border-[#2554D6] hover:-translate-y-[2px] data-[play]:-translate-y-[2px] active:translate-y-0 active:scale-[0.98] active:duration-100 motion-reduce:transition-none"
           >
             Ask Your Question
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="transition-transform duration-300 group-hover/ask:translate-x-[3px] group-data-[play]/ask:translate-x-[3px]">

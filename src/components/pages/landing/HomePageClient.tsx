@@ -43,7 +43,8 @@ export default function HomePageClient({
   if (shouldReload) return null;
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
-      <div className="bg-[#F4F7FF]">
+      {/* Handoff focus ring for every link and button: 3px #759CFF, 2px offset */}
+      <div className="bg-[#F4F7FF] [&_:is(a,button):focus-visible]:outline-3 [&_:is(a,button):focus-visible]:outline-solid [&_:is(a,button):focus-visible]:outline-[#759CFF] [&_:is(a,button):focus-visible]:outline-offset-2">
         <main>
           <Hero />
           <SkillsSection />

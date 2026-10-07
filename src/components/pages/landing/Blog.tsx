@@ -80,7 +80,7 @@ const Blog = ({ posts }: { posts: HomeBlogPost[] }) => {
                 "group grow flex items-center gap-[14px] p-[12px] rounded-[16px] bg-white border border-[#E8EEFB] overflow-hidden",
                 "screen1280:!flex-col screen1280:!items-stretch screen1280:!gap-0 screen1280:!p-0 screen1280:!rounded-[18px]",
                 "transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-[4px] data-[play]:-translate-y-[4px] hover:border-[#C9D5F5] data-[play]:border-[#C9D5F5] hover:shadow-[0_16px_32px_-20px_rgba(37,84,214,0.4)] data-[play]:shadow-[0_16px_32px_-20px_rgba(37,84,214,0.4)]",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2554D6] focus-visible:ring-offset-2 motion-reduce:transition-none",
+                " motion-reduce:transition-none",
               )}
             >
               <div className="shrink-0 w-[120px] h-[65px] rounded-[10px] overflow-hidden bg-[#EEF3FF] screen1280:!w-full screen1280:!h-[150px] screen1280:!rounded-none screen1280:!border-b screen1280:!border-[#E8EEFB]">

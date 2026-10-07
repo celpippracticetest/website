@@ -53,7 +53,7 @@ const Footer = (_props: { isSignedIn?: boolean }) => {
   }, [inView, setInFooter]);
 
   return (
-    <footer ref={ref} aria-label="Site footer" className="mt-[44px] screen1280:!mt-[40px] w-full bg-[#E0E9FB]">
+    <footer ref={ref} aria-label="Site footer" className="mt-[44px] screen1280:!mt-[40px] w-full bg-[#E0E9FB] [&_:is(a,button):focus-visible]:outline-3 [&_:is(a,button):focus-visible]:outline-solid [&_:is(a,button):focus-visible]:outline-[#759CFF] [&_:is(a,button):focus-visible]:outline-offset-2">
       <div className="mx-auto w-full max-w-[1236px] px-[20px] pt-[40px] pb-[32px] screen744:!px-[48px] screen744:!pt-[48px] screen744:!pb-[36px] screen1280:!px-[40px] screen1440:!px-0 screen1280:!pt-[56px] screen1280:!pb-0 flex flex-col gap-[24px] screen1280:!gap-0">
         <div className="flex flex-col gap-[24px] screen1280:!grid screen1280:!grid-cols-[2fr_1fr_1fr_1fr] screen1280:!gap-[48px] screen1280:!pb-[40px]">
           {/* Brand */}
@@ -87,7 +87,7 @@ const Footer = (_props: { isSignedIn?: boolean }) => {
               href={getStoreUrl("android")}
               target="_blank"
               rel="noopener noreferrer"
-              className="group self-start flex items-center gap-[8px] h-[44px] px-[16px] rounded-full bg-white border border-[#C9D5F5] text-[#2554D6] text-[14px] font-semibold transition-[transform,border-color,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-[2px] data-[play]:-translate-y-[2px] hover:border-[#2554D6] data-[play]:border-[#2554D6] hover:shadow-[0_10px_20px_-14px_rgba(37,84,214,0.6)] data-[play]:shadow-[0_10px_20px_-14px_rgba(37,84,214,0.6)] active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2554D6] focus-visible:ring-offset-2"
+              className="group self-start flex items-center gap-[8px] h-[44px] px-[16px] rounded-full bg-white border border-[#C9D5F5] text-[#2554D6] text-[14px] font-semibold transition-[transform,border-color,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-[2px] data-[play]:-translate-y-[2px] hover:border-[#2554D6] data-[play]:border-[#2554D6] hover:shadow-[0_10px_20px_-14px_rgba(37,84,214,0.6)] data-[play]:shadow-[0_10px_20px_-14px_rgba(37,84,214,0.6)] active:translate-y-0 active:scale-[0.98]"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="transition-transform duration-300 group-hover:-rotate-6 group-data-[play]:-rotate-6">
                 <rect x="6" y="2" width="12" height="20" rx="3" />
