@@ -213,20 +213,7 @@ const TopHeader = () => {
               <span className="w-[96px] screen744:!w-[110px] h-[40px] screen744:!h-[44px] rounded-full bg-white/60 animate-pulse" />
             )}
 
-            {showSignedOut && (
-              <Link
-                href="/sign-in"
-                className="group relative hidden screen744:!flex items-center h-[44px] px-[4px] text-[14px] font-semibold text-[#2554D6] transition-[color,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:text-[#1B3FA8] active:scale-[0.96] motion-reduce:transition-none"
-              >
-                Sign in
-                <span
-                  aria-hidden="true"
-                  className="absolute left-1/2 bottom-[8px] h-[2px] w-0 -translate-x-1/2 rounded-full bg-current opacity-0 transition-[width,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:w-[calc(100%-8px)] group-hover:opacity-100"
-                />
-              </Link>
-            )}
-
-            {/* Pricing + Start Free Practice button group */}
+            {/* Pricing, Start Free Practice (revealed after the hero) and Sign in — separate buttons */}
             {(showPricing || showSignedOut) && (
               <div className="flex items-center">
                 {showPricing && (
@@ -234,15 +221,14 @@ const TopHeader = () => {
                     href="/pricing"
                     aria-label="Pricing"
                     className={cn(
-                      "group/pricing relative z-[1] flex items-center gap-[6px] h-[40px] screen744:!h-[44px] px-[12px] min-[380px]:px-[14px] screen744:!px-[16px]",
+                      "group/pricing relative z-[1] flex items-center gap-[6px] h-[40px] screen744:!h-[44px] px-[12px] min-[380px]:px-[14px] screen744:!px-[16px] rounded-[22px]",
                       "bg-[#C4453A] text-white text-[14px] font-semibold whitespace-nowrap",
                       "shadow-[inset_0_1px_0_rgba(255,255,255,0.22),3px_3px_0_0_#759CFF]",
-                      "transition-[border-radius,background-color,transform,box-shadow] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                      "transition-[background-color,transform,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
                       "hover:bg-[#B83E34] hover:-translate-y-[2px] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.22),4px_5px_0_0_#759CFF]",
                       "active:translate-x-[2px] active:translate-y-[2px] active:shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_0_0_0_#759CFF] active:duration-100",
                       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C4453A] focus-visible:ring-offset-2",
-                      "motion-reduce:transition-none",
-                      showStart ? "rounded-l-[22px] rounded-r-[6px]" : "rounded-[22px]"
+                      "motion-reduce:transition-none"
                     )}
                   >
                     <span className="flex origin-bottom group-hover/pricing:animate-crown-wiggle motion-reduce:!animate-none">
@@ -260,22 +246,22 @@ const TopHeader = () => {
                       showStart ? "grid-cols-[1fr] opacity-100" : "grid-cols-[0fr] opacity-0"
                     )}
                   >
-                    {/* Extra padding keeps the offset shadow and press motion from being clipped. */}
-                    <div className="min-w-0 overflow-hidden -my-[8px] py-[8px] -mr-[8px] pr-[8px]">
+                    {/* Extra padding keeps the offset shadow and press motion from being clipped;
+                        the left margin lives inside so the gap collapses with the button. */}
+                    <div className="min-w-0 overflow-hidden -my-[8px] py-[8px] -mr-[8px] pr-[8px] pl-[8px] screen744:!pl-[12px]">
                       <Link
                         href="/practice-overview"
                         tabIndex={showStart ? undefined : -1}
                         onClick={() => handleStart("header")}
                         className={cn(
-                          "group/start flex items-center justify-center gap-[6px] h-[40px] screen744:!h-[44px] px-[14px] min-[380px]:px-[16px] screen744:!pl-[20px] screen744:!pr-[16px]",
+                          "group/start flex items-center justify-center gap-[6px] h-[40px] screen744:!h-[44px] px-[14px] min-[380px]:px-[16px] screen744:!pl-[20px] screen744:!pr-[16px] rounded-[22px]",
                           "bg-[#2554D6] text-white text-[14px] screen744:!text-[15px] screen1280:!text-[16px] font-medium whitespace-nowrap",
                           "shadow-[inset_0_1px_0_rgba(255,255,255,0.2),3px_3px_0_0_#759CFF]",
-                          "transition-[transform,background-color,box-shadow,border-radius] duration-[650ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+                          "transition-[transform,background-color,box-shadow] duration-[650ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
                           "hover:bg-[#1F48BD] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.2),4px_5px_0_0_#759CFF]",
                           "active:shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_0_0_0_#759CFF] active:duration-100",
                           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2554D6] focus-visible:ring-offset-2",
                           "motion-reduce:transition-none",
-                          showPricing ? "ml-[4px] rounded-r-[22px] rounded-l-[6px]" : "rounded-[22px]",
                           showStart
                             ? "translate-x-0 hover:-translate-y-[2px] active:translate-x-[2px] active:translate-y-[2px]"
                             : "-translate-x-[24px]"
@@ -296,6 +282,19 @@ const TopHeader = () => {
                       </Link>
                     </div>
                   </div>
+                )}
+
+                {showSignedOut && (
+                  <Link
+                    href="/sign-in"
+                    className="group relative hidden screen744:!flex items-center h-[44px] ml-[16px] screen1280:!ml-[20px] px-[4px] text-[14px] font-semibold text-[#2554D6] transition-[color,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:text-[#1B3FA8] active:scale-[0.96] motion-reduce:transition-none"
+                  >
+                    Sign in
+                    <span
+                      aria-hidden="true"
+                      className="absolute left-1/2 bottom-[8px] h-[2px] w-0 -translate-x-1/2 rounded-full bg-current opacity-0 transition-[width,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:w-[calc(100%-8px)] group-hover:opacity-100"
+                    />
+                  </Link>
                 )}
               </div>
             )}
