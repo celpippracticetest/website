@@ -32,7 +32,7 @@ const columns = [
     links: [
       { label: "Pricing", href: "/pricing" },
       { label: "Contact us", href: "/contact-us" },
-      { label: "Sign in", href: "/sign-in" },
+      { label: "Log in", href: "/sign-in" },
     ],
   },
 ];

@@ -80,13 +80,20 @@ const TopHeader = () => {
   const { user, isLoaded, isSignedIn } = useHybridWebUser();
   const { trackCTA } = useEventTracker();
   const startRef = useRef<HTMLAnchorElement>(null);
+  const menuToggleRef = useRef<HTMLButtonElement>(null);
 
   const hasActivePlan = hasPaidPracticeAccess(user?.publicMetadata?.plan);
   const authReady = mounted && isLoaded;
   const showSignedOut = authReady && !isSignedIn;
   const showPricing = authReady && !hasActivePlan;
-  // On mobile the open menu already has a Start Free Practice button.
-  const showStart = showSignedOut && pastHero && !ctaBannerVisible && !(isMenuOpen && isMobile);
+  // Guests see "Pricing"; signed-in free-plan users see "Upgrade" (handoff).
+  const pricingLabel = isSignedIn ? "Upgrade" : "Pricing";
+  // The CTA slot: "Start Free Practice" for guests, "Continue Practice" when signed in.
+  const ctaLabel = isSignedIn
+    ? { short: "Continue", long: "Continue Practice" }
+    : { short: "Start Free", long: "Start Free Practice" };
+  // On mobile the open menu already has the same CTA.
+  const showStart = authReady && pastHero && !ctaBannerVisible && !(isMenuOpen && isMobile);
 
   useEffect(() => {
     setMounted(true);
@@ -143,12 +150,32 @@ const TopHeader = () => {
     return () => observer.disconnect();
   }, [pathname]);
 
-  // Lock page scroll and allow Escape to close while the menu is open.
+  // While the menu is open: lock page scroll, move focus into the menu and keep
+  // Tab inside it (menu + toggle button); Escape closes and returns focus.
   useEffect(() => {
     if (!isMenuOpen) return;
     document.body.classList.add("overflow-hidden");
+    const focusables = () =>
+      [
+        menuToggleRef.current,
+        ...Array.from(document.querySelectorAll<HTMLElement>("#site-menu a, #site-menu button")),
+      ].filter((el): el is HTMLElement => !!el);
+    const focusTimer = window.setTimeout(() => focusables()[1]?.focus(), 60);
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setIsMenuOpen(false);
+      if (e.key === "Escape") {
+        setIsMenuOpen(false);
+        menuToggleRef.current?.focus();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const items = focusables();
+      if (items.length === 0) return;
+      const index = items.indexOf(document.activeElement as HTMLElement);
+      const next = e.shiftKey
+        ? index <= 0 ? items.length - 1 : index - 1
+        : index === -1 || index === items.length - 1 ? 0 : index + 1;
+      e.preventDefault();
+      items[next].focus();
     };
     const onResize = () => {
       if (window.innerWidth >= 1280) setIsMenuOpen(false);
@@ -156,6 +183,7 @@ const TopHeader = () => {
     window.addEventListener("keydown", onKey);
     window.addEventListener("resize", onResize);
     return () => {
+      window.clearTimeout(focusTimer);
       document.body.classList.remove("overflow-hidden");
       window.removeEventListener("keydown", onKey);
       window.removeEventListener("resize", onResize);
@@ -166,13 +194,13 @@ const TopHeader = () => {
 
   const handleStart = (location: string) => {
     closeMenu();
-    trackCTA("Start Free Practice", location);
+    trackCTA(ctaLabel.long, location);
   };
 
   return (
     <>
       <header className="fixed top-0 inset-x-0 z-[50] flex justify-center pointer-events-none">
-        <div className="pointer-events-auto w-full screen744:!mx-[24px] screen1280:!mx-0 max-w-[1176px] h-[68px] screen744:!h-[72px] screen1280:!h-[80px] pl-[14px] pr-[6px] min-[380px]:pl-[18px] min-[380px]:pr-[10px] screen744:!pl-[28px] screen744:!pr-[16px] screen1280:!px-[40px] flex items-center justify-between gap-[8px] border border-t-0 border-[#E3EBFF] rounded-b-[24px] screen744:!rounded-b-[28px] screen1280:!rounded-b-[32px] backdrop-blur-[8px] bg-[linear-gradient(90deg,rgba(255,255,255,0.8)_0%,rgba(255,255,255,0.45)_100%)] screen1280:!bg-[linear-gradient(90deg,rgba(255,255,255,0.75)_0%,rgba(255,255,255,0.35)_100%)]">
+        <div className="pointer-events-auto w-full screen744:!mx-[24px] screen1280:!mx-0 max-w-[1156px] h-[68px] screen744:!h-[72px] screen1280:!h-[80px] pl-[14px] pr-[6px] min-[380px]:pl-[18px] min-[380px]:pr-[10px] screen744:!pl-[28px] screen744:!pr-[16px] screen1280:!px-[40px] flex items-center justify-between gap-[8px] border border-t-0 border-[#E3EBFF] rounded-b-[24px] screen744:!rounded-b-[28px] screen1280:!rounded-b-[32px] backdrop-blur-[8px] bg-[linear-gradient(90deg,rgba(255,255,255,0.8)_0%,rgba(255,255,255,0.45)_100%)] screen1280:!bg-[linear-gradient(90deg,rgba(255,255,255,0.75)_0%,rgba(255,255,255,0.35)_100%)]">
           <Logo />
 
           {/* Desktop navigation */}
@@ -214,14 +242,14 @@ const TopHeader = () => {
               <span className="w-[96px] screen744:!w-[110px] h-[40px] screen744:!h-[44px] rounded-full bg-white/60 animate-pulse" />
             )}
 
-            {/* Pricing, Sign in and Start Free Practice — separate buttons */}
-            {(showPricing || showSignedOut) && (
+            {/* Pricing, Log in and the CTA (Start Free / Continue Practice) — separate buttons */}
+            {authReady && (
               <div className="flex items-center">
                 {showPricing && (
                   <Link
                     ref={playOnView}
                     href="/pricing"
-                    aria-label="Pricing"
+                    aria-label={pricingLabel}
                     className={cn(
                       "group/pricing relative z-[1] flex items-center gap-[6px] h-[40px] screen744:!h-[44px] px-[12px] min-[380px]:px-[14px] screen744:!px-[16px] rounded-[22px]",
                       "bg-[#C4453A] text-white text-[14px] font-semibold whitespace-nowrap",
@@ -236,7 +264,7 @@ const TopHeader = () => {
                     <span className="flex origin-bottom group-hover/pricing:animate-crown-wiggle group-data-[play]/pricing:animate-crown-wiggle motion-reduce:!animate-none">
                       <CrownIcon />
                     </span>
-                    <span className="max-[379px]:hidden">Pricing</span>
+                    <span className="max-[379px]:hidden">{pricingLabel}</span>
                   </Link>
                 )}
 
@@ -245,7 +273,7 @@ const TopHeader = () => {
                     href="/sign-in"
                     className="group relative hidden screen744:!flex items-center h-[44px] ml-[16px] screen1280:!ml-[20px] px-[4px] text-[14px] font-semibold text-[#2554D6] transition-[color,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:text-[#1B3FA8] data-[play]:text-[#1B3FA8] active:scale-[0.96] motion-reduce:transition-none"
                   >
-                    Sign in
+                    Log in
                     <span
                       aria-hidden="true"
                       className="absolute left-1/2 bottom-[8px] h-[2px] w-0 -translate-x-1/2 rounded-full bg-current opacity-0 transition-[width,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:w-[calc(100%-8px)] group-data-[play]:w-[calc(100%-8px)] group-hover:opacity-100 group-data-[play]:opacity-100"
@@ -254,7 +282,7 @@ const TopHeader = () => {
                 )}
 
                 {/* Rightmost: revealed once the hero's own Start button scrolls away. */}
-                {showSignedOut && (
+                {authReady && (
                   <div
                     aria-hidden={!showStart}
                     className={cn(
@@ -285,10 +313,10 @@ const TopHeader = () => {
                         )}
                       >
                         <span className="flex screen744:!hidden">
-                          <RollingWords text="Start Free" />
+                          <RollingWords text={ctaLabel.short} />
                         </span>
                         <span className="hidden screen744:!flex">
-                          <RollingWords text="Start Free Practice" />
+                          <RollingWords text={ctaLabel.long} />
                         </span>
                         <svg
                           width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
@@ -310,6 +338,7 @@ const TopHeader = () => {
             )}
 
             <button
+              ref={menuToggleRef}
               type="button"
               aria-label={isMenuOpen ? "Close menu" : "Open menu"}
               aria-expanded={isMenuOpen}
@@ -404,7 +433,7 @@ const TopHeader = () => {
               })}
             </nav>
 
-            {showSignedOut && (
+            {authReady && (
               <div
                 style={{ transitionDelay: menuVisible ? `${80 + navLinks.length * 45}ms` : "0ms" }}
                 className={cn(
@@ -418,7 +447,7 @@ const TopHeader = () => {
                   onClick={() => handleStart("mobile_menu")}
                   className="group/start flex items-center justify-center gap-[6px] h-[52px] rounded-full bg-[#2554D6] text-white text-[16px] font-medium shadow-[3.7px_3.9px_0_0_#759CFF] transition-[transform,box-shadow,background-color] duration-200 hover:bg-[#1F48BD] data-[play]:bg-[#1F48BD] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[0_0_0_0_#759CFF]"
                 >
-                  <RollingWords text="Start Free Practice" />
+                  <RollingWords text={ctaLabel.long} />
                   <svg
                     width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
                     className="transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/start:translate-x-[3px] group-data-[play]/start:translate-x-[3px]"
@@ -426,13 +455,15 @@ const TopHeader = () => {
                     <path d="M5 12h14M13 6l6 6-6 6" />
                   </svg>
                 </Link>
+                {showSignedOut && (
                 <Link
                   href="/sign-in"
                   onClick={closeMenu}
                   className="flex items-center justify-center h-[48px] rounded-full text-[16px] font-semibold text-[#2554D6] transition-colors duration-200 hover:bg-[#F4F7FF] data-[play]:bg-[#F4F7FF] active:bg-[#E3EBFF]"
                 >
-                  Sign in
+                  Log in
                 </Link>
+                )}
               </div>
             )}
           </div>
