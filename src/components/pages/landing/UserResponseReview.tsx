@@ -4,6 +4,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { trackCTAClick } from "@/lib/analytics";
 import { playOnView } from "@/hooks/usePlayOnView";
+import Reveal from "./Reveal";
 
 const tabs = [
   { id: "score", label: "Your Score", shortLabel: "Your Score" },
@@ -248,7 +249,6 @@ const UserResponseReview = () => {
   const [active, setActive] = useState<TabId>("score");
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const activeIndex = tabs.findIndex((tab) => tab.id === active);
-  const copy = panelCopy[active];
 
   const onTabKeyDown = (event: React.KeyboardEvent, index: number) => {
     if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
@@ -263,9 +263,10 @@ const UserResponseReview = () => {
       aria-labelledby="insights-heading"
       className="mx-auto w-full max-w-[1006px] px-[20px] pt-[44px] screen744:!px-[48px] screen744:!pt-[64px] screen1280:!px-0 screen1280:!pt-[16px] flex flex-col"
     >
+      <Reveal className="flex flex-col">
       <h2
         id="insights-heading"
-        className="m-0 text-center text-[24px] leading-[31px] screen744:!text-[30px] screen744:!leading-[38px] screen1280:!text-[32px] screen1280:!leading-[40px] font-semibold text-[#212E42]"
+        className="text-balance m-0 text-center text-[24px] leading-[31px] screen744:!text-[30px] screen744:!leading-[38px] screen1280:!text-[32px] screen1280:!leading-[40px] font-semibold text-[#212E42]"
       >
         Get Real-Time Insights on Your Responses
       </h2>
@@ -273,8 +274,10 @@ const UserResponseReview = () => {
         Every Writing and Speaking answer is scored on the official CELPIP criteria, with clear corrections
         <span className="hidden screen1280:!inline"> you can learn from</span>.
       </p>
+      </Reveal>
 
       {/* Tabs with a sliding indicator */}
+      <Reveal delay={80}>
       <div
         role="tablist"
         aria-label="How AI feedback works"
@@ -313,32 +316,53 @@ const UserResponseReview = () => {
           );
         })}
       </div>
+      </Reveal>
 
+      <Reveal delay={140}>
       <div
         role="tabpanel"
         id="insights-panel"
         aria-labelledby={`insights-tab-${active}`}
         className="mt-[14px] screen1280:!mt-[20px] p-[18px] screen1280:!p-[28px] rounded-[18px] screen1280:!rounded-[20px] bg-white border border-[#E8EEFB] shadow-[0_12px_32px_-18px_rgba(33,46,66,0.18)] flex flex-col"
       >
-        <div key={active} className="flex flex-col animate-in fade-in slide-in-from-bottom-1 duration-500 motion-reduce:animate-none">
-          <div className="flex items-center justify-between">
-            <Image
-              src="/images/hero.png"
-              alt=""
-              width={46}
-              height={56}
-              className="w-[36px] h-[44px] screen1280:!w-[46px] screen1280:!h-[56px] object-cover"
-            />
-            <div className="flex gap-[6px] screen1280:!gap-[8px]">{copy.chips}</div>
-          </div>
-          <h3 className="m-0 mt-[12px] screen1280:!mt-[16px] text-[20px] leading-[26px] screen1280:!text-[26px] screen1280:!leading-[34px] font-bold text-[#212E42]">
-            {copy.title}
-          </h3>
-          <p className="hidden screen1280:!block m-0 mt-[6px] text-[15px] leading-[23px] text-[#37465C]">{copy.subtitle}</p>
+        {/* All three panels share one grid cell: the box keeps the tallest panel's
+            height, so switching tabs never makes the page jump, and panels cross-fade. */}
+        <div className="grid">
+          {tabs.map((tab) => {
+            const panel = panelCopy[tab.id];
+            const shown = tab.id === active;
+            return (
+              <div
+                key={tab.id}
+                aria-hidden={!shown}
+                inert={!shown || undefined}
+                className={cn(
+                  "col-start-1 row-start-1 flex flex-col",
+                  "transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
+                  shown ? "opacity-100 translate-y-0" : "opacity-0 translate-y-[8px] pointer-events-none",
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <Image
+                    src="/images/hero.png"
+                    alt=""
+                    width={46}
+                    height={56}
+                    className="w-[36px] h-[44px] screen1280:!w-[46px] screen1280:!h-[56px] object-cover"
+                  />
+                  <div className="flex gap-[6px] screen1280:!gap-[8px]">{panel.chips}</div>
+                </div>
+                <h3 className="m-0 mt-[12px] screen1280:!mt-[16px] text-[20px] leading-[26px] screen1280:!text-[26px] screen1280:!leading-[34px] font-bold text-[#212E42]">
+                  {panel.title}
+                </h3>
+                <p className="hidden screen1280:!block m-0 mt-[6px] text-[15px] leading-[23px] text-[#37465C] text-pretty">{panel.subtitle}</p>
 
-          {active === "score" && <ScorePanel />}
-          {active === "mistakes" && <MistakesPanel />}
-          {active === "format" && <FormatPanel />}
+                {tab.id === "score" && <ScorePanel />}
+                {tab.id === "mistakes" && <MistakesPanel />}
+                {tab.id === "format" && <FormatPanel />}
+              </div>
+            );
+          })}
         </div>
 
         <div className="mt-[16px] screen1280:!mt-[24px] flex flex-col screen1280:!flex-row screen1280:!items-center screen1280:!justify-between gap-[12px]">
@@ -356,8 +380,10 @@ const UserResponseReview = () => {
           </Link>
         </div>
       </div>
+      </Reveal>
 
       {/* AI tutor */}
+      <Reveal>
       <div className="mt-[16px] screen1280:!mt-[24px] p-[18px] screen1280:!px-[28px] screen1280:!py-[24px] rounded-[18px] screen1280:!rounded-[20px] border border-[#E3EBFF] bg-white/85 screen1280:!bg-[linear-gradient(120deg,rgba(255,255,255,0.92)_0%,rgba(255,255,255,0.7)_100%)] flex flex-col gap-[12px] screen1280:!gap-[16px]">
         <h3 className="m-0 text-[17px] leading-[24px] screen1280:!text-[20px] screen1280:!leading-[28px] font-bold text-[#212E42]">
           Stuck on a question? Ask our AI tutor
@@ -404,6 +430,7 @@ const UserResponseReview = () => {
           </div>
         </div>
       </div>
+      </Reveal>
     </section>
   );
 };
