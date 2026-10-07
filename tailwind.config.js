@@ -161,6 +161,7 @@ module.exports = {
         "accordion-up": "accordion-up 0.2s ease-out",
         "pulse-frame": "pulse-frame 3s ease-in-out infinite",
         "crown-wiggle": "crown-wiggle 0.7s ease-in-out",
+        "soft-float": "soft-float 6s ease-in-out infinite",
       },
       typography: (theme) => ({
         DEFAULT: {

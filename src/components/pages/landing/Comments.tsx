@@ -60,7 +60,7 @@ const Comments = () => {
     >
       <h2
         id="reviews-heading"
-        className="m-0 text-center text-[24px] leading-[31px] screen744:!text-[30px] screen744:!leading-[38px] screen1280:!text-[32px] screen1280:!leading-[40px] font-semibold text-[#212E42]"
+        className="text-balance m-0 text-center text-[24px] leading-[31px] screen744:!text-[30px] screen744:!leading-[38px] screen1280:!text-[32px] screen1280:!leading-[40px] font-semibold text-[#212E42]"
       >
         Join {HOMEPAGE_USER_COUNT} Test-Takers Who Trust Us
       </h2>
@@ -86,7 +86,7 @@ const Comments = () => {
           <svg width="34" height="26" viewBox="0 0 34 26" fill="none" aria-hidden="true" className="hidden screen1280:!block text-[#C9D5F5]">
             <path fill="currentColor" d="M0 26V15.6C0 6.9 4.9 1.7 12.4 0l1.6 3.5C9.4 5 7.3 8.1 7.1 12H13v14H0zm20 0V15.6C20 6.9 24.9 1.7 32.4 0L34 3.5C29.4 5 27.3 8.1 27.1 12H33v14H20z" />
           </svg>
-          <blockquote className="m-0 text-[17px] leading-[26px] screen744:!text-[15px] screen744:!leading-[23px] screen1280:!text-[20px] screen1280:!leading-[31px] font-medium text-[#212E42]">
+          <blockquote className="m-0 text-pretty text-[17px] leading-[26px] screen744:!text-[15px] screen744:!leading-[23px] screen1280:!text-[20px] screen1280:!leading-[31px] font-medium text-[#212E42]">
             {featured.comment}
           </blockquote>
           <Author person={featured} />
@@ -104,7 +104,7 @@ const Comments = () => {
           >
             <figure ref={playOnView} data-play-delay={300 + index * 150} className="m-0 h-full flex flex-col gap-[12px] screen1280:!gap-[14px] p-[18px] screen1280:!p-[22px] rounded-[16px] screen1280:!rounded-[18px] bg-white border border-[#E8EEFB] transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-[3px] data-[play]:-translate-y-[3px] hover:border-[#C9D5F5] data-[play]:border-[#C9D5F5] hover:shadow-[0_14px_28px_-18px_rgba(37,84,214,0.35)] data-[play]:shadow-[0_14px_28px_-18px_rgba(37,84,214,0.35)] motion-reduce:transition-none">
               <Author person={person} small />
-              <blockquote className="m-0 text-[14px] leading-[21px] screen1280:!text-[15px] screen1280:!leading-[23px] text-[#37465C]">
+              <blockquote className="m-0 text-pretty text-[14px] leading-[21px] screen1280:!text-[15px] screen1280:!leading-[23px] text-[#37465C]">
                 {person.comment}
               </blockquote>
             </figure>

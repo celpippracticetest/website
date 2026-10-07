@@ -49,7 +49,7 @@ const Practice = () => {
 
         <h2
           id="cta-heading"
-          className="m-0 text-[26px] leading-[32px] screen744:!text-[32px] screen744:!leading-[40px] screen1280:!text-[34px] screen1280:!leading-[42px] screen1280:!w-[640px] font-bold text-white"
+          className="text-balance m-0 text-[26px] leading-[32px] screen744:!text-[32px] screen744:!leading-[40px] screen1280:!text-[34px] screen1280:!leading-[42px] screen1280:!w-[640px] font-bold text-white"
         >
           Ready to reach your target CLB?
         </h2>

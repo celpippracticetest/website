@@ -195,20 +195,23 @@ const Hero = () => {
               style={{ animationDelay: "200ms" }}
               className="shrink-0 w-[132px] h-[160px] screen744:!w-[220px] screen744:!h-[266px] screen744:!mr-[20px] screen1280:!mr-0 screen1280:!w-[300px] screen1280:!h-[363px] animate-in fade-in zoom-in-95 duration-700 fill-mode-both motion-reduce:animate-none"
             >
-              <Image
-                ref={playOnView}
-                data-play-delay={300}
-                src="/images/hero.png"
-                alt="CELPIP Practice Test beaver mascot"
-                width={300}
-                height={363}
-                priority
-                fetchPriority="high"
-                loading="eager"
-                quality={75}
-                sizes="(max-width: 743px) 132px, (max-width: 1279px) 220px, 300px"
-                className="w-full h-full object-cover transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-rotate-2 data-[play]:-rotate-2 hover:-translate-y-[4px] data-[play]:-translate-y-[4px]"
-              />
+              {/* Gentle idle float on its own layer, so it never fights the entrance or hover tilt. */}
+              <div className="w-full h-full animate-soft-float [animation-delay:900ms] motion-reduce:animate-none">
+                <Image
+                  ref={playOnView}
+                  data-play-delay={300}
+                  src="/images/hero.png"
+                  alt="CELPIP Practice Test beaver mascot"
+                  width={300}
+                  height={363}
+                  priority
+                  fetchPriority="high"
+                  loading="eager"
+                  quality={75}
+                  sizes="(max-width: 743px) 132px, (max-width: 1279px) 220px, 300px"
+                  className="w-full h-full object-cover transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-rotate-2 data-[play]:-rotate-2 hover:-translate-y-[4px] data-[play]:-translate-y-[4px]"
+                />
+              </div>
             </div>
           </div>
         </div>

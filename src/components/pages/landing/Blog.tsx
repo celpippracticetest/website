@@ -43,7 +43,7 @@ const Blog = ({ posts }: { posts: HomeBlogPost[] }) => {
         <div className="flex flex-col items-center screen1280:!items-start gap-[0px] screen1280:!gap-[6px]">
           <h2
             id="blog-heading"
-            className="m-0 text-[24px] leading-[31px] screen744:!text-[30px] screen744:!leading-[38px] screen1280:!text-[32px] screen1280:!leading-[40px] font-semibold text-[#212E42] text-center"
+            className="text-balance m-0 text-[24px] leading-[31px] screen744:!text-[30px] screen744:!leading-[38px] screen1280:!text-[32px] screen1280:!leading-[40px] font-semibold text-[#212E42] text-center"
           >
             CELPIP Tips and Guides
           </h2>
