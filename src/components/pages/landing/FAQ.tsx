@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { HOMEPAGE_FAQS } from "@/data/homepage-faqs";
+import Reveal from "./Reveal";
 
 // Turns the "See Pricing" mention into a real link; other answers render as text.
 const renderAnswer = (answer: string) => {
@@ -27,12 +28,14 @@ const FAQ = () => {
       aria-labelledby="faq-heading"
       className="mx-auto w-full max-w-[1000px] px-[20px] pt-[44px] screen744:!px-[48px] screen744:!pt-[64px] screen1280:!px-0 screen1280:!pt-[88px] flex flex-col"
     >
+      <Reveal>
       <h2
         id="faq-heading"
-        className="m-0 mb-[20px] screen1280:!mb-[32px] text-center text-[24px] leading-[31px] screen744:!text-[30px] screen744:!leading-[38px] screen1280:!text-[32px] screen1280:!leading-[40px] font-semibold text-[#212E42]"
+        className="text-balance m-0 mb-[20px] screen1280:!mb-[32px] text-center text-[24px] leading-[31px] screen744:!text-[30px] screen744:!leading-[38px] screen1280:!text-[32px] screen1280:!leading-[40px] font-semibold text-[#212E42]"
       >
         CELPIP Practice Test FAQs
       </h2>
+      </Reveal>
 
       <div className="flex flex-col gap-[10px] screen1280:!gap-[12px]">
         {HOMEPAGE_FAQS.map((faq, index) => {
@@ -40,8 +43,8 @@ const FAQ = () => {
           const panelId = `faq-panel-${index}`;
           const buttonId = `faq-button-${index}`;
           return (
+            <Reveal key={faq.question} delay={Math.min(index, 5) * 50}>
             <div
-              key={faq.question}
               className={cn(
                 "rounded-[14px] border overflow-hidden transition-[background-color,border-color,box-shadow] duration-300",
                 open
@@ -87,12 +90,13 @@ const FAQ = () => {
                 )}
               >
                 <div className="overflow-hidden" inert={!open || undefined}>
-                  <p className="m-0 px-[18px] pb-[18px] screen1280:!px-[24px] screen1280:!pb-[22px] text-[14px] leading-[22px] screen1280:!text-[16px] screen1280:!leading-[26px] text-[#37465C]">
+                  <p className={cn("m-0 px-[18px] pb-[18px] screen1280:!px-[24px] screen1280:!pb-[22px] text-[14px] leading-[22px] screen1280:!text-[16px] screen1280:!leading-[26px] text-[#37465C] text-pretty transition-transform duration-300 ease-out motion-reduce:transition-none", open ? "translate-y-0" : "-translate-y-[6px]")}>
                     {renderAnswer(faq.answer)}
                   </p>
                 </div>
               </div>
             </div>
+            </Reveal>
           );
         })}
       </div>

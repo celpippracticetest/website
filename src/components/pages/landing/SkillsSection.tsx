@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { playOnView } from "@/hooks/usePlayOnView";
+import Reveal from "./Reveal";
 
 type Skill = {
   title: string;
@@ -191,10 +192,10 @@ const SkillsSection = () => {
       aria-labelledby="skills-heading"
       className="mx-auto w-full max-w-[1236px] px-[20px] pt-[40px] screen744:!px-[48px] screen744:!pt-[56px] screen1280:!px-[40px] screen1440:!px-0 screen1280:!pt-[24px] screen1280:!pb-[64px] flex flex-col gap-[14px] screen1280:!gap-[20px]"
     >
-      <div className="flex items-end justify-between">
+      <Reveal className="flex items-end justify-between">
         <h2
           id="skills-heading"
-          className="m-0 text-[21px] leading-[28px] screen744:!text-[28px] screen744:!leading-[36px] screen1280:!text-[26px] screen1280:!leading-[34px] font-bold text-[#212E42]"
+          className="text-balance m-0 text-[21px] leading-[28px] screen744:!text-[28px] screen744:!leading-[36px] screen1280:!text-[26px] screen1280:!leading-[34px] font-bold text-[#212E42]"
         >
           Practice every CELPIP skill
         </h2>
@@ -206,24 +207,30 @@ const SkillsSection = () => {
           See all practice
           <ArrowIcon />
         </Link>
-      </div>
+      </Reveal>
 
       {/* Desktop: one row of seven cards */}
       <div className="hidden screen1280:!grid grid-cols-7 gap-[14px]">
         {[...mainSkills, ...toolSkills].map((skill, index) => (
-          <FullCard key={skill.title} skill={skill} index={index} />
+          <Reveal key={skill.title} delay={index * 60}>
+            <FullCard skill={skill} index={index} />
+          </Reveal>
         ))}
       </div>
 
       {/* Mobile & tablet: skills, then compact tool cards */}
       <div className="grid screen1280:!hidden grid-cols-2 screen744:!grid-cols-4 gap-[10px] screen744:!gap-[12px]">
         {mainSkills.map((skill, index) => (
-          <FullCard key={skill.title} skill={skill} index={index} />
+          <Reveal key={skill.title} delay={index * 60}>
+            <FullCard skill={skill} index={index} />
+          </Reveal>
         ))}
       </div>
       <div className="grid screen1280:!hidden grid-cols-3 gap-[10px]">
         {toolSkills.map((skill, index) => (
-          <CompactCard key={skill.title} skill={skill} index={index} />
+          <Reveal key={skill.title} delay={240 + index * 60}>
+            <CompactCard skill={skill} index={index} />
+          </Reveal>
         ))}
       </div>
       <Link
