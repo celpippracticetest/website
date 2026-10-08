@@ -1,7 +1,6 @@
 "use client";
 import Link from "next/link";
 import AuthButtons from "../pages/landing/AuthButtons";
-import SvgCrown from "./icons/crown";
 import useStore from "@/store";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
@@ -16,8 +15,6 @@ const TopHeaderRightSide = () => {
   const { user, isLoaded, isSignedIn } = useHybridWebUser();
   const hasActivePlan = hasPaidPracticeAccess(user?.publicMetadata?.plan);
   const showPricing = !hasActivePlan;
-  // Signed-out visitors get Pricing + Sign Up joined as one button group.
-  const grouped = showPricing && !isSignedIn;
 
   if (!isLoaded) {
     return (
@@ -30,7 +27,7 @@ const TopHeaderRightSide = () => {
   return (
     <div className="flex items-center gap-[12px] screen744:!gap-[20px]">
       {(showPricing || !isSignedIn) && (
-        <div className="flex items-center">
+        <div className="flex items-center gap-[12px] screen744:!gap-[16px]">
           {showPricing && (
             <button
               type="button"
@@ -40,31 +37,41 @@ const TopHeaderRightSide = () => {
                 "group/pricing relative z-[1] flex items-center gap-[6px] h-10 px-3 screen744:!px-4",
                 "bg-button-secondary text-white text-[13px] screen744:!text-[14px] font-medium whitespace-nowrap cursor-pointer",
                 "shadow-[inset_0_1px_0_rgba(255,255,255,0.22),3px_3px_0_0_rgba(117,156,255,1)]",
-                "transition-[border-radius,transform,box-shadow,filter] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                "transition-[transform,box-shadow,filter] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
                 "hover:-translate-y-[2px] hover:brightness-[0.96] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.22),4px_5px_0_0_rgba(117,156,255,1)]",
                 "active:translate-x-[2px] active:translate-y-[2px] active:shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_0_0_0_rgba(117,156,255,1)] active:duration-100",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button-secondary focus-visible:ring-offset-2",
-                "motion-reduce:transition-none",
-                grouped ? "rounded-l-[20px] rounded-r-[6px]" : "rounded-[20px]",
+                "motion-reduce:transition-none rounded-[20px]",
               )}
             >
-              <span className="flex shrink-0 origin-bottom [&>svg]:max-w-none group-hover/pricing:animate-crown-wiggle motion-reduce:!animate-none">
-                <SvgCrown />
-              </span>
               Pricing
             </button>
           )}
 
           {!isSignedIn && (
             <Link
+              href="/sign-in"
+              onClick={() =>
+                trackCTAClick("Sign In", "header", {
+                  itemId: "header_sign_in",
+                })
+              }
+              className="hidden screen744:!flex items-center h-10 px-[4px] text-[14px] font-semibold text-[#2554D6] whitespace-nowrap transition-colors duration-300 hover:text-[#1B3FA8] hover:underline underline-offset-[6px] decoration-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button-primary focus-visible:ring-offset-2 rounded-[6px]"
+            >
+              Sign In
+            </Link>
+          )}
+
+          {!isSignedIn && (
+            <Link
               href="/sign-up"
               onClick={() =>
-                trackCTAClick("Sign Up / Sign In", "header", {
+                trackCTAClick("Sign Up", "header", {
                   itemId: "header_sign_up",
                 })
               }
               className={cn(
-                "group/signup flex items-center justify-center gap-[4px] h-10 px-4 screen744:!px-5",
+                "group/signup flex items-center justify-center h-10 px-4 screen744:!px-5 rounded-[20px]",
                 "bg-button-primary text-white text-[14px] font-medium whitespace-nowrap",
                 "shadow-[inset_0_1px_0_rgba(255,255,255,0.2),3px_3px_0_0_rgba(117,156,255,1)]",
                 "transition-[transform,box-shadow,filter] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
@@ -72,16 +79,9 @@ const TopHeaderRightSide = () => {
                 "active:translate-x-[2px] active:translate-y-[2px] active:shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_0_0_0_rgba(117,156,255,1)] active:duration-100",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button-primary focus-visible:ring-offset-2",
                 "motion-reduce:transition-none",
-                grouped ? "ml-[4px] rounded-r-[20px] rounded-l-[6px]" : "rounded-[20px]",
               )}
             >
-              <span id="sign-up-button" className="flex">
-                Sign Up
-                <span className="hidden screen744:!flex">
-                  <span className="mx-1">/</span>
-                  Sign In
-                </span>
-              </span>
+              <span id="sign-up-button">Sign Up</span>
             </Link>
           )}
         </div>

@@ -28,13 +28,6 @@ const HERO_ID = "home-hero";
 // header's one hides while the banner is on screen.
 const CTA_BANNER_ID = "home-cta";
 
-const CrownIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M3 7l4 4 5-7 5 7 4-4-2 12H5z" />
-    <path d="M5 21h14" />
-  </svg>
-);
-
 const Logo = () => (
   <Link
     href="/"
@@ -275,10 +268,7 @@ const TopHeader = () => {
                       "motion-reduce:transition-none"
                     )}
                   >
-                    <span className="flex shrink-0 origin-bottom [&>svg]:max-w-none group-hover/pricing:animate-crown-wiggle group-data-[play]/pricing:animate-crown-wiggle motion-reduce:!animate-none">
-                      <CrownIcon />
-                    </span>
-                    <span className="max-[379px]:hidden">{pricingLabel}</span>
+                    {pricingLabel}
                   </Link>
                 )}
 
@@ -460,9 +450,6 @@ const TopHeader = () => {
                     onClick={closeMenu}
                     className="group/pricing flex items-center gap-[6px] h-[34px] px-[14px] rounded-full bg-[#C4453A] text-white text-[14px] font-semibold shadow-[2.5px_2.5px_0_0_#759CFF] transition-[background-color,transform,box-shadow] duration-200 hover:bg-[#B83E34] data-[play]:bg-[#B83E34] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[0_0_0_0_#759CFF]"
                   >
-                    <span className="flex shrink-0 origin-bottom [&>svg]:max-w-none group-hover/pricing:animate-crown-wiggle group-data-[play]/pricing:animate-crown-wiggle motion-reduce:!animate-none">
-                      <CrownIcon />
-                    </span>
                     {pricingLabel}
                   </Link>
                 </div>
