@@ -1,7 +1,6 @@
 "use client";
 import Link from "next/link";
 import AuthButtons from "../pages/landing/AuthButtons";
-import SvgCrown from "./icons/crown";
 import useStore from "@/store";
 import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
@@ -45,9 +44,6 @@ const TopHeaderRightSide = () => {
                 "motion-reduce:transition-none rounded-[20px]",
               )}
             >
-              <span className="flex shrink-0 origin-bottom [&>svg]:max-w-none group-hover/pricing:animate-crown-wiggle motion-reduce:!animate-none">
-                <SvgCrown />
-              </span>
               Pricing
             </button>
           )}
