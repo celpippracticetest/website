@@ -1,103 +1,114 @@
 import React, { useState } from "react";
-import SvgChevronDown from "../../icons/ChevronDown";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
+import { HOMEPAGE_FAQS } from "@/data/homepage-faqs";
+import Reveal from "./Reveal";
+
+// Turns the "See Pricing" mention into a real link; other answers render as text.
+const renderAnswer = (answer: string) => {
+  const [before, after] = answer.split("See Pricing");
+  if (after === undefined) return answer;
+  return (
+    <>
+      {before}See{" "}
+      <Link href="/pricing" className="font-semibold text-[#2554D6] underline-offset-2 hover:underline data-[play]:underline">
+        Pricing
+      </Link>
+      {after}
+    </>
+  );
+};
 
 const FAQ = () => {
-    const [openIndex, setOpenIndex] = useState<number | null>(null);
+  // First question starts open, as in the design; only one is open at a time.
+  const [openIndex, setOpenIndex] = useState<number | null>(0);
 
-    const toggleAccordion = (index: number) => {
-        setOpenIndex(openIndex === index ? null : index);
-    };
+  return (
+    <section
+      aria-labelledby="faq-heading"
+      className="mx-auto w-full max-w-[1000px] px-[20px] pt-[44px] screen744:!px-[48px] screen744:!pt-[64px] screen1280:!px-0 screen1280:!pt-[88px] flex flex-col"
+    >
+      <Reveal>
+      <h2
+        id="faq-heading"
+        className="text-balance m-0 mb-[20px] screen1280:!mb-[32px] text-center text-[24px] leading-[31px] screen744:!text-[30px] screen744:!leading-[38px] screen1280:!text-[32px] screen1280:!leading-[40px] font-semibold text-[#212E42]"
+      >
+        CELPIP Practice Test FAQs
+      </h2>
+      </Reveal>
 
-    const faqs = [
-        {
-            question:
-                "Where can one take a full CELPIP practice test free of charge online?",
-            answer:
-                "There are free CELPIP mock tests directly on CelpipPracticeTest.com.",
-        },
-        {
-            question: "How exact are CELPIP practice tests compared to the real test?",
-            answer:
-                "Our simulations attempt to replicate the actual CELPIP test format and duration. With AI-based scoring, your scores reflect real exam performance, enabling you to better estimate your CLB levels.",
-        },
-        {
-            question: "Will I get instant online CELPIP scores and feedback?",
-            answer:
-                "Yes. Writing and Speaking answers receive instant AI feedback and scoring. Listening and Reading receive auto-scored, complete answer keys.",
-        },
-        {
-            question: "What are the best 4 skills on the CELPIP practice platform?",
-            answer:
-                "CelpipPracticeTest.com is Australia and Canada's go-to CELPIP practice platform, preferred by 20,000+ test-takers. Students love us for the largest collection of CELPIP-specific mocks and practice exercises.",
-        },
-        {
-            question: "Do your CELPIP mock tests simulate real exam settings?",
-            answer:
-                "Yes. Our mocks are timed and structured similarly to the actual CELPIP test, getting under real exam conditions",
-        },
-        {
-            question: "What do you offer on CELPIPPracticeTest.com?",
-            answer:
-                "At \u003ca href='/' style='color: inherit; text-decoration: underline;'\u003eCELPIPPracticeTest.com\u003c/a\u003e, we offer a complete set of preparation tools, including real practice tests, complete practice exams, skill-development activities, study guides, and an exclusive Learning area.",
-        },
-        {
-            question: "Is CELPIP better than IELTS?",
-            answer:
-                "The more appropriate one is your selection depending on your need and preference but in Canada and Australia CELPIP is the most popular and widely accepted by the universities and governments.",
-        },
-    ];
-
-    return (
-        <section
-            aria-labelledby="faq-heading"
-            className="mt-[80px] screen1280:!mt-[104px] mb-[80px] max-w-[1440px] mx-auto px-[20px] screen1280:!px-[40px]"
-        >
-            <h2
-                id="faq-heading"
-                className="text-center text-[24px] screen744:!text-[32px] font-medium text-text1 mb-[40px]"
+      <div className="flex flex-col gap-[10px] screen1280:!gap-[12px]">
+        {HOMEPAGE_FAQS.map((faq, index) => {
+          const open = openIndex === index;
+          const panelId = `faq-panel-${index}`;
+          const buttonId = `faq-button-${index}`;
+          return (
+            <Reveal key={faq.question} delay={Math.min(index, 5) * 50}>
+            <div
+              className={cn(
+                "rounded-[14px] border overflow-hidden transition-[background-color,border-color,box-shadow] duration-300",
+                open
+                  ? "bg-white border-[#C9D5F5] shadow-[0_10px_28px_-20px_rgba(37,84,214,0.45)]"
+                  : "bg-white/70 border-[#E3E8F2] hover:bg-white data-[play]:bg-white hover:border-[#C9D5F5] data-[play]:border-[#C9D5F5]",
+              )}
             >
-                FAQs
-            </h2>
-
-            <div className="flex flex-col gap-[16px]">
-                {faqs.map((faq, index) => (
-                    <div
-                        key={index}
-                        className="border border-[#E0E0E0] rounded-[16px] overflow-hidden bg-[#F8F9FC]"
-                    >
-                        <button
-                            onClick={() => toggleAccordion(index)}
-                            className="w-full flex justify-between items-center p-[24px] text-left bg-[#F8F9FC] hover:bg-[#F1F3F9] transition-colors"
-                            aria-expanded={openIndex === index}
-                        >
-                            <span className="text-[16px] screen744:!text-[18px] font-medium text-text1 pr-[16px]">
-                                {faq.question}
-                            </span>
-                            <span
-                                className={`transform transition-transform duration-300 min-w-[20px] ${openIndex === index ? "rotate-180" : ""
-                                    }`}
-                            >
-                                <SvgChevronDown />
-                            </span>
-                        </button>
-                        <div
-                            className={`grid transition-all duration-300 ease-in-out ${openIndex === index
-                                ? "grid-rows-[1fr] opacity-100"
-                                : "grid-rows-[0fr] opacity-0"
-                                }`}
-                        >
-                            <div className="overflow-hidden">
-                                <div
-                                    className="p-[24px] pt-0 text-[16px] text-[#5F6D7E] leading-[24px]"
-                                    dangerouslySetInnerHTML={{ __html: faq.answer }}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                ))}
+              <h3 className="m-0">
+                <button
+                  type="button"
+                  id={buttonId}
+                  aria-expanded={open}
+                  aria-controls={panelId}
+                  onClick={() => setOpenIndex(open ? null : index)}
+                  className={cn(
+                    "group w-full flex items-center justify-between gap-[16px] min-h-[64px] px-[18px] py-[16px] screen1280:!min-h-[66px] screen1280:!px-[24px] screen1280:!py-[18px]",
+                    "text-left text-[15px] screen1280:!text-[17px] leading-[1.4] text-[#212E42] cursor-pointer",
+                    " rounded-[14px]",
+                    open ? "font-semibold" : "font-medium",
+                  )}
+                >
+                  {faq.question}
+                  <span
+                    className={cn(
+                      "flex shrink-0 items-center justify-center w-[28px] h-[28px] rounded-full transition-[transform,background-color,color] duration-200 ease-out motion-reduce:transition-none",
+                      open ? "rotate-180 bg-[#EEF3FF] text-[#2554D6]" : "text-[#37465C] group-hover:bg-[#EEF3FF] group-data-[play]:bg-[#EEF3FF] group-hover:text-[#2554D6] group-data-[play]:text-[#2554D6]",
+                    )}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M6 9l6 6 6-6" />
+                    </svg>
+                  </span>
+                </button>
+              </h3>
+              {/* grid-rows trick animates height without measuring */}
+              <div
+                id={panelId}
+                role="region"
+                aria-labelledby={buttonId}
+                className={cn(
+                  "grid transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
+                  open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
+                )}
+              >
+                <div className="overflow-hidden" inert={!open || undefined}>
+                  <p className={cn("m-0 px-[18px] pb-[18px] screen1280:!px-[24px] screen1280:!pb-[22px] text-[14px] leading-[22px] screen1280:!text-[16px] screen1280:!leading-[26px] text-[#37465C] text-pretty transition-transform duration-300 ease-out motion-reduce:transition-none", open ? "translate-y-0" : "-translate-y-[6px]")}>
+                    {renderAnswer(faq.answer)}
+                  </p>
+                </div>
+              </div>
             </div>
-        </section>
-    );
+            </Reveal>
+          );
+        })}
+      </div>
+
+      <p className="m-0 mt-[14px] screen1280:!mt-[24px] text-center text-[14px] screen1280:!text-[15px] text-[#5B6B82]">
+        Still have a question?{" "}
+        <Link href="/contact-us" className="font-semibold text-[#2554D6] underline-offset-2 hover:underline data-[play]:underline">
+          Contact us
+        </Link>
+      </p>
+    </section>
+  );
 };
 
 export default FAQ;

@@ -1,52 +1,94 @@
 import React from "react";
-import SvgPlus from "../../icons/Plus";
 import Image from "next/image";
 import Link from "next/link";
+import { useInView } from "react-intersection-observer";
+import { cn } from "@/lib/utils";
+import { trackCTAClick } from "@/lib/analytics";
+import { playOnView } from "@/hooks/usePlayOnView";
+import RollingWords from "./RollingWords";
 
 const Practice = () => {
-  return (
-    <section aria-labelledby="practice-heading">
-      <div className="mx-auto max-w-[1440px] ">
-        <div className="relative flex screen744:!block flex-col justify-end items-center mx-[20px] screen1280:!mx-[40px] rounded-[40px] h-[357px] screen744:!h-[209px] screen1280:!h-[256px] p-[24px] screen1280:!p-[40px] screen1280:!pl-[104px] mt-[142px] screen744:!mt-[180px] screen1280:!mt-[256px] bg-[radial-gradient(50%_265.62%_at_50%_50%,_#F26B3E_0%,_#FC8A65_100%)]">
-          <h2
-            id="practice-heading"
-            className="max-w-[311px] screen1280:!max-w-[480px] font-medium text-[20px] screen1280:!text-[32px]  text-white"
-          >
-            Effective Practice Approaches for CELPIP Preparation
-          </h2>
-          <div className="mt-[32px] screen1280:!mt-[40px] flex flex-col screen1280:!flex-row items-center screen744:!items-start screen1280:!items-center gap-[16px] screen1280:!gap-[24px] ">
-            <div className="group hover:cursor-pointer hover:!bg-[linear-gradient(270deg,_#F79D65_0%,_#759CFF_100%)] shadow-startButton flex gap-[8px] pl-[16px] bg-white max-w-[311px] screen1280:!max-w-[223px] h-[40px] rounded-[24px] items-center justify-center">
-              <SvgPlus className="text-text2 group-hover:text-white" />
-              <Link
-                href={"/practice-overview"}
-                className="text-text2 group-hover:text-white text-[14px] pr-[24px] leading-[16px] font-medium"
-              >
-                Start Your Free Practice
-              </Link>
-            </div>
+  const { ref, inView } = useInView({ threshold: 0.3, triggerOnce: true });
 
-            <span className="font-normal text-[14px] screen1280:!text-[16px] text-white">
-              No credit card required
-            </span>
+  return (
+    <section
+      ref={ref}
+      aria-labelledby="cta-heading"
+      className="mx-auto w-full max-w-[1236px] px-[20px] pt-[110px] screen744:!px-[48px] screen744:!pt-[130px] screen1280:!px-[40px] screen1440:!px-0 screen1280:!pt-[120px]"
+    >
+      {/* The header hides its own Start button while this card is on screen. */}
+      <div
+        id="home-cta"
+        className={cn(
+          "relative flex flex-col items-center text-center rounded-[28px] px-[22px] pt-[96px] pb-[28px]",
+          "screen744:!rounded-[36px] screen744:!px-[48px] screen744:!pt-[112px] screen744:!pb-[36px]",
+          "screen1280:!items-start screen1280:!text-left screen1280:!justify-center screen1280:!h-[256px] screen1280:!rounded-[40px] screen1280:!px-[80px] screen1280:!py-0",
+          "bg-[radial-gradient(80%_120%_at_50%_40%,#E2592B_0%,#F07B50_100%)] screen1280:!bg-[radial-gradient(60%_260%_at_50%_50%,#E2592B_0%,#F07B50_100%)]",
+        )}
+      >
+        {/* Mascot: centred above the card on mobile/tablet, standing on the right edge on desktop */}
+        <div
+          className={cn(
+            "absolute left-1/2 -translate-x-1/2 top-[-84px] w-[140px] h-[169px] screen744:!top-[-110px] screen744:!w-[170px] screen744:!h-[205px]",
+            "screen1280:!left-auto screen1280:!translate-x-0 screen1280:!top-auto screen1280:!right-[110px] screen1280:!bottom-0 screen1280:!w-[250px] screen1280:!h-[302px]",
+            "transition-[opacity,transform] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
+            inView ? "opacity-100" : "opacity-0 translate-y-[12px]",
+          )}
+        >
+          <Image
+            ref={playOnView}
+            data-play-delay={200}
+            src="/images/hero.png"
+            alt=""
+            width={250}
+            height={302}
+            sizes="(max-width: 743px) 140px, (max-width: 1279px) 170px, 250px"
+            className="w-full h-full object-cover object-top transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-rotate-3 data-[play]:-rotate-3 hover:-translate-y-[4px] data-[play]:-translate-y-[4px]"
+          />
+        </div>
+
+        <h2
+          id="cta-heading"
+          className="text-balance m-0 text-[26px] leading-[32px] screen744:!text-[32px] screen744:!leading-[40px] screen1280:!text-[34px] screen1280:!leading-[42px] screen1280:!w-[640px] font-bold text-white"
+        >
+          Ready to reach your target CLB?
+        </h2>
+        <p className="m-0 mt-[8px] screen1280:!mt-[10px] text-[16px] leading-[24px] screen1280:!text-[18px] screen1280:!leading-[27px] screen1280:!w-[600px] font-semibold text-white">
+          Take a free practice test and get your first AI score in minutes.
+        </p>
+
+        <div className="mt-[20px] screen744:!mt-[24px] screen1280:!mt-[26px] self-stretch screen744:!self-auto flex flex-col items-center gap-[12px] screen1280:!flex-row screen1280:!gap-[22px]">
+          <Link
+            ref={playOnView}
+            href="/practice-overview"
+            onClick={() =>
+              trackCTAClick("Start Your Free Practice", "cta_banner", {
+                itemId: "cta_banner_start",
+              })
+            }
+            className={cn(
+              "group/start flex items-center justify-center gap-[8px] h-[54px] w-full screen744:!w-auto screen744:!min-w-[290px] screen744:!px-[24px] screen744:!h-[55px] screen1280:!min-w-[260px] rounded-full",
+              "bg-white text-[#2554D6] text-[17px] screen1280:!text-[18px] font-semibold whitespace-nowrap shadow-[3.7px_3.9px_0_0_#B8431B]",
+              "transition-[transform,box-shadow,background-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+              "hover:-translate-y-[2px] data-[play]:-translate-y-[2px] hover:shadow-[5px_6px_0_0_#B8431B] data-[play]:shadow-[5px_6px_0_0_#B8431B] hover:bg-[#F4F7FF] data-[play]:bg-[#F4F7FF]",
+              "active:translate-x-[2px] active:translate-y-[2px] active:shadow-[0_0_0_0_#B8431B] active:duration-100",
+              "motion-reduce:transition-none",
+            )}
+          >
+            <svg
+              width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+              className="transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/start:rotate-90 group-data-[play]/start:rotate-90"
+            >
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            <RollingWords text="Start Your Free Practice" />
+          </Link>
+          <div className="flex items-center gap-[6px] screen1280:!gap-[8px] text-[14px] screen1280:!text-[16px] font-semibold text-white">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="screen1280:!w-[18px] screen1280:!h-[18px]">
+              <path d="M5 12l5 5L20 7" />
+            </svg>
+            No credit card required
           </div>
-          <Image
-            className="absolute right-[104px] -top-[210px] hidden screen1280:!flex"
-            src="/images/bear_student.png"
-            alt="Bear student mascot holding a CELPIP study guide"
-            width={325}
-            height={488}
-            sizes="(max-width: 1280px) 0px, 325px"
-            quality={75}
-          />
-          <Image
-            className="absolute left-auto right-auto screen744:!right-[21px] -top-[126px] flex screen1280:!hidden"
-            src="/images/bear_student_tablet.png"
-            alt="Bear student mascot using a tablet for CELPIP preparation"
-            width={242}
-            height={297}
-            sizes="(min-width: 1280px) 0px, 242px"
-            quality={75}
-          />
         </div>
       </div>
     </section>

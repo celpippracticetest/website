@@ -19,13 +19,13 @@ export const HOMEPAGE_TESTIMONIALS: HomepageTestimonial[] = [
     source: "Carlos.png",
   },
   {
-    name: "Admad",
+    name: "Ahmed",
     comment:
       "I finally got CLB 9 in writing after doing 2 weeks of practice tests at CELPIPPRACTICETEST.com. The AI feedback was exactly what I needed to improve structure and coherence. I highly recommend it!",
     source: "Ahmed.png",
   },
   {
-    name: "Lie",
+    name: "Li",
     comment:
       "The practice of speaking on this website is amazing. I practiced and listened to the high-score examples. It was so helpful.",
     source: "Li.png",

@@ -3,7 +3,8 @@
 import { ErrorBoundary } from "react-error-boundary";
 import dynamic from "next/dynamic";
 import Practice from "./Practice";
-import Blog from "./Blog";
+import SkillsSection from "./SkillsSection";
+import Blog, { type HomeBlogPost } from "./Blog";
 import FAQ from "./FAQ";
 import { useChunkErrorHandler } from "@/hooks/useChunkErrorHandler";
 
@@ -33,18 +34,24 @@ function ErrorFallback() {
   );
 }
 
-export default function HomePageClient() {
+export default function HomePageClient({
+  blogPosts = [],
+}: {
+  blogPosts?: HomeBlogPost[];
+}) {
   const shouldReload = useChunkErrorHandler();
   if (shouldReload) return null;
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
-      <div className="bg-[#F4F7FF]">
+      {/* Handoff focus ring for every link and button: 3px #759CFF, 2px offset */}
+      <div className="bg-[#F4F7FF] [-webkit-tap-highlight-color:transparent] [&_section]:scroll-mt-[96px] [&_:is(a,button):focus-visible]:outline-3 [&_:is(a,button):focus-visible]:outline-solid [&_:is(a,button):focus-visible]:outline-[#759CFF] [&_:is(a,button):focus-visible]:outline-offset-2">
         <main>
           <Hero />
+          <SkillsSection />
           <UserResponseReview />
           <Comments />
+          <Blog posts={blogPosts} />
           <Practice />
-          {/* <Blog /> */}
           <FAQ />
         </main>
         <Footer />

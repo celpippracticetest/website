@@ -1,67 +1,52 @@
 "use client";
 
 import React, { useEffect } from "react";
-import dynamic from "next/dynamic";
 import Image from "next/image";
-import ExamSectionCard from "./ExamSectionCard";
-import { motion } from "framer-motion";
-import { useButtonVisibleStore } from "@/store/buttonVisible.store";
-import { useInView } from "react-intersection-observer";
+import Link from "next/link";
 import TopHeader from "./TopHeader";
-import { Button } from "@/components/v2/Button";
-import SvgMedalLg from "@/components/v2/icons/medal-lg";
-import SvgMedalMd from "@/components/v2/icons/medal-md";
-import { SvgLearning } from "@/components/icons";
-import SvgWord from "@/components/icons/Word";
+import RollingWords from "./RollingWords";
 import { cn } from "@/lib/utils";
 import { trackCTAClick } from "@/lib/analytics";
+import { HOMEPAGE_HERO_STATS, HOMEPAGE_USER_COUNT } from "@/data/homepage-content";
+import { playOnView } from "@/hooks/usePlayOnView";
 
-const SvgMockExamLight = dynamic(() => import("../../icons/MockExamsLight"), {
-  ssr: false,
-});
-const SvgSampleTest = dynamic(() => import("../../icons/SampleTest"), {
-  ssr: false,
-});
-const SvgGuide = dynamic(() => import("../../icons/Guide"), { ssr: false });
-const SvgScoring = dynamic(() => import("../../icons/Scoring"), { ssr: false });
-const SvgPlus = dynamic(() => import("../../icons/Plus"), { ssr: false });
-const SvgListening = dynamic(() => import("../../icons/Listening"), {
-  ssr: false,
-});
-const SvgSpeaking = dynamic(() => import("../../icons/Speaking"), {
-  ssr: false,
-});
-const SvgWriting = dynamic(() => import("../../icons/Writing"), { ssr: false });
-const SvgReading = dynamic(() => import("../../icons/Reading"), { ssr: false });
-const SvgMockExamsColorful = dynamic(
-  () => import("../../icons/MockExamsColorful"),
-  { ssr: false },
-);
+// Icons for HOMEPAGE_HERO_STATS, matched by position.
+const heroStatIcons = [
+  <>
+    <rect x="3" y="4" width="18" height="17" rx="3" />
+    <path d="M3 9h18M8 2v4M16 2v4" />
+    <circle cx="12" cy="15" r="2.5" />
+  </>,
+  <>
+    <rect x="3" y="3" width="18" height="18" rx="4" />
+    <path d="M7 9l2 2 3-3M7 15l2 2 3-3M14 10h3M14 16h3" />
+  </>,
+  <>
+    <rect x="4" y="8" width="16" height="12" rx="3" />
+    <path d="M12 4v4M9 13h.01M15 13h.01M9 17h6" />
+  </>,
+  <>
+    <path d="M12 3l9 5-9 5-9-5z" />
+    <path d="M7 10.5V16c0 1.5 2.2 3 5 3s5-1.5 5-3v-5.5" />
+  </>,
+];
+
+const heroFeatures = HOMEPAGE_HERO_STATS.map((stat, index) => ({
+  label: !stat.value ? (
+    <>{stat.label}</>
+  ) : stat.valueFirst ? (
+    <>
+      <b className="font-bold">{stat.value}</b> {stat.label}
+    </>
+  ) : (
+    <>
+      {stat.label} <b className="font-bold">{stat.value}</b>
+    </>
+  ),
+  icon: heroStatIcons[index],
+}));
 
 const Hero = () => {
-  const { ref } = useInView();
-  const { setVisible, isVisible, isInFooter } = useButtonVisibleStore(
-    (state) => state,
-  );
-
-  useEffect(() => {
-    const onScroll = () => {
-      const scrollY = window.scrollY;
-
-      if (scrollY > 100 && !isInFooter) {
-        setVisible(false);
-      } else if (scrollY > 100 && isInFooter) {
-        setVisible(false);
-      } else if (scrollY < 100) {
-        setVisible(false);
-      }
-    };
-    window.addEventListener("scroll", onScroll);
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [isInFooter]);
-
-  useEffect(() => {}, [isInFooter]);
-
   useEffect(() => {
     if (window.location.hash === "#plans") {
       const el = document.getElementById("plans");
@@ -75,228 +60,159 @@ const Hero = () => {
   }, []);
 
   return (
-    <div ref={ref} className="flex flex-col ">
-      <div
-        className={`w-full  
-    flex bg-[linear-gradient(180deg,_rgba(255,_255,_255,_0.4)_0%,_rgba(255,_255,_255,_0.8)_100%)] 
-    backdrop-blur-[1px] 
-    shadow-[0_0_100px_0px_rgba(255,255,255,0.8)] 
-    ${
-      isVisible
-        ? "opacity-100 translate-y-0"
-        : "opacity-0 translate-y-[12px] pointer-events-none"
-    } 
-    flex justify-center fixed z-[10] h-[128px] items-center 
-    left-1/2 -translate-x-1/2 transition-all duration-500 
-    ease-in-out transform bottom-0`}
-      >
-        <Button
-          size="lg"
-          href="/practice-overview"
-          aria-label="Start your free CELPIP practice"
-          onClick={() =>
-            trackCTAClick("Start Your Free Practice", "hero_sticky", {
-              itemId: "hero_sticky_cta",
-            })
-          }
-        >
-          <SvgPlus />
-          <span className="hidden sm:!flex">Start Your Free Practice</span>
-          <span className="flex sm:!hidden">Free Practice</span>
-        </Button>
-      </div>
-
-      <section
-        style={{
-          background:
-            "linear-gradient(-45deg, #CEDCFF70, #DAFFFA70, #FFB78A70, #CEDCFF70)",
-        }}
-        className="relative pt-[80px] flex flex-col min-h-screen screen1024:min-h-[100dvh] justify-between transition-all duration-300 w-full background-animate shadow-[inset_0px_-80px_96px_-4px_#F4F7FF]"
-      >
+    <div className="flex flex-col ">
+      {/* At least one full screen tall, so the first view is only the hero (the skills section starts below the fold). */}
+      <section className="relative w-full min-h-svh flex flex-col pt-[68px] screen744:!pt-[72px] screen1280:!pt-[80px] bg-[linear-gradient(180deg,rgba(244,247,255,0)_70%,#F4F7FF_100%),linear-gradient(115deg,#FCE3D5_0%,#F7F0EC_40%,#E6F6FB_100%)]">
         <TopHeader />
-        <div className="flex max-w-[1440px] w-full justify-center mx-auto ">
-          <div className="flex flex-col screen744:!flex-row w-full screen744:!justify-between justify-center px-[16px] screen744:!px-[40px] flex-wrap screen744:!flex-nowrap">
-            <div className="flex flex-col w-full screen744:!justify-between justify-center">
-              <div className="items-center gap-[8px] screen1280:!mt-[35px] mt-[37px] flex flex-row screen744:!justify-start justify-center">
-                <SvgMedalLg className="hidden screen1280:!flex" />
-                <SvgMedalMd className="flex screen1280:!hidden" />
-                <span className="text-text2 font-normal screen1280:!text-[20px] text-[14px]">
-                  <span className="text-primary2 font-extrabold">
-                    #1 Top rated
-                  </span>{" "}
-                  CELPIP Resource 2026{" "}
-                </span>
-              </div>
-              <div className="mt-[21px] flex flex-row justify-between w-full screen1280:!mt-[38px] w-full h-[95px] screen744:!h-[135px] screen1280:!h-[245px] screen744:!justify-between justify-center">
-                <h1 className="font-bold text-[32px] screen1280:!text-[65px] leading-[40px] screen1280:!leading-[70px] text-text1 screen744:!text-left text-center">
-                  Reach Your Target
-                  <br />
-                  <span className="text-primary2">CELPIP</span> Score.{" "}
-                  <br className="screen744:!block hidden" />
-                  <span className="text-secondary2 italic">Faster.</span>
-                </h1>
-                <div className="flex">
-                  <div className="flex flex-col gap-[8px] screen744:!gap-[16px] screen744:!flex hidden w-[262px] h-[186px] screen744:!h-[224px]">
-                    {[
-                      {
-                        title1: "60",
-                        title2: "mock exams",
-                        icon: <SvgMockExamLight />,
-                      },
-                      {
-                        title1: "",
-                        title2: "Guide & Tips",
-                        icon: <SvgGuide />,
-                      },
-                      {
-                        title1: "3,000+",
-                        title2: "sample tests",
-                        icon: <SvgSampleTest />,
-                      },
-                      {
-                        title1: "",
-                        title2: "AI-powered scoring",
-                        icon: <SvgScoring />,
-                      },
-                    ].map((item, index) => (
-                      <motion.div
-                        key={index}
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.1, duration: 0.1 }}
-                        className="flex gap-[8px] h-[44px] items-center"
-                      >
-                        <span>{item.icon}</span>
-                        {item.title1 && (
-                          <span className="text-text1 font-bold text-[20px] leading-[28px]">
-                            {item.title1}
-                          </span>
-                        )}
-                        <span className="text-text1 font-normal text-[20px] leading-[28px]">
-                          {item.title2}
-                        </span>
-                      </motion.div>
-                    ))}
-                  </div>
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.1, duration: 0.15 }}
-                  >
-                    <Image
-                      src="/images/hero.png"
-                      alt="Hero image of CELPIP preparation platform showing student success"
-                      className="hidden screen1280:!flex w-[327px] h-[491px] relative top-[-120px]"
-                      width={327}
-                      height={491}
-                      priority={true}
-                      sizes="(max-width: 1280px) 0px, 327px"
-                      quality={75}
-                      loading="eager"
-                      fetchPriority="high"
-                    />
-                  </motion.div>
-                </div>
-              </div>
-              <div className="font-inter font-semibold text-xs leading-5 tracking-normal text-center screen744:!hidden flex justify-center">
-                60 mock exams · 3,000+ questions · Instant AI scoring
-              </div>
-              <div className="flex screen744:!justify-start justify-center">
-                <Button
-                  href="/practice-overview"
-                  size="lg"
-                  className="mt-[24px]"
-                  onClick={() =>
-                    trackCTAClick("Start Your Free Practice", "hero", {
-                      itemId: "hero_primary_cta",
-                    })
-                  }
+
+        <div className="flex-1 justify-center mx-auto w-full max-w-[1236px] px-[20px] pt-[36px] pb-[32px] screen744:!pb-[48px] screen744:!px-[48px] screen744:!pt-[56px] screen1280:!px-[40px] screen1440:!px-0 screen1280:!pt-[24px] screen1280:!pb-[40px] screen1280:!min-h-[560px] flex flex-col screen1280:!flex-row screen1280:!items-center screen1280:!justify-between screen1280:!gap-[24px]">
+          {/* Copy + CTAs */}
+          <div className="flex flex-col screen1280:!w-[620px] screen1280:!shrink-0">
+            <h1
+              className="m-0 mb-[14px] screen1280:!mb-[18px] text-[16px] leading-[24px] screen744:!text-[19px] screen744:!leading-[28px] screen1280:!text-[20px] screen1280:!leading-[30px] font-normal text-[#37465C] animate-in fade-in slide-in-from-bottom-2 duration-700 fill-mode-both motion-reduce:animate-none"
+            >
+              <span className="font-extrabold text-[#2554D6]">
+                Free CELPIP Practice Tests
+              </span>{" "}
+              with Instant AI Scoring
+            </h1>
+
+            <p
+              style={{ animationDelay: "80ms" }}
+              className="m-0 text-[36px] leading-[42px] tracking-[-0.4px] screen744:!text-[56px] screen744:!leading-[62px] screen744:!tracking-[-0.5px] screen1280:!text-[65px] screen1280:!leading-[70px] font-bold text-[#212E42] animate-in fade-in slide-in-from-bottom-3 duration-700 fill-mode-both motion-reduce:animate-none"
+            >
+              Reach Your Target
+              <br />
+              <span className="text-[#4A7DFF]">CELPIP</span> Score.
+              <br />
+              <span className="italic text-[#F4845F]">Faster.</span>
+            </p>
+
+            {/* The header watches this CTA row: once it scrolls away, the
+                header's Start Free Practice button appears. */}
+            <div
+              id="home-hero"
+              style={{ animationDelay: "160ms" }}
+              className="mt-[28px] screen744:!mt-[32px] screen1280:!mt-[40px] flex flex-col gap-[12px] screen744:!flex-row screen744:!items-center screen744:!gap-[16px] animate-in fade-in slide-in-from-bottom-3 duration-700 fill-mode-both motion-reduce:animate-none"
+            >
+              <Link
+                ref={playOnView}
+                href="/practice-overview"
+                onClick={() =>
+                  trackCTAClick("Start Your Free Practice", "hero", {
+                    itemId: "hero_primary_cta",
+                  })
+                }
+                className={cn(
+                  "group/start flex items-center justify-center gap-[8px] h-[54px] screen744:!h-[55px] screen744:!min-w-[270px] screen1280:!min-w-[260px] screen744:!px-[24px] rounded-full",
+                  "bg-[#2554D6] text-white text-[17px] screen744:!text-[18px] font-medium whitespace-nowrap",
+                  "shadow-[3.7px_3.9px_0_0_#759CFF]",
+                  "transition-[transform,background-color,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                  "hover:bg-[#1E46B8] data-[play]:bg-[#1E46B8]",
+                  "active:translate-x-[2px] active:translate-y-[2px] active:shadow-[0_0_0_0_#759CFF] active:duration-100",
+                  "motion-reduce:transition-none",
+                )}
+              >
+                <svg
+                  width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+                  className="transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/start:rotate-90 group-data-[play]/start:rotate-90"
                 >
-                  <SvgPlus />
-                  <span>Start Your Free Practice</span>
-                </Button>
-              </div>
-              <div className="flex flex-row screen1280:!mt-[8px] mt-[14px] screen744:!justify-start justify-center items-center gap-2">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                <RollingWords text="Start Your Free Practice" />
+              </Link>
+              <Link
+                ref={playOnView}
+                data-play-delay={350}
+                href="/exam-overview"
+                onClick={() =>
+                  trackCTAClick("Take a Mock Test", "hero", {
+                    itemId: "hero_secondary_cta",
+                  })
+                }
+                className={cn(
+                  "flex items-center justify-center h-[52px] screen744:!h-[55px] screen744:!w-[210px] screen1280:!w-[200px] rounded-full",
+                  "bg-white/85 border-[1.5px] border-[#C9D5F5] text-[#2554D6] text-[17px] screen744:!text-[18px] font-medium whitespace-nowrap",
+                  "transition-[transform,background-color,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                  "hover:bg-white data-[play]:bg-white hover:border-[#2554D6] data-[play]:border-[#2554D6] hover:-translate-y-[2px] data-[play]:-translate-y-[2px]",
+                  "active:translate-y-0 active:scale-[0.98] active:duration-100",
+                  "motion-reduce:transition-none",
+                )}
+              >
+                Take a Mock Test
+              </Link>
+            </div>
+
+            {/* Trust row */}
+            <div
+              style={{ animationDelay: "240ms" }}
+              className="mt-[18px] screen744:!mt-[20px] screen1280:!mt-[22px] flex flex-col gap-[10px] screen744:!flex-row screen744:!items-center screen744:!gap-[22px] screen1280:!gap-[18px] text-[14px] font-medium text-[#212E42] animate-in fade-in duration-700 fill-mode-both motion-reduce:animate-none"
+            >
+              <div className="flex items-center gap-[10px]">
                 <Image
                   src="/images/people.png"
-                  alt="People icon showing 20,000+ CELPIP graduates trusting CELPIPPRACTICETEST.com"
-                  width={65}
-                  height={28}
-                  className="max-h-[25px] w-auto"
-                  style={{ width: "auto" }}
+                  alt=""
+                  width={57}
+                  height={24}
+                  className="w-[50px] h-[21px] screen1280:!w-[57px] screen1280:!h-[24px]"
                   priority
                 />
-                <h2 className="text-text1 font-medium leading-[28px] screen1280:!text-[14px] text-[10px]">
-                  Trusted by 70k+ test-takers{" "}
-                </h2>
+                Trusted by {HOMEPAGE_USER_COUNT} test-takers
+              </div>
+              <span className="hidden screen1280:!block w-px h-[18px] bg-[#D5D6D8]" aria-hidden="true" />
+              <div className="flex items-center gap-[8px] screen1280:!gap-[6px] pl-[2px] screen1280:!pl-0">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0F8A6C" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M5 12l5 5L20 7" />
+                </svg>
+                No credit card required
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Navigation Cards (Desktop & Mobile Unified) */}
-        <div className="flex flex-col w-full overflow-hidden">
-          <div className="flex flex-row flex-wrap screen744:flex-nowrap px-[16px] screen744:!px-[42px] pt-[22px] pb-[60px] screen744:!pb-[40px] screen1280:!mt-[52px] gap-[12px] screen744:!gap-[16px] screen1280:gap-[24px] w-full max-w-[1440px] mx-auto screen1024:justify-center">
-            {[
-              {
-                title: "Listening",
-                icon: <SvgListening className="text-[#1D4ED8]" />,
-                bgColor: "bg-primary5",
-                link: "/listening",
-              },
-              {
-                title: "Speaking",
-                icon: <SvgSpeaking className="text-[#BE123C]" />,
-                bgColor: "bg-secondary5",
-                link: "/speaking",
-              },
-              {
-                title: "Writing",
-                icon: <SvgWriting className="text-[#0D9488]" />,
-                bgColor: "bg-success5",
-                link: "/writing",
-              },
-              {
-                title: "Reading",
-                icon: <SvgReading className="text-[#B91C1C]" />,
-                bgColor: "bg-error5",
-                link: "/reading",
-              },
-              {
-                title: "Mock Exams",
-                icon: <SvgMockExamsColorful />,
-                bgColor: "bg-purple5",
-                link: "/exam-overview",
-              },
-              {
-                title: "Learning",
-                icon: <SvgLearning className="text-[#854D0E]" />,
-                bgColor: "bg-[#FEF9C3]",
-                link: "/learning",
-              },
-              {
-                title: "Words",
-                icon: <SvgWord className="text-[#0D8A72] w-[24px]" />,
-                bgColor: "bg-[#CCFBF1]",
-                link: "/words",
-              },
-            ].map((exam, index, array) => {
-              const isLast = index === array.length - 1;
-              return (
-                <ExamSectionCard
+          {/* Features + mascot (side by side below the copy on mobile/tablet,
+              two separate columns on desktop) */}
+          <div className="mt-[26px] screen744:!mt-[36px] screen1280:!mt-0 flex items-center justify-between gap-[12px] screen744:!gap-[24px] screen1280:!contents">
+            <ul className="m-0 p-0 list-none flex flex-col gap-[14px] screen744:!gap-[18px] screen1280:!w-[260px] screen1280:!shrink-0">
+              {heroFeatures.map((feature, index) => (
+                <li
                   key={index}
-                  title={exam.title}
-                  icon={exam.icon}
-                  bgColor={exam.bgColor}
-                  isLast={isLast}
-                  link={exam.link}
-                  className={cn("screen744:!w-auto", {
-                    "!w-[calc(50%-6px)]": !isLast,
-                    "w-full": isLast,
-                  })}
+                  ref={playOnView}
+                  data-play-delay={index * 140}
+                  style={{ animationDelay: `${200 + index * 70}ms` }}
+                  className="group/feature flex items-center gap-[10px] screen1280:!gap-[14px] text-[15px] leading-[20px] screen744:!text-[18px] screen744:!leading-[24px] screen1280:!text-[19px] screen1280:!leading-[26px] text-[#212E42] animate-in fade-in slide-in-from-right-2 duration-700 fill-mode-both motion-reduce:animate-none"
+                >
+                  <span className="flex shrink-0 items-center justify-center w-[32px] h-[32px] rounded-[10px] screen744:!w-[40px] screen744:!h-[40px] screen1280:!w-[42px] screen1280:!h-[42px] screen1280:!rounded-[12px] bg-white/85 screen1280:!bg-white/80 border border-[#E3EBFF] text-[#2554D6] transition-[transform,background-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/feature:-translate-y-[2px] group-data-[play]/feature:-translate-y-[2px] group-hover/feature:bg-white group-data-[play]/feature:bg-white">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="w-[16px] h-[16px] screen744:!w-[19px] screen744:!h-[19px] screen1280:!w-[20px] screen1280:!h-[20px]">
+                      {feature.icon}
+                    </svg>
+                  </span>
+                  <span>{feature.label}</span>
+                </li>
+              ))}
+            </ul>
+
+            <div
+              style={{ animationDelay: "200ms" }}
+              className="shrink-0 w-[132px] h-[160px] screen744:!w-[220px] screen744:!h-[266px] screen744:!mr-[20px] screen1280:!mr-0 screen1280:!w-[300px] screen1280:!h-[363px] animate-in fade-in zoom-in-95 duration-700 fill-mode-both motion-reduce:animate-none"
+            >
+              {/* Gentle idle float on its own layer, so it never fights the entrance or hover tilt. */}
+              <div className="w-full h-full animate-soft-float [animation-delay:900ms] motion-reduce:animate-none">
+                <Image
+                  ref={playOnView}
+                  data-play-delay={300}
+                  src="/images/hero.png"
+                  alt="CELPIP Practice Test beaver mascot"
+                  width={300}
+                  height={363}
+                  priority
+                  fetchPriority="high"
+                  loading="eager"
+                  quality={75}
+                  sizes="(max-width: 743px) 132px, (max-width: 1279px) 220px, 300px"
+                  className="w-full h-full object-cover transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-rotate-2 data-[play]:-rotate-2 hover:-translate-y-[4px] data-[play]:-translate-y-[4px]"
                 />
-              );
-            })}
+              </div>
+            </div>
           </div>
         </div>
       </section>

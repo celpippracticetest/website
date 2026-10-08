@@ -2,6 +2,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import RollingWords from "@/components/pages/landing/RollingWords";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRouter } from "nextjs-toploader/app";
 
@@ -34,10 +35,10 @@ const CTASection = () => {
                   onClick={() => {
                     router.push("/practice-overview");
                   }}
-                  className="bg-[#3ebbf3] hover:bg-[#3ebbf3]/90 rounded-full text-white font-semibold text-lg px-8 py-3 h-auto shadow-md"
+                  className="group/start bg-[#3ebbf3] hover:bg-[#3ebbf3]/90 rounded-full text-white font-semibold text-lg px-8 py-3 h-auto shadow-md"
                 >
-                  Start Your Free Practice
-                  <ArrowRight className="ml-2" />
+                  <RollingWords text="Start Your Free Practice" />
+                  <ArrowRight className="ml-2 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/start:translate-x-[3px]" />
                 </Button>
                 <p className="text-[14px] text-gray-500 mt-2">
                   No credit card required
@@ -63,10 +64,10 @@ const CTASection = () => {
               onClick={() => {
                 router.push("/practice-overview");
               }}
-              className="bg-[#3ebbf3] hover:bg-[#3ebbf3]/90 rounded-full text-white font-semibold text-lg px-8 py-3 h-auto shadow-md"
+              className="group/start bg-[#3ebbf3] hover:bg-[#3ebbf3]/90 rounded-full text-white font-semibold text-lg px-8 py-3 h-auto shadow-md"
             >
-              Start Your Free Practice
-              <ArrowRight className="ml-2" />
+              <RollingWords text="Start Your Free Practice" />
+              <ArrowRight className="ml-2 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/start:translate-x-[3px]" />
             </Button>
             <p className="text-[14px] text-gray-500 mt-3">
               No credit card required

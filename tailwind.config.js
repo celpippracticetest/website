@@ -147,11 +147,21 @@ module.exports = {
             transform: "scale(1.05)",
           },
         },
+        "crown-wiggle": {
+          "0%, 100%": { transform: "rotate(0deg) translateY(0)" },
+          "15%": { transform: "rotate(-14deg) translateY(-1px)" },
+          "30%": { transform: "rotate(11deg) translateY(-2px)" },
+          "45%": { transform: "rotate(-8deg) translateY(-1px)" },
+          "60%": { transform: "rotate(5deg) translateY(0)" },
+          "75%": { transform: "rotate(-2deg)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "pulse-frame": "pulse-frame 3s ease-in-out infinite",
+        "crown-wiggle": "crown-wiggle 0.7s ease-in-out",
+        "soft-float": "soft-float 6s ease-in-out infinite",
       },
       typography: (theme) => ({
         DEFAULT: {
