@@ -275,7 +275,7 @@ const TopHeader = () => {
                       "motion-reduce:transition-none"
                     )}
                   >
-                    <span className="flex origin-bottom group-hover/pricing:animate-crown-wiggle group-data-[play]/pricing:animate-crown-wiggle motion-reduce:!animate-none">
+                    <span className="flex shrink-0 origin-bottom [&>svg]:max-w-none group-hover/pricing:animate-crown-wiggle group-data-[play]/pricing:animate-crown-wiggle motion-reduce:!animate-none">
                       <CrownIcon />
                     </span>
                     <span className="max-[379px]:hidden">{pricingLabel}</span>
@@ -460,7 +460,7 @@ const TopHeader = () => {
                     onClick={closeMenu}
                     className="group/pricing flex items-center gap-[6px] h-[34px] px-[14px] rounded-full bg-[#C4453A] text-white text-[14px] font-semibold shadow-[2.5px_2.5px_0_0_#759CFF] transition-[background-color,transform,box-shadow] duration-200 hover:bg-[#B83E34] data-[play]:bg-[#B83E34] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[0_0_0_0_#759CFF]"
                   >
-                    <span className="flex origin-bottom group-hover/pricing:animate-crown-wiggle group-data-[play]/pricing:animate-crown-wiggle motion-reduce:!animate-none">
+                    <span className="flex shrink-0 origin-bottom [&>svg]:max-w-none group-hover/pricing:animate-crown-wiggle group-data-[play]/pricing:animate-crown-wiggle motion-reduce:!animate-none">
                       <CrownIcon />
                     </span>
                     {pricingLabel}

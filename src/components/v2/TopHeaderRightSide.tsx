@@ -48,7 +48,7 @@ const TopHeaderRightSide = () => {
                 grouped ? "rounded-l-[20px] rounded-r-[6px]" : "rounded-[20px]",
               )}
             >
-              <span className="flex origin-bottom group-hover/pricing:animate-crown-wiggle motion-reduce:!animate-none">
+              <span className="flex shrink-0 origin-bottom [&>svg]:max-w-none group-hover/pricing:animate-crown-wiggle motion-reduce:!animate-none">
                 <SvgCrown />
               </span>
               Pricing
