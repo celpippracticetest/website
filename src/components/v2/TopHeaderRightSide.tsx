@@ -48,31 +48,18 @@ const TopHeaderRightSide = () => {
             </button>
           )}
 
-          {!isSignedIn && (
-            <Link
-              href="/sign-in"
-              onClick={() =>
-                trackCTAClick("Sign In", "header", {
-                  itemId: "header_sign_in",
-                })
-              }
-              className="hidden screen744:!flex items-center h-10 px-[4px] text-[14px] font-semibold text-[#2554D6] whitespace-nowrap transition-colors duration-300 hover:text-[#1B3FA8] hover:underline underline-offset-[6px] decoration-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button-primary focus-visible:ring-offset-2 rounded-[6px]"
-            >
-              Sign In
-            </Link>
-          )}
-
+          {/* One auth button for guests: the sign-up page also handles signing in. */}
           {!isSignedIn && (
             <Link
               href="/sign-up"
               onClick={() =>
-                trackCTAClick("Sign Up", "header", {
+                trackCTAClick("Sign In / Sign Up", "header", {
                   itemId: "header_sign_up",
                 })
               }
               className={cn(
-                "group/signup flex items-center justify-center h-10 px-4 screen744:!px-5 rounded-[20px]",
-                "bg-button-primary text-white text-[14px] font-medium whitespace-nowrap",
+                "group/signup flex items-center justify-center h-10 px-3 screen744:!px-5 rounded-[20px]",
+                "bg-button-primary text-white text-[13px] screen744:!text-[14px] font-medium whitespace-nowrap",
                 "shadow-[inset_0_1px_0_rgba(255,255,255,0.2),3px_3px_0_0_rgba(117,156,255,1)]",
                 "transition-[transform,box-shadow,filter] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
                 "hover:-translate-y-[2px] hover:brightness-[0.94] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.2),4px_5px_0_0_rgba(117,156,255,1)]",
@@ -81,7 +68,7 @@ const TopHeaderRightSide = () => {
                 "motion-reduce:transition-none",
               )}
             >
-              <span id="sign-up-button">Sign Up</span>
+              <span id="sign-up-button">Sign In / Sign Up</span>
             </Link>
           )}
         </div>
