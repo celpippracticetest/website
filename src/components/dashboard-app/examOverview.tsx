@@ -286,10 +286,14 @@ const ExamOverview = ({
                             <span className="max-[439px]:hidden screen1024:!hidden min-[1180px]:!inline">{section.short}</span>
                           </button>
                         </TooltipTrigger>
+                        {/* Portal: render at the page root so the next card (its hover lift
+                            creates a stacking context) can never paint over the tooltip. */}
+                        <TooltipPrimitive.Portal>
                         <TooltipContent
                           side="top"
                           sideOffset={8}
-                          className="flex flex-col items-center gap-[2px] whitespace-nowrap px-[12px] py-[8px] rounded-[10px] border-0 bg-[#212E42] text-white text-center shadow-[0_10px_24px_-12px_rgba(33,46,66,0.6)]"
+                          collisionPadding={8}
+                          className="z-[60] flex flex-col items-center gap-[2px] whitespace-nowrap px-[12px] py-[8px] rounded-[10px] border-0 bg-[#212E42] text-white text-center shadow-[0_10px_24px_-12px_rgba(33,46,66,0.6)]"
                         >
                           <span className="text-[13px] leading-[18px] font-semibold">
                             {locked ? "Premium test" : `Start the ${section.label} section only`}
@@ -299,6 +303,7 @@ const ExamOverview = ({
                           </span>
                           <TooltipPrimitive.Arrow className="fill-[#212E42]" width={12} height={6} />
                         </TooltipContent>
+                        </TooltipPrimitive.Portal>
                       </Tooltip>
                     ))}
                   </div>
