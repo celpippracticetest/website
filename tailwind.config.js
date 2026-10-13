@@ -155,6 +155,42 @@ module.exports = {
           "60%": { transform: "rotate(5deg) translateY(0)" },
           "75%": { transform: "rotate(-2deg)" },
         },
+        "soft-float": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-6px)" },
+        },
+        "nav-page-turn": {
+          "0%": { transform: "scaleX(1)" },
+          "50%": { transform: "scaleX(-1)" },
+          "100%": { transform: "scaleX(1)" },
+        },
+        "nav-draw": {
+          "0%": { strokeDashoffset: "1" },
+          "100%": { strokeDashoffset: "0" },
+        },
+        "nav-pop": {
+          "0%": { opacity: "0", transform: "scale(0.3)" },
+          "60%": { opacity: "1", transform: "scale(1.2)" },
+          "100%": { opacity: "1", transform: "scale(1)" },
+        },
+        "nav-wiggle": {
+          "0%, 100%": { transform: "translateY(0) rotate(0deg)" },
+          "35%": { transform: "translateY(-2px) rotate(-8deg)" },
+          "65%": { transform: "translateY(0) rotate(5deg)" },
+        },
+        "nav-flip": {
+          "0%": { transform: "scaleX(1)" },
+          "50%": { transform: "scaleX(0)" },
+          "100%": { transform: "scaleX(1)" },
+        },
+        "nav-swap-out": {
+          "0%, 49%": { opacity: "1" },
+          "50%, 100%": { opacity: "0" },
+        },
+        "nav-swap-in": {
+          "0%, 49%": { opacity: "0" },
+          "50%, 100%": { opacity: "1" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -162,6 +198,13 @@ module.exports = {
         "pulse-frame": "pulse-frame 3s ease-in-out infinite",
         "crown-wiggle": "crown-wiggle 0.7s ease-in-out",
         "soft-float": "soft-float 6s ease-in-out infinite",
+        "nav-page-turn": "nav-page-turn 0.8s cubic-bezier(0.45,0,0.2,1) both",
+        "nav-draw": "nav-draw 0.5s cubic-bezier(0.22,1,0.36,1) both",
+        "nav-pop": "nav-pop 0.45s cubic-bezier(0.22,1,0.36,1) both",
+        "nav-wiggle": "nav-wiggle 0.6s ease-in-out both",
+        "nav-flip": "nav-flip 0.6s cubic-bezier(0.45,0,0.2,1) both",
+        "nav-swap-out": "nav-swap-out 0.6s linear both",
+        "nav-swap-in": "nav-swap-in 0.6s linear both",
       },
       typography: (theme) => ({
         DEFAULT: {
