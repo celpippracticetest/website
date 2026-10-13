@@ -11,32 +11,35 @@ const RecommendedWordPill: React.FC<RecommendedWordPillProps> = ({ word, onAdd }
     const [isClicked, setIsClicked] = useState(false);
 
     const handleClick = () => {
+        if (isClicked) return;
         setIsClicked(true);
         onAdd();
         // The pill will be removed from DOM by parent, but we keep the state for the brief transition
     };
 
     return (
-        <div
+        <button
+            type="button"
             onClick={handleClick}
+            aria-label={`Add ${word} to your words`}
             className={clsx(
-                "flex items-center gap-3 transition-all duration-300 px-5 py-2.5 rounded-full group cursor-pointer active:scale-95",
-                isClicked ? "bg-[#0DAA94] text-white" : "bg-[#E8EBF2] hover:bg-[#DDE1E9] text-[#76808F]"
+                "group flex items-center gap-[8px] h-[44px] pl-[16px] pr-[12px] rounded-full border cursor-pointer whitespace-nowrap",
+                "transition-[background-color,border-color,color,transform] duration-200 active:scale-95 motion-reduce:transition-none",
+                isClicked
+                    ? "bg-[#0F9F7F] border-[#0F9F7F] text-white"
+                    : "bg-white border-[#E3EBFF] text-[#212E42] hover:border-[#0F9F7F] hover:bg-[#F2FBF8]",
             )}
         >
-            <span className={clsx(
-                "text-[16px] font-medium select-none capitalize transition-colors duration-300",
-                isClicked ? "text-white" : "text-[#76808F]"
-            )}>
-                {word}
+            <span className="text-[15px] font-semibold select-none capitalize">{word}</span>
+            <span
+                className={clsx(
+                    "flex items-center justify-center w-[24px] h-[24px] rounded-full transition-[transform,background-color,color] duration-300",
+                    isClicked ? "bg-white/20 text-white rotate-90" : "bg-[#E3F8F5] text-[#0F9F7F] group-hover:scale-110",
+                )}
+            >
+                <SvgPlus width={14} height={14} />
             </span>
-            <div className={clsx(
-                "transition-all duration-300 group-hover:scale-125",
-                isClicked ? "text-white rotate-90" : "text-[#0DAA94]"
-            )}>
-                <SvgPlus width={18} height={18} />
-            </div>
-        </div>
+        </button>
     );
 };
 
