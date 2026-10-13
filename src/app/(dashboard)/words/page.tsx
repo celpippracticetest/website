@@ -9,9 +9,7 @@ import SvgChevronDown from "@/components/icons/ChevronDown";
 import { WordDetailsCard } from "@/components/dashboard-app/words/WordDetailsCard";
 import RecommendedWordPill from "@/components/dashboard-app/words/RecommendedWordPill";
 import WordsLanding from "@/components/dashboard-app/words/WordsLanding";
-import { Button } from "@/components/v2/Button";
 import SvgArrowRight from "@/components/icons/ArrowRight";
-import Link from "next/link";
 import { trackEngagement, trackKpi } from "@/lib/analytics";
 
 const WordsPage = () => {
@@ -71,7 +69,6 @@ const WordsPage = () => {
       const response = await fetch("/api/word-recommendations");
       if (response.ok) {
         const data = await response.json();
-        console.log("Recommendations Data:", data);
         setRecommendations(data.recommendations || []);
       }
     } catch (error) {
@@ -197,216 +194,216 @@ const WordsPage = () => {
       ? words[selectedWordIndex]
       : null;
 
+
+  const masteredCount = words.filter((w) => w.isLearned).length;
+  const masteredPercent = words.length ? Math.round((masteredCount / words.length) * 100) : 0;
+
+  const loadMoreButton =
+    words.length < total ? (
+      <button
+        type="button"
+        onClick={handleLoadMore}
+        disabled={loadMoreLoading}
+        className="group flex items-center justify-center gap-[6px] w-full h-[44px] mt-[4px] rounded-[12px] text-[14px] font-semibold text-[#2554D6] transition-colors hover:bg-[#F4F7FF] disabled:opacity-60 disabled:cursor-wait"
+      >
+        {loadMoreLoading ? "Loading..." : `Load more (${total - words.length} left)`}
+        {!loadMoreLoading && (
+          <span className="transition-transform duration-200 group-hover:translate-y-[2px]">
+            <SvgChevronDown />
+          </span>
+        )}
+      </button>
+    ) : null;
+
+  const wordList = (onSelect: (index: number) => void) => (
+    <ul className="m-0 p-0 list-none flex flex-col gap-[8px]">
+      {words.map((item, index) => (
+        <li key={item.id}>
+          <WordPill
+            word={item.word}
+            isLearned={item.isLearned}
+            isSelected={selectedWordIndex === index}
+            onToggleLearned={() => handleToggleLearned(item.word, !!item.isLearned)}
+            onClick={() => onSelect(index)}
+          />
+        </li>
+      ))}
+    </ul>
+  );
+
+  const cardProps = selectedWord && selectedWordIndex !== null
+    ? {
+        word: selectedWord,
+        onNext: () => advanceFlashcard(1),
+        onPrevious: () => advanceFlashcard(-1),
+        onToggleMastered: handleToggleLearned,
+        hasPrevious: selectedWordIndex > 0,
+        hasNext: selectedWordIndex < words.length - 1,
+        currentIndex: selectedWordIndex,
+        totalWords: total,
+      }
+    : null;
+
+  // Normal document flow at every size (no viewport-height maths), so sections
+  // can never overlap; only the desktop word list scrolls on its own.
   return (
-    <div className="flex flex-col w-full max-h-screen min-h-0 overflow-hidden">
-      <div className="max-w-7xl flex justify-start items-stretch flex-col w-full mx-auto min-h-0 flex-1 px-4 screen1280:px-0">
+    <div className="w-full pb-[112px] screen1280:pb-[48px]">
+      <div className="mx-auto w-full max-w-[1180px] px-[16px] screen744:px-[24px] screen1280:px-0 flex flex-col gap-[20px] screen1280:gap-[28px]">
         {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#0DAA94] border-t-transparent"></div>
+          <div className="flex flex-col gap-[16px] pt-[8px]" aria-busy="true" aria-live="polite">
+            <span className="sr-only">Loading your words</span>
+            <span className="h-[28px] w-[180px] rounded-full bg-white animate-pulse" />
+            <div className="grid screen1280:grid-cols-[340px_minmax(0,1fr)] gap-[20px]">
+              <div className="h-[320px] rounded-[24px] bg-white animate-pulse" />
+              <div className="hidden screen1280:block h-[420px] rounded-[24px] bg-white animate-pulse" />
+            </div>
           </div>
         ) : words.length === 0 ? (
           <WordsLanding />
         ) : (
-          <div className="flex screen1280:flex-row flex-col-reverse justify-between w-full screen1280:px-0 screen1280:min-h-0 screen1280:flex-1 screen1280:max-h-[calc(100vh-280px)] screen1280:items-start">
-            {/* Word Details Card - Desktop Only */}
-            <div className="hidden screen1280:flex screen1280:flex-1 screen1280:min-h-0 w-full justify-center items-start py-6">
-              {selectedWord && selectedWordIndex !== null && (
-                <WordDetailsCard
-                  word={selectedWord}
-                  onNext={() => advanceFlashcard(1)}
-                  onPrevious={() => advanceFlashcard(-1)}
-                  onToggleMastered={handleToggleLearned}
-                  hasPrevious={
-                    selectedWordIndex !== null && selectedWordIndex > 0
-                  }
-                  hasNext={
-                    selectedWordIndex !== null &&
-                    selectedWordIndex < words.length - 1
-                  }
-                  currentIndex={selectedWordIndex}
-                  totalWords={total}
-                />
+          <>
+            {/* Header + progress */}
+            {!showMobileDetails && (
+              <div className="flex flex-col gap-[14px] pt-[4px]">
+                <div className="flex flex-wrap items-end justify-between gap-[12px]">
+                  <div className="flex flex-col gap-[4px]">
+                    <h1 className="m-0 text-[24px] leading-[31px] screen744:!text-[28px] screen744:!leading-[36px] font-bold text-[#212E42]">
+                      Your words
+                    </h1>
+                    <p className="m-0 text-[14px] text-[#5B6B82]">
+                      <b className="font-semibold text-[#212E42]">{total}</b> saved ·{" "}
+                      <b className="font-semibold text-[#0B7D64]">{masteredCount}</b> mastered
+                    </p>
+                  </div>
+                  {selectedWord && (
+                    <button
+                      type="button"
+                      onClick={handleViewFlashcards}
+                      className="screen1280:hidden flex items-center gap-[8px] h-[44px] px-[18px] rounded-full bg-[#2554D6] text-white text-[15px] font-semibold shadow-[3px_3px_0_0_#759CFF] transition-[background-color,transform,box-shadow] duration-200 hover:bg-[#1E46B8] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+                    >
+                      Study flashcards
+                      <SvgArrowRight />
+                    </button>
+                  )}
+                </div>
+                <div
+                  role="progressbar"
+                  aria-label="Words mastered"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={masteredPercent}
+                  className="h-[6px] w-full max-w-[420px] rounded-full bg-[#E3E8F2] overflow-hidden"
+                >
+                  <div
+                    className="h-full rounded-full bg-[linear-gradient(90deg,#0F9F7F,#0B7D64)] transition-[width] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                    style={{ width: `${masteredPercent}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Desktop: list + details side by side */}
+            <div className="hidden screen1280:grid grid-cols-[340px_minmax(0,1fr)] gap-[28px] items-start">
+              <aside
+                aria-label="Your word list"
+                className="sticky top-[112px] flex flex-col gap-[10px] p-[14px] rounded-[24px] bg-white border border-[#E8EEFB]"
+              >
+                <div className="flex items-center justify-between px-[6px] pt-[2px]">
+                  <h2 className="m-0 text-[13px] font-bold uppercase tracking-[0.08em] text-[#8A94A6]">
+                    Added words
+                  </h2>
+                  <span className="text-[12px] font-semibold text-[#5B6B82]">{words.length} of {total}</span>
+                </div>
+                <div className="max-h-[calc(100dvh-260px)] min-h-[200px] overflow-y-auto pr-[2px] -mr-[2px] scrollbar-thin">
+                  {wordList(selectWordIndex)}
+                  {loadMoreButton}
+                </div>
+              </aside>
+              <div className="min-w-0">{cardProps && <WordDetailsCard {...cardProps} />}</div>
+            </div>
+
+            {/* Mobile & tablet: list, then a full-card view */}
+            <div className="screen1280:hidden">
+              <AnimatePresence mode="wait" initial={false}>
+                {!showMobileDetails ? (
+                  <motion.div
+                    key="list"
+                    initial={{ opacity: 0, x: -16 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -16 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex flex-col gap-[10px] p-[12px] rounded-[24px] bg-white border border-[#E8EEFB]"
+                  >
+                    <h2 className="m-0 px-[6px] pt-[4px] text-[13px] font-bold uppercase tracking-[0.08em] text-[#8A94A6]">
+                      Added words
+                    </h2>
+                    {wordList((index) => {
+                      selectWordIndex(index);
+                      setShowMobileDetails(true);
+                    })}
+                    {loadMoreButton}
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="details"
+                    initial={{ opacity: 0, x: 16 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 16 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {cardProps && (
+                      <WordDetailsCard
+                        key={cardProps.word.word}
+                        {...cardProps}
+                        enableKeyboard={false}
+                        onBack={() => setShowMobileDetails(false)}
+                      />
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </>
+        )}
+
+        {/* Recommended words */}
+        {isSignedIn && words.length > 0 && !showMobileDetails && (
+          <section
+            aria-labelledby="recommended-words-heading"
+            className="flex flex-col gap-[14px] p-[18px] screen744:p-[24px] rounded-[24px] bg-[linear-gradient(135deg,#F7F9FF_0%,#F2FBF8_100%)] border border-[#E3EBFF]"
+          >
+            <div className="flex flex-col gap-[2px]">
+              <h2 id="recommended-words-heading" className="m-0 text-[17px] screen744:text-[18px] font-bold text-[#212E42]">
+                Recommended for you
+              </h2>
+              <p className="m-0 text-[14px] text-[#5B6B82]">Useful CELPIP words. Tap one to add it to your list.</p>
+            </div>
+            <div className="flex flex-wrap gap-[10px]">
+              {recoLoading && recommendations.length === 0 ? (
+                <div className="flex items-center gap-[10px] text-[14px] text-[#5B6B82]" aria-live="polite">
+                  <span className="w-[18px] h-[18px] rounded-full border-2 border-[#0F9F7F] border-t-transparent animate-spin" />
+                  Finding words for you...
+                </div>
+              ) : recommendations.length > 0 ? (
+                <AnimatePresence mode="popLayout">
+                  {recommendations.map((word) => (
+                    <motion.div
+                      key={word}
+                      layout
+                      initial={{ opacity: 0, scale: 0.85 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.85, transition: { duration: 0.2 } }}
+                      className="shrink-0"
+                    >
+                      <RecommendedWordPill word={word} onAdd={() => handleAddRecommended(word)} />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              ) : (
+                <p className="m-0 text-[14px] text-[#8A94A6]">No recommendations right now. Check back soon.</p>
               )}
             </div>
-
-            {/* Word List Section */}
-            <div className="flex flex-col gap-8 w-full screen1280:w-auto">
-              {/* Mobile: Card Container or Details View */}
-              <div className="screen1280:hidden relative">
-                <AnimatePresence mode="wait">
-                  {!showMobileDetails ? (
-                    <motion.div
-                      key="list"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      transition={{ duration: 0.2 }}
-                      className="bg-white rounded-[32px] p-8 shadow-lg h-[calc(100vh-460px)] overflow-y-auto"
-                    >
-                      <h1 className="text-[12px] font-bold text-[#212E42] tracking-tight mb-6">
-                        Added Words
-                      </h1>
-                      <div className="flex flex-col gap-4 w-full">
-                        {words.map((item, index) => (
-                          <WordPill
-                            key={item.id}
-                            word={item.word}
-                            isLearned={item.isLearned}
-                            isSelected={selectedWordIndex === index}
-                            onToggleLearned={() =>
-                              handleToggleLearned(item.word, !!item.isLearned)
-                            }
-                            onClick={() => {
-                              selectWordIndex(index);
-                              setShowMobileDetails(true);
-                            }}
-                          />
-                        ))}
-                      </div>
-
-                      {words.length < total && (
-                        <div className="mt-8 flex justify-center">
-                          <button
-                            onClick={handleLoadMore}
-                            disabled={loadMoreLoading}
-                            className="flex items-center gap-2 text-[#76808F] hover:text-[#0DAA94] transition-all font-medium text-md group disabled:opacity-50"
-                          >
-                            {loadMoreLoading ? "Loading..." : "Load more"}
-                            <div className="transition-transform group-hover:translate-y-1">
-                              <SvgChevronDown />
-                            </div>
-                          </button>
-                        </div>
-                      )}
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      key="details"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 20 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      {selectedWord && selectedWordIndex !== null && (
-                        <WordDetailsCard
-                          key={selectedWord.word}
-                          word={selectedWord}
-                          onNext={() => advanceFlashcard(1)}
-                          onPrevious={() => advanceFlashcard(-1)}
-                          onToggleMastered={handleToggleLearned}
-                          hasPrevious={
-                            selectedWordIndex !== null && selectedWordIndex > 0
-                          }
-                          hasNext={
-                            selectedWordIndex !== null &&
-                            selectedWordIndex < words.length - 1
-                          }
-                          onBack={() => setShowMobileDetails(false)}
-                          currentIndex={selectedWordIndex}
-                          totalWords={total}
-                        />
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {/* Desktop: Simple List */}
-              <div className="hidden screen1280:flex flex-col gap-8 h-full overflow-y-auto pr-4 scrollbar-thin">
-                <div className="flex justify-start w-full">
-                  <h1 className="text-[16px] font-bold text-[#212E42] tracking-tight">
-                    Added Words
-                  </h1>
-                </div>
-                <div className="flex screen1280:flex-col flex-wrap screen1280:mb-0 mb-6 gap-6 w-full">
-                  {words.map((item, index) => (
-                    <WordPill
-                      key={item.id}
-                      word={item.word}
-                      isLearned={item.isLearned}
-                      isSelected={selectedWordIndex === index}
-                      onToggleLearned={() =>
-                        handleToggleLearned(item.word, !!item.isLearned)
-                      }
-                      onClick={() => selectWordIndex(index)}
-                    />
-                  ))}
-                </div>
-
-                {words.length < total && (
-                  <div className="flex justify-center">
-                    <button
-                      onClick={handleLoadMore}
-                      disabled={loadMoreLoading}
-                      className="flex items-center gap-2 text-[#212E42]/60 hover:text-[#0DAA94] transition-all font-bold text-lg group disabled:opacity-50"
-                    >
-                      {loadMoreLoading ? "Loading..." : "Load more"}
-                      <div className="transition-transform group-hover:translate-y-1">
-                        <SvgChevronDown />
-                      </div>
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Recommended Words Section */}
-        {isSignedIn && words.length > 0 && !showMobileDetails && (
-          <div className="w-full screen1280:mt-[100px]">
-            <div className="screen1280:bg-[#EDF0F5] max-h-[180px] rounded-[32px] p-10 w-full screen1280:shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] screen1280:border screen1280:border-gray-200/50">
-              <h2 className="text-[#76808F] text-[16px] font-medium mb-8">
-                Recommended Words
-              </h2>
-              <div className="flex flex-nowrap gap-6 overflow-x-auto w-full items-center pb-2">
-                {recoLoading && recommendations.length === 0 ? (
-                  <div className="flex items-center gap-3">
-                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-[#0DAA94] border-t-transparent"></div>
-                    <span className="text-gray-400 font-medium">
-                      Coming up with ideas...
-                    </span>
-                  </div>
-                ) : recommendations.length > 0 ? (
-                  <AnimatePresence mode="popLayout">
-                    {recommendations.map((word) => (
-                      <motion.div
-                        key={word}
-                        layout
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{
-                          opacity: 0,
-                          scale: 0.8,
-                          transition: { duration: 0.2 },
-                        }}
-                        className="shrink-0"
-                      >
-                        <RecommendedWordPill
-                          word={word}
-                          onAdd={() => handleAddRecommended(word)}
-                        />
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                ) : (
-                  <p className="text-gray-400 italic">
-                    No recommendations available right now.
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* View Flashcards Button */}
-        {selectedWord && !showMobileDetails && (
-          <Button
-            className="screen1280:hidden flex"
-            onClick={handleViewFlashcards}
-          >
-            View Flashcards <SvgArrowRight />
-          </Button>
+          </section>
         )}
       </div>
     </div>
