@@ -17,6 +17,8 @@ import {
 import type { ExamProgressSummary } from "@/lib/examOverviewProgress";
 import SvgLock from "../icons/Lock";
 import { cn } from "@/lib/utils";
+import * as TooltipPrimitive from "@radix-ui/react-tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const ExamOverview = ({
   exams,
@@ -100,6 +102,7 @@ const ExamOverview = ({
       ) : (
         <></>
       )}
+      <TooltipProvider delayDuration={250} skipDelayDuration={150}>
       <div className="grid grid-cols-1 min-[440px]:grid-cols-2 screen1024:!grid-cols-3 screen1280:!grid-cols-4 gap-[14px] screen744:!gap-[16px] pb-[24px]">
         {exams.map((exam: TExamSchemaDto, i: number) => {
           const freeExam = isFreeGuestMockExam(exam);
@@ -255,27 +258,48 @@ const ExamOverview = ({
                   </span>
                   <div className="grid grid-cols-4 gap-[6px]">
                     {examSections.map((section) => (
-                      <button
-                        key={section.key}
-                        type="button"
-                        disabled={locked}
-                        title={locked ? "Premium mock test" : `Start ${section.label}`}
-                        aria-label={`Start ${section.label} section of ${exam.name}`}
-                        onClick={() => handleStart(exam, section.partId, section.key)}
-                        className={cn(
-                          "group/sec flex flex-col items-center justify-center gap-[3px] h-[44px] screen744:!h-[50px] rounded-[10px] text-[11px] font-semibold",
-                          "transition-[transform,background-color] duration-200 motion-reduce:transition-none",
-                          "focus-visible:outline-3 focus-visible:outline-solid focus-visible:outline-[#759CFF] focus-visible:outline-offset-2",
-                          locked
-                            ? "bg-[#F5F6F8] text-[#A0A8B4] cursor-not-allowed"
-                            : cn(section.tile, "cursor-pointer hover:-translate-y-[2px] active:translate-y-0"),
-                        )}
-                      >
-                        <span className="w-[18px] h-[18px] transition-transform duration-200 group-hover/sec:scale-110">
-                          {section.icon}
-                        </span>
-                        <span className="max-[439px]:hidden screen1024:!hidden min-[1180px]:!inline">{section.short}</span>
-                      </button>
+                      <Tooltip key={section.key}>
+                        <TooltipTrigger asChild>
+                          {/* Locked chips stay clickable (not `disabled`) so the tooltip
+                              can show; clicking opens the upgrade modal via handleStart. */}
+                          <button
+                            type="button"
+                            aria-disabled={locked || undefined}
+                            aria-label={
+                              locked
+                                ? `${section.label} section of ${exam.name}: Premium, unlock to practise`
+                                : `Start the ${section.label} section of ${exam.name} only, ${section.duration.toLowerCase()}`
+                            }
+                            onClick={() => handleStart(exam, section.partId, section.key)}
+                            className={cn(
+                              "group/sec flex flex-col items-center justify-center gap-[3px] h-[44px] screen744:!h-[50px] rounded-[10px] text-[11px] font-semibold",
+                              "transition-[transform,background-color] duration-200 motion-reduce:transition-none",
+                              "focus-visible:outline-3 focus-visible:outline-solid focus-visible:outline-[#759CFF] focus-visible:outline-offset-2",
+                              locked
+                                ? "bg-[#F5F6F8] text-[#A0A8B4] cursor-pointer hover:bg-[#F1E9FE] hover:text-[#6D28D9]"
+                                : cn(section.tile, "cursor-pointer hover:-translate-y-[2px] active:translate-y-0"),
+                            )}
+                          >
+                            <span className="w-[18px] h-[18px] transition-transform duration-200 group-hover/sec:scale-110">
+                              {section.icon}
+                            </span>
+                            <span className="max-[439px]:hidden screen1024:!hidden min-[1180px]:!inline">{section.short}</span>
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent
+                          side="top"
+                          sideOffset={8}
+                          className="flex flex-col items-center gap-[2px] whitespace-nowrap px-[12px] py-[8px] rounded-[10px] border-0 bg-[#212E42] text-white text-center shadow-[0_10px_24px_-12px_rgba(33,46,66,0.6)]"
+                        >
+                          <span className="text-[13px] leading-[18px] font-semibold">
+                            {locked ? "Premium test" : `Start the ${section.label} section only`}
+                          </span>
+                          <span className="text-[12px] leading-[16px] text-[#C9D5F5]">
+                            {locked ? `Unlock to practise ${section.label}` : section.duration}
+                          </span>
+                          <TooltipPrimitive.Arrow className="fill-[#212E42]" width={12} height={6} />
+                        </TooltipContent>
+                      </Tooltip>
                     ))}
                   </div>
                 </div>
@@ -284,6 +308,7 @@ const ExamOverview = ({
           );
         })}
       </div>
+      </TooltipProvider>
     </main>
   );
 };
@@ -340,6 +365,7 @@ const examSections = [
     key: "listening",
     label: "Listening",
     short: "Listen",
+    duration: "About 50 min",
     partId: 1,
     tile: "bg-[#EEF3FF] text-[#1D4ED8] hover:bg-[#E3EBFF]",
     icon: (
@@ -354,6 +380,7 @@ const examSections = [
     key: "reading",
     label: "Reading",
     short: "Read",
+    duration: "About 1 hr",
     partId: 7,
     tile: "bg-[#FFF0F3] text-[#B91C1C] hover:bg-[#FFE2E8]",
     icon: (
@@ -366,6 +393,7 @@ const examSections = [
     key: "writing",
     label: "Writing",
     short: "Write",
+    duration: "About 1 hr",
     partId: 11,
     tile: "bg-[#EBFAF7] text-[#0D9488] hover:bg-[#E3F8F5]",
     icon: (
@@ -378,6 +406,7 @@ const examSections = [
     key: "speaking",
     label: "Speaking",
     short: "Speak",
+    duration: "About 20 min",
     partId: 13,
     tile: "bg-[#FFF3E6] text-[#BE123C] hover:bg-[#FFEBD6]",
     icon: (
