@@ -186,9 +186,11 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
   const ogImageAlt = coverImage?.alt || post.title;
   const schemaImage = ogImage || `${siteBase}/images/hero.png`;
 
-  const blogPostingSchema = {
+  // Article schema built from CMS fields, so posts never need hand-written JSON-LD.
+  const articleKeywords = post.tags?.length ? post.tags : post.seo?.keywords ?? [];
+  const articleSchema = {
     "@context": "https://schema.org",
-    "@type": "BlogPosting",
+    "@type": "Article",
     headline: post.title,
     description: post.seo?.metaDescription || post.excerpt,
     image: schemaImage,
@@ -208,6 +210,14 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
       ? { datePublished: new Date(post.publishedAt).toISOString() }
       : {}),
     dateModified: new Date(post.updatedAt).toISOString(),
+    ...(post.categories?.length
+      ? {
+          articleSection:
+            post.categories.length === 1 ? post.categories[0] : post.categories,
+        }
+      : {}),
+    ...(articleKeywords.length ? { keywords: articleKeywords.join(", ") } : {}),
+    url: canonicalUrl,
     mainEntityOfPage: {
       "@type": "WebPage",
       "@id": canonicalUrl,
@@ -274,7 +284,7 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
         articleSlug={post.slug}
         categories={post.categories}
       />
-      <JsonLd data={blogPostingSchema} />
+      <JsonLd data={articleSchema} />
       <JsonLd data={breadcrumbSchema} />
       {faqSchema ? <JsonLd data={faqSchema} /> : null}
 
