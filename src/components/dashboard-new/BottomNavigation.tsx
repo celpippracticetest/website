@@ -6,14 +6,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import clsx from "clsx";
 
-import AnimatedIcon from "./AnimatedIcon";
-import bookAnimation from "../icons/animated/book/book-in-book.json";
-import articleAnimation from "../icons/animated/article/article-in-article.json";
-import checkAnimation from "../icons/animated/check/check-in-reveal.json";
-import SvgBook from "../icons/animated/book/Book";
-import SvgArticle from "../icons/animated/article/Article";
-import SvgCheck from "../icons/animated/check/Check";
-import SvgWord from "../icons/Word";
+import NavIcon from "./NavIcon";
 import SvgReferral from "../icons/Referral";
 import { npsAwareNavigate } from "@/components/modal/NpsLeaveGuard";
 
@@ -100,11 +93,7 @@ const BottomNavigation = () => {
             className="flex flex-col items-center gap-1 cursor-pointer"
           >
             <div className="w-[24px] h-[24px]">
-              {practice ? (
-                <AnimatedIcon animationData={bookAnimation} isActive={true} />
-              ) : (
-                <SvgBook />
-              )}
+              <NavIcon key={practice ? "active" : "idle"} name="practice" active={practice} className={practice ? "text-black" : "text-[#37465C]"} />
             </div>
             <span
               className={clsx(
@@ -145,14 +134,7 @@ const BottomNavigation = () => {
             className="flex flex-col items-center gap-1"
           >
             <div className="w-[24px] h-[24px]">
-              {mockTest ? (
-                <AnimatedIcon
-                  animationData={articleAnimation}
-                  isActive={true}
-                />
-              ) : (
-                <SvgArticle />
-              )}
+              <NavIcon key={mockTest ? "active" : "idle"} name="mockExams" active={mockTest} className={mockTest ? "text-black" : "text-[#37465C]"} />
             </div>
             <span
               className={clsx(
@@ -192,11 +174,7 @@ const BottomNavigation = () => {
             className="flex flex-col items-center gap-1 cursor-pointer"
           >
             <div className="w-[24px] h-[24px]">
-              {isLearning ? (
-                <AnimatedIcon animationData={checkAnimation} isActive={true} />
-              ) : (
-                <SvgCheck />
-              )}
+              <NavIcon key={isLearning ? "active" : "idle"} name="learning" active={isLearning} className={isLearning ? "text-black" : "text-[#37465C]"} />
             </div>
             <span
               className={clsx(
@@ -233,7 +211,7 @@ const BottomNavigation = () => {
             className="flex flex-col items-center gap-1 cursor-pointer"
           >
             <div className="w-[24px] h-[24px] flex items-center justify-center">
-              <SvgWord />
+              <NavIcon key={isWords ? "active" : "idle"} name="words" active={isWords} className={isWords ? "text-black" : "text-[#37465C]"} />
             </div>
             <span
               className={clsx(

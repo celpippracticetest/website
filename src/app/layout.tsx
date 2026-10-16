@@ -182,21 +182,19 @@ export default async function RootLayout({
             `,
           }}
         />
-
-        <Script
-          id="ld-organization"
-          type="application/ld+json"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(buildOrganizationJsonLd(baseUrl)),
-          }}
-        />
       </head>
 
       <body className="bg-[#F4F7FF]">
+        {/* Blog pages carry their own Article schema, so no Organization/Product there. */}
         <NonHomeGlobalJsonLd
+          schemas={[buildOrganizationJsonLd(baseUrl)]}
+          showOnHome
+          hideOnBlog
+        />
+        <NonHomeGlobalJsonLd schemas={[buildWebSiteJsonLd(baseUrl)]} />
+        <NonHomeGlobalJsonLd
+          hideOnBlog
           schemas={[
-            buildWebSiteJsonLd(baseUrl),
             {
               "@context": "https://schema.org",
               "@graph": [
