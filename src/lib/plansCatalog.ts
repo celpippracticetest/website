@@ -50,7 +50,7 @@ function serializePlan(plan: {
 export type GetActivePlansCatalogOptions = {
   /** When true, only rows that match {@link isPremiumPlusPlan} (Plus tier / mock exams / naming heuristics). */
   plusOnly?: boolean;
-  /** ISO country from the request IP (India uses INR Stripe prices). */
+  /** ISO country from the request IP (India / Nigeria get local-currency Stripe prices; see REGIONAL_PRICING). */
   country?: string | null;
 };
 

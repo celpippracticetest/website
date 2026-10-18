@@ -1,5 +1,5 @@
 import type { SerializedPlan } from "@/types/pricing";
-import { parsePrice } from "@/lib/pricing";
+import { formatRegionalAmount, isRegionalPlanCurrency, parsePrice } from "@/lib/pricing";
 import {
   discountedUnitAmountCents,
   parseMoneyToCents,
@@ -32,13 +32,6 @@ const CATALOG_DISPLAY: Record<
   quarterly: { price: "$95.99", priceSuffix: "/ 3 months" },
 };
 
-function formatInrAmount(amount: number): string {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: amount % 1 === 0 ? 0 : 2,
-  }).format(amount);
-}
 
 function formatUsdFromCents(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
@@ -78,12 +71,14 @@ export function getPlanPriceDisplay(
     return discountedUnitAmountCents(listCents, discountPercent);
   }
 
-  if (currency === "inr" && plan?.price) {
+  // Geo-priced local currency (₹ India, ₦ Nigeria, ...): use the plan's own price.
+  if (currency && isRegionalPlanCurrency(currency) && plan?.price) {
+    const formatLocal = (amount: number) => formatRegionalAmount(amount, currency);
     const listAmount = parsePrice(plan.price);
     const listCents = Math.round(listAmount * 100);
     const amountCents = saleCents(listCents);
     const weeklyList =
-      options?.weeklyPlan?.currency?.toLowerCase() === "inr" && options.weeklyPlan.price
+      options?.weeklyPlan?.currency?.toLowerCase() === currency && options.weeklyPlan.price
         ? parsePrice(options.weeklyPlan.price)
         : 0;
     const weeklySaleCents = saleCents(Math.round(weeklyList * 100));
@@ -95,15 +90,15 @@ export function getPlanPriceDisplay(
       const off = savePercentVsWeekly(weeklySaleCents, weeks, amountCents);
       if (off > 0) saveLabel = `SAVE ${off}%`;
       if (showPerWeek) {
-        perWeekEquivalent = `≈ ${formatInrAmount(amountCents / weeks / 100)} per week`;
+        perWeekEquivalent = `≈ ${formatLocal(amountCents / weeks / 100)} per week`;
       }
     }
 
     return {
-      price: formatInrAmount(amountCents / 100),
+      price: formatLocal(amountCents / 100),
       compareAtPrice:
         discountPercent > 0 && listAmount > 0
-          ? formatInrAmount(listAmount)
+          ? formatLocal(listAmount)
           : null,
       priceSuffix: catalog.priceSuffix,
       perWeekEquivalent,

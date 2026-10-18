@@ -100,8 +100,34 @@ export function formatPlanCadPrice(value: string) {
   }).format(numericValue);
 }
 
+/**
+ * Local currencies used by geo pricing (see REGIONAL_PRICING in
+ * stripeRegionalPricing), with the locale used to format them. Keep in sync.
+ */
+export const REGIONAL_CURRENCY_LOCALES: Record<string, string> = {
+  inr: "en-IN",
+  ngn: "en-NG",
+};
+
 export function isInrPlanCurrency(currency?: string | null) {
   return currency?.trim().toLowerCase() === "inr";
+}
+
+/** True for a geo-priced local currency (₹, ₦, ...), as opposed to the CAD catalog. */
+export function isRegionalPlanCurrency(currency?: string | null) {
+  const code = currency?.trim().toLowerCase();
+  return Boolean(code && REGIONAL_CURRENCY_LOCALES[code]);
+}
+
+/** Formats an amount in a geo-priced currency, e.g. "₹999" or "₦9,900". */
+export function formatRegionalAmount(amount: number, currency: string) {
+  const code = currency.trim().toLowerCase();
+  return new Intl.NumberFormat(REGIONAL_CURRENCY_LOCALES[code] ?? "en", {
+    style: "currency",
+    currency: code.toUpperCase(),
+    currencyDisplay: "narrowSymbol",
+    maximumFractionDigits: amount % 1 === 0 ? 0 : 2,
+  }).format(amount);
 }
 
 export function formatPlanCardPrice(
@@ -114,12 +140,8 @@ export function formatPlanCardPrice(
     discountPercent > 0
       ? applySitewideDiscount(listPrice, discountPercent)
       : listPrice;
-  if (isInrPlanCurrency(currency)) {
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      maximumFractionDigits: numericValue % 1 === 0 ? 0 : 2,
-    }).format(numericValue);
+  if (currency && isRegionalPlanCurrency(currency)) {
+    return formatRegionalAmount(numericValue, currency);
   }
   const text =
     numericValue % 1 === 0 ? String(numericValue) : numericValue.toFixed(2);

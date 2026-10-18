@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getActivePlansCatalog } from "@/lib/plansCatalog";
 import { getRequestCountry } from "@/lib/clientIpGeo";
-import { isIndiaCountry } from "@/lib/stripeRegionalPricing";
+import { hasRegionalPricing } from "@/lib/stripeRegionalPricing";
 import { getDb } from "@/lib/appDocumentsClient";
 
 export async function GET(req: NextRequest) {
@@ -86,7 +86,7 @@ export async function GET(req: NextRequest) {
             .sort({ order: 1 })
             .toArray();
 
-        if (!isIndiaCountry(country)) {
+        if (!hasRegionalPricing(country)) {
             return NextResponse.json({ plans });
         }
 

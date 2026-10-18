@@ -4,7 +4,7 @@ import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
 import documentsClient from "@/lib/appDocumentsClient";
 import { getActivePlansCatalog } from "@/lib/plansCatalog";
 import { countryFromHeaderBag } from "@/lib/clientIpGeo";
-import { isIndiaCountry } from "@/lib/stripeRegionalPricing";
+import { hasRegionalPricing } from "@/lib/stripeRegionalPricing";
 import { PlansRepository } from "@/repositories/plans.repo";
 import { cookies, headers } from "next/headers";
 import {
@@ -45,7 +45,7 @@ const Plans = async () => {
 
   const [prevCheckout, plans] = await Promise.all([
     userRepo.findLatestCheckoutByUserId(user?.id || ""),
-    isIndiaCountry(country)
+    hasRegionalPricing(country)
       ? getActivePlansCatalog({ country })
       : plansRepo.getActivePlans(),
   ]);
