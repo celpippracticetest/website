@@ -796,8 +796,35 @@ export async function POST(req: Request) {
 
     const authAdmin = await appUserAdmin();
 
-    if (event.type === "checkout.session.completed") {
+    if (event.type === "checkout.session.async_payment_failed") {
       const session = event.data.object as Stripe.Checkout.Session;
+      logger.warn("Checkout async payment failed; no access granted", {
+        component: "stripe_webhook",
+        action: "checkout_async_payment_failed",
+        metadata: {
+          sessionId: session.id,
+          userId: session.metadata?.user_id,
+          paymentStatus: session.payment_status,
+        },
+      });
+      return NextResponse.json({ received: true });
+    }
+
+    // Delayed payment methods (e.g. UPI) complete the session as `unpaid` and settle later
+    // with `checkout.session.async_payment_succeeded`; fulfil only once the money is in.
+    if (
+      event.type === "checkout.session.completed" ||
+      event.type === "checkout.session.async_payment_succeeded"
+    ) {
+      const session = event.data.object as Stripe.Checkout.Session;
+      if (session.payment_status === "unpaid") {
+        logger.info("Checkout completed with payment pending; waiting for async result", {
+          component: "stripe_webhook",
+          action: "checkout_payment_pending",
+          metadata: { sessionId: session.id, eventType: event.type },
+        });
+        return NextResponse.json({ received: true });
+      }
       let metadata: Record<string, string | undefined> = {
         ...(session.metadata as Record<string, string | undefined>),
       };
