@@ -20,7 +20,7 @@ export type SerializedPlan = {
   billingIntervalCount?: number;
   stripeProductId?: string;
   stripePriceId?: string;
-  /** ISO 4217 from Stripe (e.g. cad, inr). */
+  /** ISO 4217 from Stripe (e.g. cad, inr, ngn). */
   currency?: string;
   iconType?: PlanIconType;
   iconWrapperColor?: string;

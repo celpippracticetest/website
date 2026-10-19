@@ -7,6 +7,9 @@ import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { stripe } from "@/lib/stripe";
 import { stripeCheckoutPaymentMethodParams } from "@/lib/stripeCheckoutPaymentMethods";
 import { getRequestCountry } from "@/lib/clientIpGeo";
+import { getDb } from "@/lib/appDocumentsClient";
+import { loadActivePlansWithStripePrices } from "@/lib/loadActivePlansWithStripePrices";
+import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { resolveStripePriceForCountry } from "@/lib/stripeRegionalPricing";
 import { resolveCheckoutDiscount } from "@/lib/sitewidePlanCoupon";
 import { SITEWIDE_PLAN_DISCOUNT_PERCENT } from "@/lib/sitewidePlanDiscount";
@@ -248,12 +251,63 @@ function mobileCheckoutAppPlatform(
   return parseAppClientPlatform(request.headers.get("user-agent") || "");
 }
 
+function checkoutError(error: string, code: string, status: number) {
+  return NextResponse.json({ error, code }, { status });
+}
+
+/**
+ * Pre-payment checks: the account must be active (not banned) and must not
+ * already have a paid plan, so nobody is charged twice or while suspended.
+ * Returns an error response to send, or null when the user may pay.
+ */
+async function verifyUserCanPurchase(
+  publicMetadata: UserMetadata,
+  supabaseAuthUserId: string | null
+): Promise<NextResponse | null> {
+  if (supabaseAuthUserId) {
+    const admin = getSupabaseAdmin();
+    if (admin) {
+      const { data, error } = await admin.auth.admin.getUserById(supabaseAuthUserId);
+      if (error || !data.user) {
+        return checkoutError("Your account could not be verified. Please sign in again.", "account_not_found", 401);
+      }
+      const bannedUntil = data.user.banned_until ? new Date(data.user.banned_until) : null;
+      if (bannedUntil && !Number.isNaN(bannedUntil.getTime()) && bannedUntil > new Date()) {
+        return checkoutError("This account is suspended. Please contact support.", "account_suspended", 403);
+      }
+    }
+  }
+
+  // A plan whose end date has already passed (but wasn't cleared yet) must not
+  // stop the user from subscribing again.
+  const expiresAt = readStringValue(publicMetadata.planExpiresAt);
+  const expiry = expiresAt ? new Date(expiresAt) : null;
+  const planExpired = Boolean(expiry && !Number.isNaN(expiry.getTime()) && expiry <= new Date());
+
+  if (!planExpired && hasPaidPracticeAccess(toMetadataValue(publicMetadata.plan))) {
+    return checkoutError(
+      "You already have an active subscription. Manage it from your account instead of buying again.",
+      "already_subscribed",
+      409
+    );
+  }
+
+  return null;
+}
+
+/** The product must be one of the active plans the app shows (same source as /api/plans/available). */
+async function isActivePlanProduct(productId: string, country: string | null): Promise<boolean> {
+  const db = await getDb();
+  const plans = await loadActivePlansWithStripePrices(db, { country });
+  return plans.some((plan) => plan.stripeProductId === productId);
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { user, userId, mobileAuthKind, supabaseAuthUserId } =
       await requireAuthenticatedRequest(request);
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return checkoutError("Please sign in to continue.", "unauthorized", 401);
     }
 
     const body = await request.json().catch(() => ({}));
@@ -261,18 +315,26 @@ export async function POST(request: NextRequest) {
       typeof body?.productId === "string" ? body.productId.trim() : "";
 
     if (!productId) {
-      return NextResponse.json(
-        { error: "Product ID is required." },
-        { status: 400 }
-      );
+      return checkoutError("Product ID is required.", "missing_product", 400);
     }
 
     const email = getPrimaryEmailAddress(user);
     if (!email) {
-      return NextResponse.json(
-        { error: "Authenticated user does not have a primary email." },
-        { status: 400 }
+      return checkoutError(
+        "Your account needs an email address before you can subscribe.",
+        "missing_email",
+        400
       );
+    }
+
+    const blocked = await verifyUserCanPurchase(
+      (user.publicMetadata ?? {}) as UserMetadata,
+      supabaseAuthUserId ?? (mobileAuthKind === "supabase" ? userId : null)
+    );
+    if (blocked) return blocked;
+
+    if (!(await isActivePlanProduct(productId, getRequestCountry(request)))) {
+      return checkoutError("This plan is not available.", "invalid_plan", 400);
     }
 
     const product = await stripe.products.retrieve(productId, {
@@ -457,7 +519,9 @@ export async function POST(request: NextRequest) {
       automatic_tax: { enabled: true },
       ...(checkoutDiscount.kind === "promotion"
         ? { discounts: [{ promotion_code: checkoutDiscount.promotionCode }] }
-        : { discounts: [{ coupon: checkoutDiscount.couponId }] }),
+        : checkoutDiscount.kind === "none"
+          ? {}
+          : { discounts: [{ coupon: checkoutDiscount.couponId }] }),
       metadata: {
         user_id: userId,
         plan_name: toMetadataValue(product.name),
@@ -544,10 +608,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("[mobile subscription checkout]", error);
 
-    const message =
-      error instanceof Error ? error.message : "Failed to create checkout.";
-    const status = message === "Unauthorized" ? 401 : 500;
-
-    return NextResponse.json({ error: message }, { status });
+    // Never send internal error text to the app; it is logged above.
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return checkoutError("Please sign in to continue.", "unauthorized", 401);
+    }
+    return checkoutError("Failed to create checkout. Please try again.", "checkout_failed", 500);
   }
 }

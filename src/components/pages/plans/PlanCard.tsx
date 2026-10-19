@@ -7,7 +7,7 @@ import {
   submitPlanCheckout,
 } from "@/lib/planCheckout";
 import { usePlanDiscountPercent } from "@/hooks/usePlanDiscountAb";
-import { formatPlanCardPrice, isInrPlanCurrency } from "@/lib/pricing";
+import { formatPlanCardPrice, isRegionalPlanCurrency } from "@/lib/pricing";
 
 interface IPlanCard {
   title: string;
@@ -114,7 +114,7 @@ const PlanCard = ({
         <div className="flex gap-[10px] items-center mt-[24px] h-[34px] screen1280:!h-[48px]">
           {type != "Free" && (
             <>
-              {oldPrice && !isInrPlanCurrency(currency) && (
+              {oldPrice && !isRegionalPlanCurrency(currency) && (
                 <>
                   <span className="relative text-text3 text-[16px] screen744:!text-[28px] screen1280:!text-[26px] font-medium">
                     $ {oldPrice}
