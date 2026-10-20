@@ -12,6 +12,16 @@ import {
 import { getBlogCoverImage } from "@/lib/blog/coverImage";
 import { sanitizeContentHtml } from "@/lib/content-linker-core";
 import { resolveBlogContentHtml } from "@/lib/blog/editorHtml";
+import { withHeadingAnchors } from "@/lib/blog/toc";
+import { getBlogAuthor } from "@/data/blog-authors";
+import BlogArticleEnhancer from "@/components/pages/blog/post/BlogArticleEnhancer";
+import BlogAuthorCard from "@/components/pages/blog/post/BlogAuthorCard";
+import BlogNewsletterCard from "@/components/pages/blog/post/BlogNewsletterCard";
+import BlogShareCard from "@/components/pages/blog/post/BlogShareCard";
+import {
+  BlogTocInline,
+  BlogTocSidebar,
+} from "@/components/pages/blog/post/BlogToc";
 import BlogArticleAnalytics from "@/components/analytics/BlogArticleAnalytics";
 import {
   Accordion,
@@ -272,10 +282,13 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
         }
       : null;
 
-  const articleHtml = sanitizeContentHtml(
-    resolveBlogContentHtml(post.contentHtml, post.contentJson),
-    `/blog/${post.slug}`,
+  const { html: articleHtml, toc } = withHeadingAnchors(
+    sanitizeContentHtml(
+      resolveBlogContentHtml(post.contentHtml, post.contentJson),
+      `/blog/${post.slug}`,
+    ),
   );
+  const author = getBlogAuthor(post.authorName);
 
   return (
     <Box className="cel-container py-10 md:py-14">
@@ -288,7 +301,8 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
       <JsonLd data={breadcrumbSchema} />
       {faqSchema ? <JsonLd data={faqSchema} /> : null}
 
-      <Box className="mx-auto max-w-4xl rounded-2xl border border-slate-200 bg-white p-6 md:p-10">
+      <Box className="mx-auto grid max-w-4xl gap-8 lg:max-w-6xl lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
+      <Box className="min-w-0 rounded-2xl border border-slate-200 bg-white p-6 md:p-10">
         <Box className="mb-4 flex flex-wrap items-center gap-2 text-xs text-slate-500">
           <Link href="/" className="hover:text-slate-900">
             Home
@@ -329,10 +343,18 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
           </Box>
         ) : null}
 
+        <Box className="lg:hidden">
+          <BlogTocInline items={toc} />
+        </Box>
+
         <article
-          className="article-content prose prose-blue mt-8 max-w-none"
+          id="blog-article"
+          className="article-content prose prose-blue mt-8 max-w-none [&_h2]:scroll-mt-28 [&_h3]:scroll-mt-28"
           dangerouslySetInnerHTML={{ __html: articleHtml }}
         />
+        <BlogArticleEnhancer articleId="blog-article" />
+
+        <BlogAuthorCard author={author} />
 
         {fullFaq.length > 0 ? (
           <Box className="mt-10 border-t border-slate-200 pt-10">
@@ -355,8 +377,18 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
         ) : null}
       </Box>
 
+      {/* Sticky sidebar on desktop; stacked under the article on smaller screens. */}
+      <aside className="flex flex-col gap-5 lg:sticky lg:top-24">
+        <Box className="hidden lg:block">
+          <BlogTocSidebar items={toc} />
+        </Box>
+        <BlogShareCard url={canonicalUrl} title={post.title} />
+        <BlogNewsletterCard source={`blog:${post.slug}`} />
+      </aside>
+      </Box>
+
       {relatedPosts.length ? (
-        <Box className="mx-auto mt-12 flex max-w-4xl flex-col gap-4">
+        <Box className="mx-auto mt-12 flex max-w-4xl flex-col gap-4 lg:max-w-6xl">
           <h2 className="text-2xl font-bold text-slate-900">
             Related Articles
           </h2>

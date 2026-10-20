@@ -124,7 +124,7 @@ function wrapTablesForScroll(html: string): string {
   if (!/<table\b/i.test(html)) return html;
 
   return html.replace(/<table\b[\s\S]*?<\/table>/gi, (table, offset: number) => {
-    const before = html.slice(Math.max(0, offset - 120), offset);
+    const before = html.slice(Math.max(0, offset - 2000), offset);
     if (/article-table-scroll[^>]*>\s*$/i.test(before)) return table;
     return `<div class="article-table-scroll">${table}</div>`;
   });
