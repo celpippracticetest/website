@@ -11,7 +11,10 @@ const ShowTasks = ({ tasks }: any) => {
   const router = useRouter();
   const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
   const isMobile = useIsMobile();
-  const [expandedSections, setExpandedSections] = useState<Set<number>>(new Set());
+  // Every section starts open; users can still collapse one.
+  const [expandedSections, setExpandedSections] = useState<Set<number>>(
+    () => new Set((tasks ?? []).map((_: unknown, index: number) => index)),
+  );
 
   const toggleSection = (index: number) => {
     const newExpanded = new Set(expandedSections);
