@@ -39,6 +39,10 @@ export default async function Success({ searchParams }: any) {
   if (status === "open") {
     redirect("/");
   }
+  // Delayed methods (e.g. UPI) land here as `unpaid`; the webhook grants access once
+  // `checkout.session.async_payment_succeeded` arrives.
+  const paymentPending = session.payment_status === "unpaid";
+  const isPaidComplete = status === "complete" && !paymentPending;
 
   const sessionData = JSON.parse(JSON.stringify(session));
   const amountTotal = session?.amount_total;
@@ -70,7 +74,7 @@ export default async function Success({ searchParams }: any) {
   // The Stripe webhook (`checkout.session.completed`) is the source of truth for the
   // plan upgrade and the persisted checkout record. Everything below is best-effort:
   // a failure here must not crash the confirmation page for a customer who just paid.
-  if (status === "complete" && !alreadyRecorded && user) {
+  if (isPaidComplete && !alreadyRecorded && user) {
     try {
       await userRepo.createCheckout({
         userId: user.id,
@@ -132,7 +136,7 @@ export default async function Success({ searchParams }: any) {
 
   // Only fire the conversion pixel on the first completed render of a session so a
   // refresh (or the webhook having recorded it already) does not double-count.
-  const showConversion = status === "complete" && !alreadyRecorded;
+  const showConversion = isPaidComplete && !alreadyRecorded;
 
   return (
     <div className="bg-[#F4F7FF] min-h-screen flex w-full lg:pt-[108px] pt-[70px]">
@@ -171,7 +175,11 @@ export default async function Success({ searchParams }: any) {
         </>
       ) : null}
 
-      <DashboardHome session={sessionData} email={customerEmail} />
+      <DashboardHome
+        session={sessionData}
+        email={customerEmail}
+        paymentPending={paymentPending}
+      />
     </div>
   );
 }

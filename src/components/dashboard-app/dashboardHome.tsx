@@ -12,9 +12,12 @@ import { readPracticePlanFromSupabaseUser } from "@/lib/auth/supabase-user-plan"
 const DashboardHome = ({
   session,
   email,
+  paymentPending = false,
 }: {
   session: any;
   email: string | undefined | null;
+  /** Delayed payment method still settling: no plan to wait for yet. */
+  paymentPending?: boolean;
 }) => {
   const router = useRouter();
   const { reloadUser } = useHybridWebUser();
@@ -25,6 +28,10 @@ const DashboardHome = ({
   // Pro is visible so practice paywalls unlock without logout/login.
   useEffect(() => {
     let cancelled = false;
+    if (paymentPending) {
+      setPlanReady(true);
+      return;
+    }
 
     async function syncPlanAfterCheckout() {
       const supabase = createBrowserSupabaseClient();
@@ -55,7 +62,7 @@ const DashboardHome = ({
     return () => {
       cancelled = true;
     };
-  }, [reloadUser]);
+  }, [reloadUser, paymentPending]);
 
   if (!session) {
     return <div>Loading...</div>;
@@ -67,9 +74,15 @@ const DashboardHome = ({
         <div className="flex flex-col items-center gap-[24px]">
           <SvgSuccess />
           <span className="text-[28px] font-medium text-[#212E42]">
-            Payment Successful
+            {paymentPending ? "Payment Processing" : "Payment Successful"}
           </span>
-          {!planReady ? (
+          {paymentPending ? (
+            <span className="text-[14px] text-[#76808F] font-normal text-center px-4">
+              Your payment is being confirmed. Pro access unlocks automatically
+              once it goes through — usually within a few minutes.
+            </span>
+          ) : null}
+          {!paymentPending && !planReady ? (
             <span className="text-[14px] text-[#76808F] font-normal text-center px-4">
               Activating your Pro access…
             </span>
@@ -102,7 +115,7 @@ const DashboardHome = ({
           </div>
           <div className="flex items-center justify-between">
             <span className="text-[20px] text-[#76808F] font-normal">
-              Amount paid
+              {paymentPending ? "Amount" : "Amount paid"}
             </span>
             <span className="text-[22px] font-normal text-[#212E42]">
               {((session?.amount_total ?? 0) / 100).toFixed(2)}

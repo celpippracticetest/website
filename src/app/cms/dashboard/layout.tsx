@@ -78,7 +78,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
       <aside
         className={`fixed inset-y-0 left-0 transform ${
           mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-        } transition-transform duration-200 ease-in-out z-50 w-64 md:sticky md:top-0 md:z-30 md:translate-x-0 md:w-auto h-[100dvh] shrink-0 border-b md:border-b-0 md:border-r bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/50 ${
+        } transition-transform duration-200 ease-in-out z-50 w-64 md:sticky md:top-0 md:z-30 md:translate-x-0 md:w-auto h-[100dvh] shrink-0 overflow-y-auto overscroll-contain [scrollbar-width:thin] border-b md:border-b-0 md:border-r bg-white md:bg-white/70 md:backdrop-blur md:supports-[backdrop-filter]:bg-white/50 ${
           collapsed ? "md:w-16" : "md:w-64"
         }`}
       >
@@ -101,13 +101,13 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
             </button>
           </div>
           <nav
-            className={`flex md:block overflow-x-auto md:overflow-visible [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
+            className={`block ${
               collapsed ? "md:text-center" : ""
             }`}
           >
             {/* Top-level items */}
             <ul
-              className={`flex md:block gap-2 md:gap-1 ${
+              className={`block space-y-1 ${
                 collapsed ? "md:space-y-1" : ""
               }`}
             >
@@ -423,7 +423,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
       </aside>
       {mobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-25 z-40 md:hidden"
+          className="fixed inset-0 bg-black/25 z-40 md:hidden"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
