@@ -119,8 +119,14 @@ async function resolveFreshSupabaseUser(
     return userData.user;
   }
 
+  // The auth cookie no longer carries the user (see auth-user-storage), so session.user
+  // may be a placeholder that throws on access; only use it when it's a real user.
   const { data: sessionData } = await supabase.auth.getSession();
-  return sessionData.session?.user ?? null;
+  const sessionUser = sessionData.session?.user as
+    | (SupabaseAuthUser & { __isUserNotAvailableProxy?: boolean })
+    | undefined;
+  if (!sessionUser || sessionUser.__isUserNotAvailableProxy) return null;
+  return sessionUser;
 }
 
 export function useHybridWebUser() {

@@ -77,6 +77,34 @@ function mergePrivateIntoUserMetadata(
   return next;
 }
 
+const SURVEY_META_KEYS = ["onboarding", "onboardingNew"] as const;
+
+/**
+ * Everything in `user_metadata` is copied into the access token and the auth cookie, so keep
+ * it small (see auth-user-storage). Survey answers already live in the onboarding tables;
+ * here we keep only the survey flags, at the top level, and drop the nested legacy copies.
+ */
+function slimUserMetadata(meta: Record<string, unknown>): void {
+  const hasLegacyPrivate = LEGACY_IMPORTED_PRIVATE_META_KEY in meta;
+  const legacyPriv = { ...readObject(meta, LEGACY_IMPORTED_PRIVATE_META_KEY) };
+
+  for (const key of SURVEY_META_KEYS) {
+    const value = meta[key] ?? legacyPriv[key];
+    if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+      const { answers: _answers, ...flags } = value as Record<string, unknown>;
+      meta[key] = flags;
+    }
+    delete legacyPriv[key];
+  }
+
+  if (!hasLegacyPrivate) return;
+  if (Object.keys(legacyPriv).length > 0) {
+    meta[LEGACY_IMPORTED_PRIVATE_META_KEY] = legacyPriv;
+  } else {
+    delete meta[LEGACY_IMPORTED_PRIVATE_META_KEY];
+  }
+}
+
 async function loadSupabaseUserByExternalId(externalId: string): Promise<SupabaseAuthUser | null> {
   const uid = await resolveSupabaseAuthUserId(externalId);
   if (!uid) return null;
@@ -145,6 +173,7 @@ export async function appUserAdmin() {
           });
         }
 
+        slimUserMetadata(meta);
         const updated = await persistSupabaseUser(uid, { app_metadata: app, user_metadata: meta });
         if (!updated) throw new Error("Failed to update user metadata");
         return supabaseUserToAppShape(updated);
@@ -195,6 +224,7 @@ export async function appUserAdmin() {
           };
         }
 
+        slimUserMetadata(meta);
         const patch: Parameters<typeof persistSupabaseUser>[1] = {
           app_metadata: app,
           user_metadata: meta,

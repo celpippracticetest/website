@@ -2,6 +2,7 @@ import "server-only";
 
 import { cache } from "react";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { supabaseAuthUserStorageOptions } from "@/lib/supabase/auth-user-storage";
 import { cookies } from "next/headers";
 import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
 
@@ -22,6 +23,7 @@ async function getSupabaseAuthUserFromServerCookiesUncached(): Promise<SupabaseA
   const cookieStore = await cookies();
 
   const supabase = createServerClient(url, anonKey, {
+    auth: supabaseAuthUserStorageOptions(),
     cookies: {
       getAll() {
         return cookieStore.getAll();

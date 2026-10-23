@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createServerClient } from "@supabase/ssr";
+import { supabaseAuthUserStorageOptions } from "@/lib/supabase/auth-user-storage";
 import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
 import { parse } from "cookie";
 
@@ -44,6 +45,7 @@ export function createSupabaseServerClientReadOnly(request: Request) {
   }
 
   return createServerClient(url, anonKey, {
+    auth: supabaseAuthUserStorageOptions(),
     cookies: {
       getAll() {
         return readRequestCookiePairs(request);
