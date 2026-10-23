@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+import { supabaseAuthUserStorageOptions } from "@/lib/supabase/auth-user-storage";
 import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
 import { resolvePostAuthRedirect } from "@/lib/auth/post-auth-redirect";
@@ -28,6 +29,7 @@ export async function GET(request: NextRequest) {
 
     const cookieStore = await cookies();
     const supabase = createServerClient(url, anonKey, {
+      auth: supabaseAuthUserStorageOptions(),
       cookies: {
         getAll() {
           return cookieStore.getAll();

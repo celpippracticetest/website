@@ -1,4 +1,5 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { supabaseAuthUserStorageOptions } from "@/lib/supabase/auth-user-storage";
 import type { NextRequest } from "next/server";
 import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
 
@@ -27,6 +28,7 @@ export async function refreshSupabaseSessionFromRequest(
   const cookieWrites: SupabaseMiddlewareCookieWrite[] = [];
 
   const supabase = createServerClient(url, anonKey, {
+    auth: supabaseAuthUserStorageOptions(),
     cookies: {
       getAll() {
         return request.cookies.getAll();
