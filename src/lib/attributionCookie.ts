@@ -4,8 +4,10 @@ import type { NextRequest, NextResponse } from "next/server";
 export const ACQUISITION_ATTRIBUTION_COOKIE = "celpip_acq";
 
 const COOKIE_MAX_AGE_SEC = 60 * 60 * 24 * 90; // 90 days
-const MAX_FIELD_LEN = 512;
-const MAX_ENTRY_LEN = 2048;
+const MAX_FIELD_LEN = 256;
+const MAX_ENTRY_LEN = 256;
+/** Encoded cookie budget: request headers are capped at the edge (494 REQUEST_HEADER_TOO_LARGE). */
+const MAX_ENCODED_COOKIE_LEN = 1200;
 
 export type AcquisitionAttributionV1 = {
   v: 1;
@@ -22,7 +24,7 @@ export type AcquisitionAttributionV1 = {
   utm_term?: string;
   /** Google Ads campaign ID from `gad_campaignid` (joins to Ads + GA4). */
   google_ads_campaign_id?: string;
-  /** Path + query of the request that set the cookie (first campaign landing). */
+  /** Path of the request that set the cookie (first campaign landing); params are stored above. */
   entry_page?: string;
   captured_at: string;
 };
@@ -117,14 +119,15 @@ export function applyAcquisitionAttributionCookie(
     utm_term: trimParam(sp.get("utm_term")),
   };
 
-  const fullEntry = `${path}${req.nextUrl.search}`;
-  payload.entry_page =
-    fullEntry.length <= MAX_ENTRY_LEN ? fullEntry : fullEntry.slice(0, MAX_ENTRY_LEN);
+  // Path only: the campaign params are already captured as fields, and the full query
+  // (often long ad-click ids) made this cookie several KB once URL-encoded.
+  payload.entry_page = path.length <= MAX_ENTRY_LEN ? path : path.slice(0, MAX_ENTRY_LEN);
 
   let serialized = JSON.stringify(payload);
-  if (serialized.length > 3800) {
-    const { entry_page: _e, ...rest } = payload;
-    serialized = JSON.stringify(rest);
+  for (const optional of ["entry_page", "utm_content", "utm_term"] as const) {
+    if (encodeURIComponent(serialized).length <= MAX_ENCODED_COOKIE_LEN) break;
+    delete payload[optional];
+    serialized = JSON.stringify(payload);
   }
 
   response.cookies.set(ACQUISITION_ATTRIBUTION_COOKIE, serialized, {
