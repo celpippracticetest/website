@@ -37,6 +37,13 @@ export const REGIONAL_PRICING: Record<string, RegionalPricing> = {
     // ₦3,900 / ₦9,900 / ₦19,900
     unitAmounts: { weekly: 390000, monthly: 990000, threeMonth: 1990000 },
   },
+  PK: {
+    country: "PK",
+    currency: "pkr",
+    name: "Pakistan",
+    // ₨999 / ₨2,499 / ₨4,999
+    unitAmounts: { weekly: 99900, monthly: 249900, threeMonth: 499900 },
+  },
 };
 
 export const INDIA_COUNTRY_CODE = "IN";

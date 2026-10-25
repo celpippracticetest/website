@@ -107,6 +107,7 @@ export function formatPlanCadPrice(value: string) {
 export const REGIONAL_CURRENCY_LOCALES: Record<string, string> = {
   inr: "en-IN",
   ngn: "en-NG",
+  pkr: "en-PK",
 };
 
 export function isInrPlanCurrency(currency?: string | null) {
