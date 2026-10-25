@@ -71,7 +71,7 @@ export function getPlanPriceDisplay(
     return discountedUnitAmountCents(listCents, discountPercent);
   }
 
-  // Geo-priced local currency (₹ India, ₦ Nigeria, ...): use the plan's own price.
+  // Geo-priced local currency (₹ India, ₦ Nigeria, Rs Pakistan, ...): use the plan's own price.
   if (currency && isRegionalPlanCurrency(currency) && plan?.price) {
     const formatLocal = (amount: number) => formatRegionalAmount(amount, currency);
     const listAmount = parsePrice(plan.price);
