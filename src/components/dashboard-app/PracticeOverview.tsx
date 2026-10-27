@@ -4,6 +4,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { TTaskSchemaDto } from "@/models/tasks.model";
 import useStore from "@/store";
 import { LoaderCircle } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import SvgListeningPart from "../icons/ListeningPart";
@@ -19,6 +20,17 @@ interface PracticeSection {
   tasks: TTaskSchemaDto[];
   route: string;
   bgColor: string;
+  /** Skill landing page (format, tips, samples). Only skills with a redesigned page. */
+  guideHref?: string;
+}
+
+function GuideArrow() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="size-3.5 transition-transform duration-200 group-hover/guide:translate-x-0.5">
+      <path d="M5 12h14" />
+      <path d="m12 5 7 7-7 7" />
+    </svg>
+  );
 }
 
 const PracticeOverview = ({
@@ -146,6 +158,7 @@ const PracticeOverview = ({
       icon: <SvgSpeakingPart />,
       bgColor: "bg-[#F1E9FE]",
       route: "speaking",
+      guideHref: "/speaking?view=guide",
       tasks:
         tasks["speaking"]?.sort((a, b) => {
           return (
@@ -180,6 +193,18 @@ const PracticeOverview = ({
               <h2 className={`text-[20px] font-bold ${section.color}`}>
                 {section.title}
               </h2>
+              {/* Same height in every column so the task lists stay aligned. */}
+              <div className="flex h-7 items-center">
+                {section.guideHref ? (
+                  <Link
+                    href={section.guideHref}
+                    className={`group/guide inline-flex items-center gap-1 rounded-full px-3 py-1 text-[13px] font-semibold ${section.color} ${section.bgColor} transition-[filter] duration-200 hover:brightness-95`}
+                  >
+                    {section.title} guide
+                    <GuideArrow />
+                  </Link>
+                ) : null}
+              </div>
             </div>
 
             {/* Desktop Tasks List */}
@@ -239,6 +264,16 @@ const PracticeOverview = ({
                     {section.title}
                   </h2>
                 </div>
+                {section.guideHref ? (
+                  <Link
+                    href={section.guideHref}
+                    onClick={(event) => event.stopPropagation()}
+                    className={`group/guide ml-auto mr-2 inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[13px] font-semibold ${section.color} ${section.bgColor}`}
+                  >
+                    Guide
+                    <GuideArrow />
+                  </Link>
+                ) : null}
                 <div className="text-[#37465C]">
                   {isExpanded ? (
                     <svg

@@ -56,7 +56,7 @@ const SpeakingPage = async ({
 }: {
   searchParams: Promise<{ [key: string]: string | undefined }>;
 }) => {
-  const { selectedPracticeId, taskId } = await searchParams;
+  const { selectedPracticeId, taskId, view } = await searchParams;
   const taskRepo = new TaskRepository(documentsClient);
   const tasks = await taskRepo.getAllTask({ type: "practice" }, 0, 100);
 
@@ -81,7 +81,10 @@ const SpeakingPage = async ({
 
   const hybridUser = await getHybridCurrentUser();
   const user = hybridUser?.user ?? null;
-  if (!user && !taskId && !selectedPracticeId) {
+  // Visitors get the landing page; signed-in users can open it via ?view=guide
+  // (e.g. the "Speaking guide" link on Practice overview).
+  const showGuide = !user || view === "guide";
+  if (showGuide && !taskId && !selectedPracticeId) {
     const availableTasks = tasks.items
       .filter((taskItem) => taskItem.category === "speaking")
       .sort((a, b) => {
