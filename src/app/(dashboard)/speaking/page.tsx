@@ -11,9 +11,8 @@ import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { ObjectId } from "bson";
 import { redirect, RedirectType } from "next/navigation";
-import SkillLandingPage from "@/components/skill-landing/SkillLandingPage";
+import SpeakingLandingPage from "@/components/skill-landing/SpeakingLandingPage";
 import { SkillHubJsonLd } from "@/components/seo/SkillHubJsonLd";
-import { skillPagesContent } from "@/data/skill-pages-content";
 import type { Metadata } from "next";
 import { skillHubPageMetadata } from "@/lib/skillHubPageMetadata";
 
@@ -98,11 +97,7 @@ const SpeakingPage = async ({
     return (
       <>
         <SkillHubJsonLd skillType="speaking" availableTasks={availableTasks} />
-        <SkillLandingPage
-          content={skillPagesContent.speaking}
-          skillType="speaking"
-          availableTasks={availableTasks}
-        />
+        <SpeakingLandingPage availableTasks={availableTasks} />
       </>
     );
   }
