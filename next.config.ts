@@ -183,6 +183,25 @@ const nextConfig: NextConfig = {
       ],
       ["/blog/celpip-vs-ielts-format-fees-scoring", "/blog/celpip-vs-ieltes"],
       ["/wiki/celpip-general-vs-ls-comparison", "/blog/celpip-ls-vs-general"],
+      // Retired wiki pages (403s) → their blog replacements (SEO sheet "301 redirect", Nov 2026).
+      ["/wiki/celpip-exam-overview", "/blog/what-is-celpip-exam"],
+      ["/wiki/celpip-speaking-task-1-guide", "/blog/celpip-speaking-task-1-template"],
+      ["/wiki/celpip-speaking-task-2-template", "/blog/celpip-speaking-task-2-template"],
+      ["/wiki/celpip-speaking-task-3-template", "/blog/celpip-speaking-task-3"],
+      ["/wiki/celpip-speaking-task-3-scene-description", "/blog/celpip-speaking-task-3"],
+      ["/wiki/celpip-speaking-task-4-template", "/blog/celpip-speaking-task-4"],
+      ["/wiki/celpip-speaking-task-5-template", "/blog/celpip-speaking-task-5-template"],
+      [
+        "/wiki/celpip-speaking-task-5-template-comparing-and-persuading",
+        "/blog/celpip-speaking-task-5-template",
+      ],
+      ["/wiki/celpip-speaking-task-6-template", "/blog/celpip-speaking-task-6"],
+      ["/wiki/celpip-speaking-task-7-template", "/blog/celpip-speaking-task-7-template"],
+      ["/wiki/celpip-speaking-task-8-template", "/blog/celpip-speaking-task-8"],
+      ["/wiki/celpip-writing-task-1-email-template", "/blog/celpip-writing-task-1-template"],
+      ["/wiki/celpip-writing-task-2-template", "/blog/celpip-writing-task-2-template"],
+      ["/wiki/mastering-hardest-celpip-questions", "/blog/hardest-celpip-questions"],
+      ["/wiki/celpip-practice-test", "/"],
     ].map(([source, destination]) => ({ source, destination, permanent: true }));
     return fixes;
   },
