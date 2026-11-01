@@ -8,6 +8,7 @@ import {
   SPEAKING_PRACTICE_TIPS,
   SPEAKING_SAMPLE,
   SPEAKING_SCORING,
+  SPEAKING_SESSION_CHECKLIST,
   SPEAKING_TASKS,
   SPEAKING_TOPICS,
 } from "@/data/speaking-landing";
@@ -212,35 +213,18 @@ export default function SpeakingLandingPage({
           <SectionHeading
             id="practice-heading"
             title="How to practise CELPIP Speaking effectively"
-            intro="Small habits make the biggest difference. Use these in every session."
+            intro="Simple habits that get more out of every minute you practise."
           />
-          <div className="mt-8 grid gap-4 screen1024:!grid-cols-[minmax(0,1fr)_340px]">
-            <ol className="grid gap-3 screen744:!grid-cols-2">
-              {SPEAKING_PRACTICE_TIPS.map((tip, index) => (
-                <li key={tip} className="flex gap-3 rounded-2xl border border-[#E3E8F2] bg-white p-4">
-                  <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#EEF3FF] text-[13px] font-bold text-[#2554D6]">
-                    {index + 1}
-                  </span>
-                  <span className="text-[15px] leading-[1.55] text-[#37465C]">{tip}</span>
-                </li>
-              ))}
-            </ol>
-            <div className="flex flex-col justify-between rounded-2xl bg-[#212E42] p-6 text-white">
-              <div>
-                <p className="text-[18px] font-bold leading-snug">Want a full study plan?</p>
-                <p className="mt-2 text-[14px] leading-[1.6] text-white/75">
-                  Our blog has step-by-step guides, sample answers and score-boosting strategies for every CELPIP skill.
-                </p>
-              </div>
-              <Link
-                href="/blog"
-                className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-full bg-white px-5 text-[14px] font-bold text-[#212E42] transition-colors duration-200 hover:bg-[#EEF3FF]"
-              >
-                Read the guides
-                <ArrowIcon className="size-4" />
-              </Link>
-            </div>
-          </div>
+          <ul className="mt-8 grid gap-3 screen744:!grid-cols-2">
+            {SPEAKING_PRACTICE_TIPS.map((tip) => (
+              <li key={tip} className="flex items-start gap-3 rounded-2xl border border-[#E3E8F2] bg-white p-4">
+                <span className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-[#0B7A55] text-white">
+                  <CheckIcon className="size-3.5" />
+                </span>
+                <span className="text-[15px] leading-[1.55] text-[#37465C]">{tip}</span>
+              </li>
+            ))}
+          </ul>
         </section>
 
         {/* Sample answer */}
@@ -306,6 +290,48 @@ export default function SpeakingLandingPage({
               </li>
             ))}
           </ul>
+        </section>
+
+        {/* Session checklist */}
+        <section aria-labelledby="checklist-heading" className={`${SECTION_CLASS} border-t border-[#E3E8F2]`}>
+          <SectionHeading
+            id="checklist-heading"
+            title="Make the most of your Speaking practice"
+            intro="Small changes make a big difference. Run through this checklist every time you practise."
+          />
+          <div className="mt-8 grid gap-4 screen1024:!grid-cols-[minmax(0,1fr)_340px] screen1024:!items-start">
+            <ol className="overflow-hidden rounded-2xl border border-[#E3E8F2] bg-white">
+              {SPEAKING_SESSION_CHECKLIST.map((step, index) => (
+                <li
+                  key={step.title}
+                  className={`flex gap-4 p-5 ${index > 0 ? "border-t border-[#E3E8F2]" : ""}`}
+                >
+                  <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#EEF3FF] text-[14px] font-bold text-[#2554D6]">
+                    {index + 1}
+                  </span>
+                  <span>
+                    <span className="block text-[16px] font-bold text-[#212E42]">{step.title}</span>
+                    <span className="mt-1 block text-[14.5px] leading-[1.55] text-[#5B6B82]">{step.description}</span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+            <div className="flex flex-col justify-between rounded-2xl bg-[#212E42] p-6 text-white">
+              <div>
+                <p className="text-[18px] font-bold leading-snug">Want a full study plan?</p>
+                <p className="mt-2 text-[14px] leading-[1.6] text-white/75">
+                  Our blog has step-by-step guides, sample answers and score-boosting strategies for every CELPIP skill.
+                </p>
+              </div>
+              <Link
+                href="/blog"
+                className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-full bg-white px-5 text-[14px] font-bold text-[#212E42] transition-colors duration-200 hover:bg-[#EEF3FF]"
+              >
+                Read the guides
+                <ArrowIcon className="size-4" />
+              </Link>
+            </div>
+          </div>
         </section>
 
         {/* FAQ */}

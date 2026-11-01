@@ -39,6 +39,26 @@ export const SPEAKING_PRACTICE_TIPS: string[] = [
   "Rotate through all 8 tasks so no task type surprises you.",
 ];
 
+/** Step-by-step checklist for a single practice session. */
+export const SPEAKING_SESSION_CHECKLIST: { title: string; description: string }[] = [
+  {
+    title: "Practise under real test conditions",
+    description: "Quiet room, headphones on, real timer, no notes. Treat every attempt like test day.",
+  },
+  {
+    title: "Review your recordings",
+    description: "Listen back once and write down the one thing that would have made the answer better.",
+  },
+  {
+    title: "Set a clear goal for each session",
+    description: "Pick one target, like \"use three linking words\" or \"finish with a summary\", and focus on it.",
+  },
+  {
+    title: "Track your progress and stay consistent",
+    description: "Compare your AI scores week to week. Short daily sessions beat one long weekend cram.",
+  },
+];
+
 export const SPEAKING_SAMPLE = {
   task: "Task 1 · Giving Advice",
   question:
