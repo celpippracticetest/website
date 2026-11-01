@@ -12,9 +12,9 @@ import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { ObjectId } from "bson";
 import { redirect, RedirectType } from "next/navigation";
-import SkillLandingPage from "@/components/skill-landing/SkillLandingPage";
+import SkillGuidePage from "@/components/skill-landing/SkillGuidePage";
+import { SKILL_GUIDES } from "@/data/skill-guides";
 import { SkillHubJsonLd } from "@/components/seo/SkillHubJsonLd";
-import { skillPagesContent } from "@/data/skill-pages-content";
 import type { Metadata } from "next";
 import { skillHubPageMetadata } from "@/lib/skillHubPageMetadata";
 
@@ -60,7 +60,7 @@ const ReadingPage = async ({
 }: {
   searchParams: Promise<{ [key: string]: string | undefined }>;
 }) => {
-  const { selectedPracticeId, taskId } = await searchParams;
+  const { selectedPracticeId, taskId, view } = await searchParams;
 
   const taskRepo = new TaskRepository(documentsClient);
   const tasks = await taskRepo.getAllTask({ type: "practice" }, 0, 100);
@@ -86,7 +86,10 @@ const ReadingPage = async ({
 
   const hybridUser = await getHybridCurrentUser();
   const user = hybridUser?.user ?? null;
-  if (!user && !taskId && !selectedPracticeId) {
+  // Visitors get the guide page; signed-in users can open it via ?view=guide
+  // (e.g. the guide link on Practice overview).
+  const showGuide = !user || view === "guide";
+  if (showGuide && !taskId && !selectedPracticeId) {
     const availableTasks = tasks.items
       .filter((taskItem) => taskItem.category === "reading")
       .sort((a, b) => {
@@ -102,11 +105,7 @@ const ReadingPage = async ({
     return (
       <>
         <SkillHubJsonLd skillType="reading" availableTasks={availableTasks} />
-        <SkillLandingPage
-          content={skillPagesContent.reading}
-          skillType="reading"
-          availableTasks={availableTasks}
-        />
+        <SkillGuidePage guide={SKILL_GUIDES.reading} availableTasks={availableTasks} />
       </>
     );
   }

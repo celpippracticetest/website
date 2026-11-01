@@ -20,7 +20,7 @@ interface PracticeSection {
   tasks: TTaskSchemaDto[];
   route: string;
   bgColor: string;
-  /** Skill landing page (format, tips, samples). Only skills with a redesigned page. */
+  /** Skill guide page (format, tips, samples), opened via ?view=guide. */
   guideHref?: string;
 }
 
@@ -116,6 +116,7 @@ const PracticeOverview = ({
       icon: <SvgListeningPart />,
       bgColor: "bg-[#E6F6F4]",
       route: "listening",
+      guideHref: "/listening?view=guide",
       tasks:
         tasks["listening"]?.sort((a, b) => {
           return (
@@ -130,6 +131,7 @@ const PracticeOverview = ({
       bgColor: "bg-[#FEECEF]",
       icon: <SvgReadingPart />,
       route: "reading",
+      guideHref: "/reading?view=guide",
       tasks:
         tasks["reading"]?.sort((a, b) => {
           return (
@@ -144,6 +146,7 @@ const PracticeOverview = ({
       icon: <SvgWritingPart />,
       bgColor: "bg-[#FFF1EE]",
       route: "writing",
+      guideHref: "/writing?view=guide",
       tasks:
         tasks["writing"]?.sort((a, b) => {
           return (
