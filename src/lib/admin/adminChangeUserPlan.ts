@@ -12,7 +12,10 @@ import {
 } from "@/lib/resolveStripeCustomerId";
 import { stripe } from "@/lib/stripe";
 import { syncUserPlanPublicMetadata } from "@/lib/syncUserPlanPublicMetadata";
-import { findUserProfileForAdminLookup } from "@/lib/users/userProfilesPg";
+import {
+  findAuthUserForAdminLookup,
+  findUserProfileForAdminLookup,
+} from "@/lib/users/userProfilesPg";
 import type { Plan } from "@/models/plans.model";
 
 export type AdminPlanChangeTiming = "immediate" | "period_end";
@@ -193,7 +196,16 @@ async function resolveAuthUserId(identifier: string): Promise<{
 }> {
   const profile = await findUserProfileForAdminLookup(identifier);
   if (!profile) {
-    throw Object.assign(new Error("User not found"), { status: 404 });
+    // Free sign-ups have no user_profiles row yet; the plan sync below creates one.
+    const authUser = await findAuthUserForAdminLookup(identifier);
+    if (!authUser) {
+      throw Object.assign(new Error("User not found"), { status: 404 });
+    }
+    return {
+      authUserId: authUser.id,
+      email: authUser.email,
+      stripeCustomerIdFromProfile: null,
+    };
   }
 
   const authUserId =
