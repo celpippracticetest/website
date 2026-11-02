@@ -128,6 +128,28 @@ export async function findUserProfileForAdminLookup(
 }
 
 /**
+ * Supabase Auth user by auth id or email, for accounts that never got a `user_profiles` row
+ * (free sign-ups: rows are only created on plan changes / Stripe events).
+ */
+export async function findAuthUserForAdminLookup(
+  identifier: string,
+): Promise<{ id: string; email: string | null } | null> {
+  const id = identifier.trim();
+  if (!id) return null;
+
+  const sql = getSql();
+  const rows = await sql<{ id: string; email: string | null }[]>`
+    SELECT id::text AS id, email
+    FROM auth.users
+    WHERE id::text = ${id}
+       OR lower(email) = lower(${id})
+    ORDER BY created_at DESC
+    LIMIT 1
+  `;
+  return rows[0] ?? null;
+}
+
+/**
  * Write plan / publicMetadata onto `user_profiles` so profiles become write-authoritative
  * for entitlements (users docs remain a dual-write mirror during cutover).
  */
