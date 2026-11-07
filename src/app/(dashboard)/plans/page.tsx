@@ -1,4 +1,5 @@
 import PlanCard from "@/components/pages/plans/PlanCard";
+import { PlanDiscountExposure } from "@/components/analytics/PlanDiscountExposure";
 import { CheckoutRepository } from "@/repositories/checkout.repo";
 import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
 import documentsClient from "@/lib/appDocumentsClient";
@@ -55,6 +56,7 @@ const Plans = async () => {
   return (
     <>
       <section id="plans" className={"w-full"} aria-labelledby="plans-heading">
+        <PlanDiscountExposure surface="plans_page" />
         <h2
           id="plans-heading"
           className="mt-[40px] screen744:!mt-[64px] screen1280:!mt-[40px] text-[24px] screen744:!text-[28px]  text-center flex justify-center text-neutral1 font-medium screen1280:!text-[32px]"

@@ -12,6 +12,7 @@ import { PricingBrandFaqSection } from "@/components/pages/pricing/brand/Pricing
 import type { SerializedPlan } from "@/types/pricing";
 import { trackKpi } from "@/lib/analytics";
 import { usePlanDiscountPercent } from "@/hooks/usePlanDiscountAb";
+import { PlanDiscountExposure } from "@/components/analytics/PlanDiscountExposure";
 
 function toSerializedPlans(plans: unknown[]): SerializedPlan[] {
   return plans.map((raw) => {
@@ -108,6 +109,7 @@ export function PremiumPaywallOverlay({
 
             <div className="custom-scrollbar flex-1 overflow-y-auto px-6 py-10 screen744:px-10">
               <div className="mx-auto flex w-full max-w-[1060px] flex-col items-center">
+                <PlanDiscountExposure surface={triggerSource} />
                 <PricingBrandHeader
                   titleTag="h2"
                   discountPercent={discountPercent}
