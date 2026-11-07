@@ -362,6 +362,9 @@ function buildStripeGaAttributionParams(
   const appPlatform = normalizeAppClientPlatform(
     readMetadataValue(metadata, "app_platform"),
   );
+  const planDiscountAbRaw = readMetadataValue(metadata, "plan_discount_ab");
+  const planDiscountAb =
+    planDiscountAbRaw === "a" || planDiscountAbRaw === "b" ? planDiscountAbRaw : null;
   return {
     source: inferAttributionSource(metadata),
     medium: inferAttributionMedium(metadata),
@@ -389,6 +392,8 @@ function buildStripeGaAttributionParams(
     purchase_page: readMetadataValue(metadata, "purchase_page") || "",
     entry_page: readMetadataValue(metadata, "entry_page") || "",
     ...(appPlatform ? { app_platform: appPlatform } : {}),
+    // Price test arm from checkout, so GA4 purchases/renewals split by A/B.
+    ...(planDiscountAb ? { plan_discount_ab: planDiscountAb } : {}),
   };
 }
 
