@@ -36,13 +36,18 @@ export function planDiscountPercent(variant: PlanDiscountAbVariant): number {
   return variant === "b" ? SITEWIDE_PLAN_DISCOUNT_PERCENT : 0;
 }
 
-export function readBrowserPlanDiscountVariant(): PlanDiscountAbVariant {
-  if (typeof document === "undefined") return "a";
+/** Assigned arm from the browser cookie, or null when not assigned (e.g. bots). */
+export function readBrowserPlanDiscountVariantOrNull(): PlanDiscountAbVariant | null {
+  if (typeof document === "undefined") return null;
   const match = document.cookie.match(
     /(?:^|;\s*)plan_discount_ab=([^;]+)/,
   );
   const value = match?.[1]?.trim();
-  return isPlanDiscountAbVariant(value) ? value : "a";
+  return isPlanDiscountAbVariant(value) ? value : null;
+}
+
+export function readBrowserPlanDiscountVariant(): PlanDiscountAbVariant {
+  return readBrowserPlanDiscountVariantOrNull() ?? "a";
 }
 
 export function upsertCookieHeader(

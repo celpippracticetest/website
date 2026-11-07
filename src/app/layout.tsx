@@ -295,6 +295,11 @@ export default async function RootLayout({
                   platform: platform,
                   app_platform: platform
                 });
+                // Price test arm (set by middleware) so every GA4 event can be split by it.
+                var planAb = (document.cookie.match(/(?:^|;\\s*)plan_discount_ab=([ab])(?:;|$)/) || [])[1];
+                if (planAb) {
+                  gtag('set', 'user_properties', { plan_discount_ab: planAb });
+                }
               })();
               gtag('config', '${GA4_MEASUREMENT_ID}', {
                 send_page_view: false
