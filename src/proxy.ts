@@ -9,6 +9,7 @@ import { logger, trackUserAction, captureException } from "@/lib/sentry-logger";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { PRICING_AB_COOKIE, type PricingAbLayout } from "@/lib/pricingAbTest";
 import {
+  isNonHumanUserAgent,
   isPlanDiscountAbVariant,
   parsePlanDiscountPreviewQuery,
   pickPlanDiscountAbVariant,
@@ -89,9 +90,15 @@ export default async function middleware(req: NextRequest) {
   const existingPlanVariant = isPlanDiscountAbVariant(existingPlanAb)
     ? existingPlanAb
     : null;
+  // Bots are not enrolled: they see arm `a` and get no cookie (see isNonHumanUserAgent).
+  const isNonHumanVisitor =
+    !planAbPreview && !existingPlanVariant && isNonHumanUserAgent(req.headers.get("user-agent"));
   const planDiscountVariant: PlanDiscountAbVariant =
-    planAbPreview ?? existingPlanVariant ?? pickPlanDiscountAbVariant();
-  const shouldSetPlanDiscountCookie = planDiscountVariant !== existingPlanVariant;
+    planAbPreview ??
+    existingPlanVariant ??
+    (isNonHumanVisitor ? "a" : pickPlanDiscountAbVariant());
+  const shouldSetPlanDiscountCookie =
+    !isNonHumanVisitor && planDiscountVariant !== existingPlanVariant;
 
   function headersWithPlanDiscount(base?: Headers): Headers {
     const headers = new Headers(base ?? req.headers);

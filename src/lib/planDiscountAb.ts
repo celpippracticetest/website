@@ -14,6 +14,18 @@ export function isPlanDiscountAbVariant(
   return value === "a" || value === "b";
 }
 
+/**
+ * Crawlers, link previews and monitors: kept out of the price test (always arm `a`, no cookie)
+ * so they don't skew the split and search engines always see list prices. Names only, no bare
+ * "bot", so phone models like "Cubot" are not caught.
+ */
+const NON_HUMAN_USER_AGENT =
+  /googlebot|google-inspectiontool|adsbot-google|mediapartners-google|bingbot|bingpreview|yandex(bot|images)|baiduspider|duckduckbot|slurp|applebot|petalbot|ahrefsbot|semrushbot|mj12bot|dotbot|seznambot|facebookexternalhit|facebookcatalog|meta-externalagent|twitterbot|linkedinbot|pinterestbot|whatsapp|telegrambot|discordbot|slackbot|skypeuripreview|gptbot|chatgpt-user|oai-searchbot|claudebot|claude-web|anthropic-ai|perplexitybot|ccbot|bytespider|amazonbot|headlesschrome|chrome-lighthouse|pingdom|uptimerobot|statuscake|crawler|spider|python-requests|curl\/|wget\//i;
+
+export function isNonHumanUserAgent(userAgent: string | null | undefined): boolean {
+  return Boolean(userAgent && NON_HUMAN_USER_AGENT.test(userAgent));
+}
+
 /** Random 50/50 assignment when the cookie is missing. */
 export function pickPlanDiscountAbVariant(): PlanDiscountAbVariant {
   return Math.random() < 0.5 ? "a" : "b";
