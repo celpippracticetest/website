@@ -353,6 +353,16 @@ export default async function RootLayout({
           />
         )}
 
+        {/* Contentsquare (UX analytics / session replay). Production only, like GTM,
+            so local and preview sessions don't pollute the data. */}
+        {enableGtm && (
+          <Script
+            id="contentsquare"
+            src="https://t.contentsquare.net/uxa/7b36cadc26112.js"
+            strategy="afterInteractive"
+          />
+        )}
+
         <Script
           id="third-party-loader"
           strategy="lazyOnload"
