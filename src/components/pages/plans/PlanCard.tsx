@@ -117,7 +117,7 @@ const PlanCard = ({
               {oldPrice && !isRegionalPlanCurrency(currency) && (
                 <>
                   <span className="relative text-text3 text-[16px] screen744:!text-[28px] screen1280:!text-[26px] font-medium">
-                    $ {oldPrice}
+                    C$ {oldPrice}
                     <span
                       className={`${
                         id == 1
@@ -125,10 +125,6 @@ const PlanCard = ({
                           : "-left-2 screen1280:!left-[12px] w-[112px]"
                       } absolute  screen1280:!flex top-[13px]   screen744:!top-[20px] screen1280:!top-[22px]  screen1280:!w-[129px] h-[2px] bg-error1 -translate-y-1/2`}
                     ></span>
-                  </span>
-
-                  <span className="text-gray font-normal text-[16px] screen744:!text-[20px]">
-                    CA
                   </span>
                 </>
               )}
