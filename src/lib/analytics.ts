@@ -28,6 +28,7 @@ import {
   sendMetaCompleteRegistrationBeacon,
   sendMetaPageViewBeacon,
 } from "@/lib/metaCapiBeacon";
+import { cleanUtmValue } from "@/lib/adsPlaceholder";
 import type {
   AnalyticsEvent,
   UserContext,
@@ -257,11 +258,11 @@ function readAttributionFromStorage() {
   }
 
   return {
-    utm_source: normalizeString(localStorage.getItem(ATTRIBUTION_STORAGE_KEYS.utmSource)),
-    utm_medium: normalizeString(localStorage.getItem(ATTRIBUTION_STORAGE_KEYS.utmMedium)),
-    utm_campaign: normalizeString(localStorage.getItem(ATTRIBUTION_STORAGE_KEYS.utmCampaign)),
-    utm_content: normalizeString(localStorage.getItem(ATTRIBUTION_STORAGE_KEYS.utmContent)),
-    utm_term: normalizeString(localStorage.getItem(ATTRIBUTION_STORAGE_KEYS.utmTerm)),
+    utm_source: cleanUtmValue(localStorage.getItem(ATTRIBUTION_STORAGE_KEYS.utmSource)),
+    utm_medium: cleanUtmValue(localStorage.getItem(ATTRIBUTION_STORAGE_KEYS.utmMedium)),
+    utm_campaign: cleanUtmValue(localStorage.getItem(ATTRIBUTION_STORAGE_KEYS.utmCampaign)),
+    utm_content: cleanUtmValue(localStorage.getItem(ATTRIBUTION_STORAGE_KEYS.utmContent)),
+    utm_term: cleanUtmValue(localStorage.getItem(ATTRIBUTION_STORAGE_KEYS.utmTerm)),
     gclid: normalizeString(localStorage.getItem(ATTRIBUTION_STORAGE_KEYS.gclid)),
     gbraid: normalizeString(localStorage.getItem(ATTRIBUTION_STORAGE_KEYS.gbraid)),
     wbraid: normalizeString(localStorage.getItem(ATTRIBUTION_STORAGE_KEYS.wbraid)),
@@ -330,17 +331,17 @@ function buildAttributionEventPayload(attributionData?: Record<string, unknown>)
   const storage = readAttributionFromStorage();
   const data = attributionData ?? {};
 
-  const utm_source = normalizeString(data.utm_source) || storage.utm_source;
-  const utm_medium = normalizeString(data.utm_medium) || storage.utm_medium;
+  const utm_source = cleanUtmValue(data.utm_source) || storage.utm_source;
+  const utm_medium = cleanUtmValue(data.utm_medium) || storage.utm_medium;
   const google_ads_campaign_id =
     normalizeString(data.google_ads_campaign_id) || storage.google_ads_campaign_id;
   const utm_campaign =
-    normalizeString(data.utm_campaign) ||
+    cleanUtmValue(data.utm_campaign) ||
     storage.utm_campaign ||
     google_ads_campaign_id ||
     "(not set)";
-  const utm_content = normalizeString(data.utm_content) || storage.utm_content;
-  const utm_term = normalizeString(data.utm_term) || storage.utm_term;
+  const utm_content = cleanUtmValue(data.utm_content) || storage.utm_content;
+  const utm_term = cleanUtmValue(data.utm_term) || storage.utm_term;
   const gclid = normalizeString(data.gclid) || normalizeString(data.attribution_gclid) || storage.gclid;
   const gbraid = normalizeString(data.gbraid) || normalizeString(data.attribution_gbraid) || storage.gbraid;
   const wbraid = normalizeString(data.wbraid) || normalizeString(data.attribution_wbraid) || storage.wbraid;

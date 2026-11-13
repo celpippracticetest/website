@@ -13,6 +13,7 @@ import { getAccessTierKey } from "@/lib/pricing";
 import { toSerializedPlan } from "@/lib/planSerialization";
 import type { Plan } from "@/models/plans.model";
 import { logger, captureException, trackAPICall } from "@/lib/sentry-logger";
+import { cleanUtmValue } from "@/lib/adsPlaceholder";
 import { findOrCreateWebUserByEmail } from "@/lib/guestCheckoutAuth";
 import { persistStripeCustomerIdForUser } from "@/lib/resolveStripeCustomerId";
 import { recordPartnerCommissionForSubscriber } from "@/lib/partner/recordPartnerCommissionForSubscriber";
@@ -350,9 +351,11 @@ function buildStripeGaAttributionParams(
   const fbclid = readMetadataValue(metadata, "fbclid") || "";
   const msclkid = readMetadataValue(metadata, "msclkid") || "";
   const ttclid = readMetadataValue(metadata, "ttclid") || "";
-  const utmCampaignRaw = readMetadataValue(metadata, "utm_campaign");
+  // Older checkouts may hold a literal Ads placeholder ("{campaign_id}"); treat it as missing
+  // so the Google Ads campaign id is used instead.
+  const utmCampaignRaw = cleanUtmValue(readMetadataValue(metadata, "utm_campaign"));
   const googleAdsCampaignId = readMetadataValue(metadata, "google_ads_campaign_id");
-  const attributionCampaign = readMetadataValue(metadata, "attribution_campaign");
+  const attributionCampaign = cleanUtmValue(readMetadataValue(metadata, "attribution_campaign"));
   const effectiveCampaign =
     (utmCampaignRaw && utmCampaignRaw !== "(not set)" ? utmCampaignRaw : null) ||
     (attributionCampaign && attributionCampaign !== "(not set)" ? attributionCampaign : null) ||
@@ -369,11 +372,11 @@ function buildStripeGaAttributionParams(
     source: inferAttributionSource(metadata),
     medium: inferAttributionMedium(metadata),
     campaign: effectiveCampaign,
-    utm_source: readMetadataValue(metadata, "utm_source") || "",
-    utm_medium: readMetadataValue(metadata, "utm_medium") || "",
+    utm_source: cleanUtmValue(readMetadataValue(metadata, "utm_source")) || "",
+    utm_medium: cleanUtmValue(readMetadataValue(metadata, "utm_medium")) || "",
     utm_campaign: effectiveCampaign,
-    utm_content: readMetadataValue(metadata, "utm_content") || "",
-    utm_term: readMetadataValue(metadata, "utm_term") || "",
+    utm_content: cleanUtmValue(readMetadataValue(metadata, "utm_content")) || "",
+    utm_term: cleanUtmValue(readMetadataValue(metadata, "utm_term")) || "",
     // Keep raw IDs for internal parity, but register GA4 custom dimensions on attribution_* aliases.
     gclid,
     gbraid,
