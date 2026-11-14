@@ -11,10 +11,10 @@ export type FeaturedPlanName = "Weekly" | "Monthly" | "Quarterly";
 
 export type PlanPriceDisplay = {
   price: string;
-  /** List price before the sitewide discount, e.g. "$19.99". */
+  /** List price before the sitewide discount, e.g. "C$19.99". */
   compareAtPrice: string | null;
   priceSuffix: string;
-  /** e.g. "≈ $12.50 per week" */
+  /** e.g. "≈ C$12.50 per week" */
   perWeekEquivalent: string;
   /** e.g. "SAVE 37%" — longer plans vs weekly. */
   saveLabel: string | null;
@@ -33,8 +33,9 @@ const CATALOG_DISPLAY: Record<
 };
 
 
-function formatUsdFromCents(cents: number): string {
-  return `$${(cents / 100).toFixed(2)}`;
+/** Catalog (non-regional) prices are Canadian dollars: "C$13.99". */
+function formatCadFromCents(cents: number): string {
+  return `C$${(cents / 100).toFixed(2)}`;
 }
 
 function savePercentVsWeekly(weeklySaleCents: number, weeks: number, salePriceCents: number): number {
@@ -118,14 +119,14 @@ export function getPlanPriceDisplay(
     const off = savePercentVsWeekly(weeklySaleCents, weeks, amountCents);
     if (off > 0) saveLabel = `SAVE ${off}%`;
     if (showPerWeek) {
-      perWeekEquivalent = `≈ ${formatUsdFromCents(Math.round(amountCents / weeks))} per week`;
+      perWeekEquivalent = `≈ ${formatCadFromCents(Math.round(amountCents / weeks))} per week`;
     }
   }
 
   return {
-    price: formatUsdFromCents(amountCents),
+    price: formatCadFromCents(amountCents),
     compareAtPrice:
-      discountPercent > 0 ? formatUsdFromCents(listCents) : null,
+      discountPercent > 0 ? formatCadFromCents(listCents) : null,
     priceSuffix: catalog.priceSuffix,
     perWeekEquivalent,
     saveLabel,

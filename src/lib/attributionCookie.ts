@@ -1,4 +1,5 @@
 import type { NextRequest, NextResponse } from "next/server";
+import { cleanUtmValue } from "@/lib/adsPlaceholder";
 
 /** First-touch UTM / gclid from landing URL; set by middleware, read by API routes. */
 export const ACQUISITION_ATTRIBUTION_COOKIE = "celpip_acq";
@@ -34,6 +35,11 @@ function trimParam(value: string | null): string | undefined {
   const t = value.trim();
   if (!t) return undefined;
   return t.length > MAX_FIELD_LEN ? t.slice(0, MAX_FIELD_LEN) : t;
+}
+
+/** Like trimParam, but drops unfilled Google Ads placeholders such as `{campaign_id}`. */
+function utmParam(value: string | null): string | undefined {
+  return trimParam(cleanUtmValue(value));
 }
 
 function hasAcquisitionQuery(params: URLSearchParams): boolean {
@@ -112,11 +118,11 @@ export function applyAcquisitionAttributionCookie(
     fbclid: trimParam(sp.get("fbclid")),
     msclkid: trimParam(sp.get("msclkid")),
     ttclid: trimParam(sp.get("ttclid")),
-    utm_source: trimParam(sp.get("utm_source")),
-    utm_medium: trimParam(sp.get("utm_medium")),
-    utm_campaign: trimParam(sp.get("utm_campaign")),
-    utm_content: trimParam(sp.get("utm_content")),
-    utm_term: trimParam(sp.get("utm_term")),
+    utm_source: utmParam(sp.get("utm_source")),
+    utm_medium: utmParam(sp.get("utm_medium")),
+    utm_campaign: utmParam(sp.get("utm_campaign")),
+    utm_content: utmParam(sp.get("utm_content")),
+    utm_term: utmParam(sp.get("utm_term")),
   };
 
   // Path only: the campaign params are already captured as fields, and the full query
@@ -152,6 +158,7 @@ export function mergeAcquisitionCookieIntoAttributionData(
     const v = c[key];
     if (typeof v !== "string" || !v.trim()) return;
     const k = key as string;
+    if (k.startsWith("utm_") && !cleanUtmValue(v)) return;
     if (!data[k]) data[k] = v;
   };
 
@@ -210,11 +217,12 @@ export function flatAcquisitionFromCookie(
     };
   }
   return {
-    utm_source: c.utm_source?.trim() || null,
-    utm_medium: c.utm_medium?.trim() || null,
-    utm_campaign: c.utm_campaign?.trim() || null,
-    utm_content: c.utm_content?.trim() || null,
-    utm_term: c.utm_term?.trim() || null,
+    // cleanUtmValue also drops placeholders saved before they were filtered at capture.
+    utm_source: cleanUtmValue(c.utm_source),
+    utm_medium: cleanUtmValue(c.utm_medium),
+    utm_campaign: cleanUtmValue(c.utm_campaign),
+    utm_content: cleanUtmValue(c.utm_content),
+    utm_term: cleanUtmValue(c.utm_term),
     gclid: c.gclid?.trim() || null,
     gbraid: c.gbraid?.trim() || null,
     wbraid: c.wbraid?.trim() || null,

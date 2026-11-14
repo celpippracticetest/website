@@ -31,6 +31,7 @@ import {
   ACQUISITION_ATTRIBUTION_COOKIE,
   flatAcquisitionFromCookie,
 } from "@/lib/attributionCookie";
+import { cleanUtmValue } from "@/lib/adsPlaceholder";
 import { isLikelySupabaseAuthUserId } from "@/lib/auth/supabase-mobile-user-bridge";
 import {
   matchUsersCollectionByWebUserIds,
@@ -446,14 +447,18 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
       lastTouch.country ||
       null;
     const readRequestAttribution = (field: string) => {
+      // utm_* values holding an unfilled Ads placeholder ("{campaign_id}") count as missing.
+      const clean = (value: string) =>
+        field.startsWith("utm_") ? cleanUtmValue(value) : value.trim() || null;
+
       const formValue = formData.get(field);
-      if (typeof formValue === "string" && formValue.trim()) {
-        return formValue.trim();
+      if (typeof formValue === "string" && clean(formValue)) {
+        return clean(formValue);
       }
 
       const queryValue = req.nextUrl.searchParams.get(field);
-      if (queryValue?.trim()) {
-        return queryValue.trim();
+      if (queryValue && clean(queryValue)) {
+        return clean(queryValue);
       }
 
       return null;
@@ -531,11 +536,11 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
     const finalOfferMetadata = isOnboardingFinalOffer ? finalOfferSource : null;
     const lastTouchCampaign =
       typeof lastTouch.campaign === "string" && lastTouch.campaign !== "(not set)"
-        ? lastTouch.campaign
+        ? cleanUtmValue(lastTouch.campaign)
         : null;
     const metadataUtmCampaign =
       typeof userMetadata?.utm_campaign === "string" && userMetadata.utm_campaign !== "(not set)"
-        ? userMetadata.utm_campaign
+        ? cleanUtmValue(userMetadata.utm_campaign)
         : null;
     const clerkGoogleAdsId =
       typeof userMetadata?.google_ads_campaign_id === "string" &&
@@ -556,14 +561,14 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
       utm_source:
         readRequestAttribution("utm_source") ||
         acqCk.utm_source ||
-        lastTouch.source ||
-        userMetadata?.utm_source ||
+        cleanUtmValue(lastTouch.source) ||
+        cleanUtmValue(userMetadata?.utm_source) ||
         null,
       utm_medium:
         readRequestAttribution("utm_medium") ||
         acqCk.utm_medium ||
-        lastTouch.medium ||
-        userMetadata?.utm_medium ||
+        cleanUtmValue(lastTouch.medium) ||
+        cleanUtmValue(userMetadata?.utm_medium) ||
         null,
       utm_campaign:
         readRequestAttribution("utm_campaign") ||
@@ -576,12 +581,12 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
       utm_content:
         readRequestAttribution("utm_content") ||
         acqCk.utm_content ||
-        userMetadata?.utm_content ||
+        cleanUtmValue(userMetadata?.utm_content) ||
         null,
       utm_term:
         readRequestAttribution("utm_term") ||
         acqCk.utm_term ||
-        userMetadata?.utm_term ||
+        cleanUtmValue(userMetadata?.utm_term) ||
         null,
       gclid:
         readRequestAttribution("gclid") ||

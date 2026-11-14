@@ -146,7 +146,8 @@ export function formatPlanCardPrice(
   }
   const text =
     numericValue % 1 === 0 ? String(numericValue) : numericValue.toFixed(2);
-  return `$ ${text}`;
+  // Catalog prices are Canadian dollars; regional currencies are formatted above.
+  return `C$ ${text}`;
 }
 
 export function isWeeklyPlan(plan: SerializedPlan) {
