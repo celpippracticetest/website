@@ -347,11 +347,15 @@ const LayoutClient = ({
   // Inline UpgradeModal removed in favor of shared component
 
   const LoginModal = () => {
+    // Come back to this page after signing in (e.g. a writing prompt with a saved draft).
+    const here = window.location.pathname + window.location.search;
+    const returnQuery =
+      here && here !== "/" ? `redirect_url=${encodeURIComponent(here)}` : "";
     return (
       <div className="z-[999] px-[16px] fixed top-0 left-0 right-0 mx-auto w-full h-full bg-[#17161680] flex justify-center items-center">
         <div
           ref={loginRef}
-          className="flex-col mx-[16px] relative w-[440px] pt-[24px] px-[16px] pb-[18px]  h-[270px] rounded-[24px] bg-white"
+          className="flex-col mx-[16px] relative w-[440px] pt-[24px] px-[16px] pb-[18px] min-h-[270px] rounded-[24px] bg-white"
         >
           <div
             onClick={() => setShowLoginModal(false)}
@@ -364,7 +368,7 @@ const LayoutClient = ({
           </div>
           <div className="text-[#212E42] mt-[12px] text-[14px] text-center font-normal">
             {loginMessage || "Please log in to start the exam"}{" "}
-            <Link href="/sign-in?mode=sign-up">
+            <Link href={`/sign-in?mode=sign-up${returnQuery ? `&${returnQuery}` : ""}`}>
               <div className="text-[14px] cursor-pointer flex items-center justify-center text-white bg-[#4A7DFF] rounded-[24px] h-[40px] mt-[12px]  text-center font-normal">
                 Create a free account
               </div>
@@ -378,7 +382,7 @@ const LayoutClient = ({
           </div>
           <div className="text-[16px]   mt-[32px]  text-center font-medium">
             <span>Do you have an account? </span>{" "}
-            <Link href="/sign-in">
+            <Link href={`/sign-in${returnQuery ? `?${returnQuery}` : ""}`}>
               <span className="text-[#316BFF] cursor-pointer"> Login </span>
             </Link>
           </div>

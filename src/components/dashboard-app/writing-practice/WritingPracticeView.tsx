@@ -38,6 +38,39 @@ import StatBadge from "@/components/shared/StatBadge";
 import { usePracticeCount } from "@/hooks/usePracticeCount";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
 import { formatSubmissionRelativeTime } from "@/lib/formatSubmissionRelativeTime";
+import { useAuthModalStore } from "@/store/useAuthModal.store";
+
+function countWords(value: string): number {
+  return value.trim().split(/\s+/).filter(Boolean).length;
+}
+
+/** Unsent answers survive a reload or the trip through sign-up. */
+const draftKey = (practiceId: string) => `celpip:writing-draft:${practiceId}`;
+
+function readDraft(practiceId: string): string {
+  try {
+    return window.localStorage.getItem(draftKey(practiceId)) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function saveDraft(practiceId: string, value: string) {
+  try {
+    if (value.trim()) window.localStorage.setItem(draftKey(practiceId), value);
+    else window.localStorage.removeItem(draftKey(practiceId));
+  } catch {
+    // storage blocked (private mode): the answer just isn't kept
+  }
+}
+
+function clearDraft(practiceId: string) {
+  try {
+    window.localStorage.removeItem(draftKey(practiceId));
+  } catch {
+    // ignore
+  }
+}
 const SvgBestValuePlan = dynamic(
   () => import("../../../components/icons/BestValuePlan"),
   {
@@ -120,6 +153,7 @@ const WritingPracticeView = ({
   const setPremiumPlanModalState = useStore(
     (state) => state.setPremiumPlanModalState,
   );
+  const openLoginModal = useAuthModalStore((state) => state.setShowLoginModal);
   const completedRef = useRef(false);
   const scoringRetryRef = useRef(0);
   useTimerExpiredAnalytics(time, "writing", text.trim() ? 0 : 1);
@@ -274,6 +308,7 @@ const WritingPracticeView = ({
         );
       }
 
+      clearDraft(practice.id);
       onAnswerButtonClick(practice, result);
       setProgressBar(0);
       setTryToSubmit(false);
@@ -295,7 +330,10 @@ const WritingPracticeView = ({
     setPassageIndex(0);
     setQuestionIndex(0);
     setSelectedAnswers({});
-    setText("");
+    // Bring back an unsent answer, e.g. after signing up to submit it.
+    const draft = readDraft(practice.id);
+    setText(draft);
+    setWordCount(countWords(draft));
     setProgressBar(0);
     setIsSubmit(false);
 
@@ -548,17 +586,11 @@ const WritingPracticeView = ({
                       placeholder="Type your response here..."
                       value={text}
                       onChange={(e) => {
-                        if (!user) {
-                          setPremiumPlanModalState();
-                        } else if (!shouldShowPractice) {
-                          setPremiumPlanModalState();
-                        }
-                        const wordCount = e.target.value
-                          .trim()
-                          .split(/\s+/)
-                          .filter(Boolean).length;
-                        setWordCount(wordCount);
+                        // Let everyone type; sign-up / upgrade is asked for on Submit.
+                        // (Opening the pricing modal here fired on every keystroke.)
+                        setWordCount(countWords(e.target.value));
                         setText(e.target.value);
+                        saveDraft(practice.id, e.target.value);
                       }}
                     ></textarea>
 
@@ -624,7 +656,10 @@ const WritingPracticeView = ({
                             className="cursor-pointer flex h-[40px] items-center justify-center text-white text-[14px] font-normal  rounded-[24px] bg-[#4A7DFF] w-full"
                             onClick={() => {
                               if (!user) {
-                                setPremiumPlanModalState();
+                                openLoginModal(
+                                  true,
+                                  "Create a free account to submit your answer and get your AI score. We'll keep what you've written.",
+                                );
                                 return;
                               }
                               if (!shouldShowPractice) {
