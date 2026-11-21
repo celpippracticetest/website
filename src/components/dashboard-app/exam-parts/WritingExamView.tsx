@@ -85,8 +85,8 @@ const WritingExamView = ({
   const [showModal, setShowModal] = useState(false);
   const [showContinueModal, setShowContinueModal] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const setPremiumPlanModalState = useStore(
-    (state) => state.setPremiumPlanModalState,
+  const openPremiumPlanModal = useStore(
+    (state) => state.openPremiumPlanModal,
   );
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
@@ -557,11 +557,11 @@ const WritingExamView = ({
                             className="flex h-[40px] items-center justify-center text-white text-[14px] font-normal  rounded-[24px] bg-[#4A7DFF] w-full"
                             onClick={() => {
                               if (!freeMock && !user) {
-                                setPremiumPlanModalState();
+                                openPremiumPlanModal();
                                 return;
                               }
                               if (!shouldShowPractice) {
-                                setPremiumPlanModalState();
+                                openPremiumPlanModal();
                                 return;
                               }
                               if (!isSubmit && wordCount > 20) {

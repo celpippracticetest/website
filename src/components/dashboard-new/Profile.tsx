@@ -420,12 +420,13 @@ export default function Profile({
             </div>
             <div>
               {!showEditEmail && (
-                <span
-                  className="flex items-center justify-center border-[#76808F] text-[#76808F] rounded-[24px] border-[1px] font-normal text-[14px] w-[113px] h-[40px] cursor-pointer"
+                <button
+                  type="button"
+                  className="flex items-center justify-center border-[#76808F] text-[#76808F] rounded-[24px] border-[1px] font-normal text-[14px] w-[113px] h-[40px] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4A7DFF]/40"
                   onClick={() => setShowEditEmail(true)}
                 >
                   Edit email
-                </span>
+                </button>
               )}
               {showEditEmail && (
                 <div className="fixed inset-0 bg-[#17161680] flex justify-center items-center z-[9999]">
@@ -561,12 +562,13 @@ export default function Profile({
               </span>
             </div>
             <div>
-              <span
+              <button
+                type="button"
                 onClick={() => setShowSetPasswordModal(true)}
-                className="flex items-center justify-center border-[#76808F] text-[#76808F] rounded-[24px] border-[1px] font-normal text-[14px] w-[113px] h-[40px] cursor-pointer"
+                className="flex items-center justify-center border-[#76808F] text-[#76808F] rounded-[24px] border-[1px] font-normal text-[14px] w-[113px] h-[40px] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4A7DFF]/40"
               >
                 Set Password
-              </span>
+              </button>
             </div>
           </div>
         </div>

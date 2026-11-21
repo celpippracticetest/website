@@ -538,8 +538,8 @@ export default function PremiumPlanDrawer() {
   const isPremiumPlanModalOpen = useStore(
     (state) => state.isPremiumPlanModalOpen
   );
-  const setPremiumPlanModalState = useStore(
-    (state) => state.setPremiumPlanModalState
+  const closePremiumPlanModal = useStore(
+    (state) => state.closePremiumPlanModal
   );
 
   // Calculate the difference in seconds between user.createdAt and now
@@ -549,7 +549,7 @@ export default function PremiumPlanDrawer() {
       <Drawer.Root
         shouldScaleBackground
         open={isPremiumPlanModalOpen}
-        onOpenChange={() => setPremiumPlanModalState()}
+        onOpenChange={(open) => { if (!open) closePremiumPlanModal(); }}
       >
         <Drawer.Trigger asChild>
           <button>Open Drawer</button>

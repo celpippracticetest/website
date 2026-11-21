@@ -97,8 +97,8 @@ const ReadingPracticeView = ({
   const restoredRef = useRef(false);
   const alreadyCompletedRef = useRef(false);
   const [sessionHydrated, setSessionHydrated] = useState(false);
-  const setPremiumPlanModalState = useStore(
-    (state) => state.setPremiumPlanModalState,
+  const openPremiumPlanModal = useStore(
+    (state) => state.openPremiumPlanModal,
   );
   const completedRef = useRef(false);
   const totalQuestionsCount =
@@ -198,7 +198,17 @@ const ReadingPracticeView = ({
         setSessionHydrated(true);
         return;
       }
-      if (!user || !selectedPracticeId) {
+      if (!selectedPracticeId) {
+        setSessionHydrated(true);
+        return;
+      }
+      if (!user) {
+        // Guests: bring back answers/timer saved in this browser (e.g. after F5).
+        const saved = readInProgress<ObjectiveInProgress>(progressKey);
+        if (saved?.selectedAnswers) setSelectedAnswers(saved.selectedAnswers);
+        if (saved && typeof saved.time === "number" && saved.time > 0) {
+          setTime(saved.time);
+        }
         setSessionHydrated(true);
         return;
       }
@@ -620,7 +630,7 @@ const ReadingPracticeView = ({
                             if (shouldShowPractice) {
                               handleAnswerSelect(questionId, answerId);
                             } else {
-                              setPremiumPlanModalState();
+                              openPremiumPlanModal();
                             }
                           }}
                           selectedAnswers={selectedAnswers}
@@ -697,7 +707,7 @@ const ReadingPracticeView = ({
                                                             choice.id,
                                                           );
                                                         } else {
-                                                          setPremiumPlanModalState();
+                                                          openPremiumPlanModal();
                                                         }
                                                       }}
                                                     >
@@ -793,7 +803,7 @@ const ReadingPracticeView = ({
                                     answerId,
                                   );
                                 } else {
-                                  setPremiumPlanModalState();
+                                  openPremiumPlanModal();
                                 }
                               }}
                               selectedAnswers={selectedAnswers}

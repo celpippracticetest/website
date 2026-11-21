@@ -15,7 +15,9 @@ interface StoreState {
   tasks: Record<string, TTaskSchemaDto[]>;
   setTasks: (tasks: Record<string, TTaskSchemaDto[]>) => void;
   isPremiumPlanModalOpen: boolean;
-  setPremiumPlanModalState: () => void;
+  /** Explicit open/close (a toggle called twice closed the modal again). */
+  openPremiumPlanModal: () => void;
+  closePremiumPlanModal: () => void;
 }
 
 const useStore = create<StoreState>((set) => ({
@@ -35,9 +37,8 @@ const useStore = create<StoreState>((set) => ({
   tasks: { listening: [], reading: [], writing: [], speaking: [] },
   setTasks: (tasks: Record<string, TTaskSchemaDto[]>) => set((state) => ({ tasks: tasks ? tasks : state.tasks })),
   isPremiumPlanModalOpen: false,
-  setPremiumPlanModalState: () => {
-    set((state) => ({ isPremiumPlanModalOpen: !state.isPremiumPlanModalOpen }));
-  },
+  openPremiumPlanModal: () => set({ isPremiumPlanModalOpen: true }),
+  closePremiumPlanModal: () => set({ isPremiumPlanModalOpen: false }),
 }));
 
 export default useStore;

@@ -6,11 +6,14 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 export default function OnboardingPage() {
-  const { user, isSignedIn } = useHybridWebUser();
+  const { user, isSignedIn, isLoaded } = useHybridWebUser();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // isSignedIn is false until the session has loaded; don't bounce
+    // signed-in users to /sign-up before then.
+    if (!isLoaded) return;
     if (!isSignedIn) {
       router.push("/sign-up");
       return;
@@ -42,7 +45,7 @@ export default function OnboardingPage() {
     }
 
     setLoading(false);
-  }, [isSignedIn, user, router]);
+  }, [isLoaded, isSignedIn, user, router]);
 
   const applyReferralDiscount = async (referralCode: string) => {
     try {

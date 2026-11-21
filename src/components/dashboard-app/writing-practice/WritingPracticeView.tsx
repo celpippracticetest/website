@@ -150,8 +150,8 @@ const WritingPracticeView = ({
     practice.isFree || hasPaidPracticeAccess(user?.publicMetadata?.plan);
   const [answers, setAnswers] = useState<any[]>([]);
   const [freeAttempts, setFreeAttempts] = useState<number | null>(3);
-  const setPremiumPlanModalState = useStore(
-    (state) => state.setPremiumPlanModalState,
+  const openPremiumPlanModal = useStore(
+    (state) => state.openPremiumPlanModal,
   );
   const openLoginModal = useAuthModalStore((state) => state.setShowLoginModal);
   const completedRef = useRef(false);
@@ -663,7 +663,7 @@ const WritingPracticeView = ({
                                 return;
                               }
                               if (!shouldShowPractice) {
-                                setPremiumPlanModalState();
+                                openPremiumPlanModal();
                                 return;
                               }
                               if (!isSubmit && wordCount > 20) {
@@ -684,7 +684,7 @@ const WritingPracticeView = ({
                           disabled={progressBar > 0}
                           className="flex h-[40px] items-center justify-center text-white text-[14px] font-normal  rounded-[24px] bg-[#4A7DFF] w-full"
                           onClick={() => {
-                            setPremiumPlanModalState();
+                            openPremiumPlanModal();
                           }}
                         >
                           <Gem className="mr-2 h-4 w-4"></Gem>
