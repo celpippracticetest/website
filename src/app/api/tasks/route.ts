@@ -1,9 +1,13 @@
+import { ensureCmsAdmin } from "@/lib/cms/ensure-admin";
 import documentsClient from "@/lib/appDocumentsClient";
 import { TaskSchemaDto, TTaskCategoryEnum, TTaskTypeEnum } from "@/models/tasks.model";
 import { TaskRepository } from "@/repositories/tasks.repo";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
+  // CMS-only: content can be changed (and full exam content read) by admins only.
+  const gate = await ensureCmsAdmin();
+  if (!gate.ok) return gate.response;
   const body = await req.json();
   const taskParser = TaskSchemaDto.omit({ id: true }).safeParse(body);
 

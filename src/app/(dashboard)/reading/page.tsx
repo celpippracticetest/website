@@ -10,6 +10,7 @@ import { PracticeRepository } from "@/repositories/practice.repo";
 import { TaskRepository } from "@/repositories/tasks.repo";
 import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
+import { toPracticeListItem, withoutAnswerKeys } from "@/lib/practicePublic";
 import { ObjectId } from "bson";
 import { redirect, RedirectType } from "next/navigation";
 import SkillGuidePage from "@/components/skill-landing/SkillGuidePage";
@@ -161,6 +162,16 @@ const ReadingPage = async ({
     selectedPractice = await practiceRepo.findPractice(selectedPracticeId);
   }
 
+  // Locked prompt: the browser gets the questions (shown behind the upgrade
+  // overlay) but never the answer key.
+  if (
+    selectedPractice &&
+    !selectedPractice.isFree &&
+    !hasPaidPracticeAccess(user?.publicMetadata?.plan as string | undefined)
+  ) {
+    selectedPractice = withoutAnswerKeys(selectedPractice);
+  }
+
   if (
     selectedPractice &&
     !selectedPractice.isFree &&
@@ -194,7 +205,7 @@ const ReadingPage = async ({
   return (
     <main className=" bg-[#F2F6FF] min-h-screen flex w-full justify-center   ">
       <ReadingPractice
-        allPractices={practices.items}
+        allPractices={practices.items.map(toPracticeListItem)}
         selectedPractice={selectedPractice}
         task={task}
         previousAnswer={answers}

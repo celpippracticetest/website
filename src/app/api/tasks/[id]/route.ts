@@ -1,3 +1,4 @@
+import { ensureCmsAdmin } from "@/lib/cms/ensure-admin";
 import documentsClient from "@/lib/appDocumentsClient";
 import { TaskSchemaDto } from "@/models/tasks.model";
 import { TaskRepository } from "@/repositories/tasks.repo";
@@ -22,6 +23,9 @@ export async function PATCH(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
+  // CMS-only: content can be changed (and full exam content read) by admins only.
+  const gate = await ensureCmsAdmin();
+  if (!gate.ok) return gate.response;
     const { id } = await params;
     const body = await req.json();
 
@@ -46,6 +50,9 @@ export async function DELETE(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
+  // CMS-only: content can be changed (and full exam content read) by admins only.
+  const gate = await ensureCmsAdmin();
+  if (!gate.ok) return gate.response;
     const { id } = await params;
     const taskRepo = new TaskRepository(documentsClient);
     await taskRepo.deleteTask(id);

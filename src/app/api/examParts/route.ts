@@ -1,3 +1,4 @@
+import { ensureCmsAdmin } from "@/lib/cms/ensure-admin";
 import documentsClient from "@/lib/appDocumentsClient";
 import { NextRequest, NextResponse } from "next/server";
 import { ObjectId } from "bson";
@@ -5,6 +6,9 @@ import { ExamPartsRepository } from "@/repositories/examParts.repo";
 import { ExamPartSchemaDto } from "@/models/examParts.model";
 
 export async function POST(req: NextRequest) {
+  // CMS-only: content can be changed (and full exam content read) by admins only.
+  const gate = await ensureCmsAdmin();
+  if (!gate.ok) return gate.response;
   const body = await req.json();
   const practiceParser = ExamPartSchemaDto.omit({ id: true }).safeParse({...body, partId: parseInt(body.partId)});
 
@@ -18,6 +22,9 @@ export async function POST(req: NextRequest) {
 }
 
 export const GET = async function (req: NextRequest) {
+  // CMS-only: content can be changed (and full exam content read) by admins only.
+  const gate = await ensureCmsAdmin();
+  if (!gate.ok) return gate.response;
   const partId: string | null = req.nextUrl.searchParams.get("partId");
   const page: string = req.nextUrl.searchParams.get("page") ?? "0";
   const limit: string = req.nextUrl.searchParams.get("limit") ?? "10";

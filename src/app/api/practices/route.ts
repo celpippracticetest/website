@@ -1,3 +1,5 @@
+import { toPracticeListItem } from "@/lib/practicePublic";
+import { ensureCmsAdmin } from "@/lib/cms/ensure-admin";
 import { PracticeDtoSchema } from "@/models/practice.model";
 import { PracticeRepository } from "@/repositories/practice.repo";
 import documentsClient from "@/lib/appDocumentsClient";
@@ -14,6 +16,9 @@ function optionalBoolFromQuery(v: string | null): boolean | undefined {
 }
 
 export async function POST(req: NextRequest) {
+  // CMS-only: content can be changed (and full exam content read) by admins only.
+  const gate = await ensureCmsAdmin();
+  if (!gate.ok) return gate.response;
   const tracker = new PerformanceTracker("Create Practice Session", "practices_api");
 
   try {
@@ -118,8 +123,15 @@ export const GET = async function (req: NextRequest) {
     trackAPICall("GET", "/api/practices", 200, { count: practices.items?.length || 0 });
     tracker.finish({ success: true, count: practices.items?.length || 0 });
 
+    // Full prompts (passages, questions, answer keys) are for the CMS only.
+    // Other callers (practice overview, task lists) only need ids and names.
+    const isAdmin = (await ensureCmsAdmin()).ok;
+    const items = isAdmin
+      ? practices.items
+      : practices.items.map(toPracticeListItem);
+
     return NextResponse.json(
-      { ...practices, filters: { type, isFree } },
+      { ...practices, items, filters: { type, isFree } },
       { status: 200 }
     );
   } catch (error) {

@@ -9,6 +9,7 @@ import { TaskRepository } from "@/repositories/tasks.repo";
 import { WritingAndSpeakingAnswerRepository } from "@/repositories/writingAndSpeakingAnswers.repo";
 import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
+import { toPracticeListItem } from "@/lib/practicePublic";
 import { ObjectId } from "bson";
 import { redirect, RedirectType } from "next/navigation";
 import SkillGuidePage from "@/components/skill-landing/SkillGuidePage";
@@ -188,7 +189,7 @@ const SpeakingPage = async ({
     <main className=" bg-[#F2F6FF] min-h-screen flex w-full justify-center ">
       <SpeakingPractice
         showHeader={true}
-        allPractices={practices.items}
+        allPractices={practices.items.map(toPracticeListItem)}
         selectedPractice={selectedPractice}
         task={task}
         completedPracticeId={completedPracticeId}
