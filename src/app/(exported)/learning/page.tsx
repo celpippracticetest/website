@@ -42,6 +42,10 @@ interface Message {
   timestamp: Date;
 }
 
+/** Suggestions that need the user's own results (hidden for guests). */
+const PERSONAL_PROMPT =
+  /\b(my last|my recent|my results|my mock exam results|my top \d|my weakest|Based on my)\b/i;
+
 const Page = () => {
   const [isInConversation, setIsInConversation] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -824,12 +828,15 @@ const Page = () => {
             <div className="bg-white rounded-[16px] p-4 shadow-[0px_8px_24px_rgba(55,70,92,0.12)]">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-[12px] font-medium text-[#111827]">
-                  {skills[openIndex].popoverLabel}
+                  {noUser ? null : skills[openIndex].popoverLabel}
                 </h3>
               </div>
 
               <div className="mt-[20px] flex flex-col gap-[12px]">
-                {skills[openIndex]?.description?.map((d, i) => (
+                {skills[openIndex]?.description
+                  // Guests have no results yet, so skip "my last test…" prompts.
+                  ?.filter((d) => !noUser || !PERSONAL_PROMPT.test(d))
+                  .map((d, i) => (
                   <button
                     key={i}
                     type="button"

@@ -109,8 +109,12 @@ const ExamOverview = ({
         <div className="flex flex-wrap w-full gap-[16px] pb-[10px]">
           {exams.map((exam: TExamSchemaDto, i: number) => {
             const freeExam = isFreeGuestMockExam(exam);
+            // Guests see the Premium badge too (they used to find out only
+            // after picking a section). Start still opens the login popup.
             const locked =
-              isLoaded && isSignedIn && !freeExam && !canAccessExam(exam.id);
+              isLoaded &&
+              !freeExam &&
+              (!isSignedIn || !canAccessExam(exam.id));
             const progress = progressByExamId[exam.id];
             const hasProgress = Boolean(
               progress && progress.completedParts > 0,
