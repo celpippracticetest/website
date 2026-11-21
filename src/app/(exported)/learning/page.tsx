@@ -280,6 +280,15 @@ const Page = () => {
     });
   };
 
+  // Enter sends (like other chat apps); Shift+Enter adds a new line. Skip
+  // while an IME is composing (e.g. Persian/Chinese input) so Enter can
+  // confirm the composition.
+  const submitOnEnter = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key !== "Enter" || e.shiftKey || e.nativeEvent.isComposing) return;
+    e.preventDefault();
+    e.currentTarget.form?.requestSubmit();
+  };
+
   const handleSendMessage = async () => {
     if (!text.trim() || isLoading) return;
 
@@ -646,6 +655,7 @@ const Page = () => {
                       ref={textareaRef}
                       value={text}
                       onChange={(e) => setText(e.target.value)}
+                      onKeyDown={submitOnEnter}
                       placeholder={
                         isChatLocked && (isFreeUser || noUser)
                           ? "Upgrade to Pro to continue chatting..."
@@ -728,6 +738,7 @@ const Page = () => {
                     ref={textareaRef}
                     value={text}
                     onChange={(e) => setText(e.target.value)}
+                    onKeyDown={submitOnEnter}
                     placeholder={
                       isChatLocked && (isFreeUser || noUser)
                         ? "Upgrade to Pro to continue chatting..."
