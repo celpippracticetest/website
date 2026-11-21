@@ -1,3 +1,4 @@
+import { ensureCmsAdmin } from "@/lib/cms/ensure-admin";
 import documentsClient from "@/lib/appDocumentsClient";
 import { BlogWriteSchema } from "@/models/blog.model";
 import { BlogRepository } from "@/repositories/blog.repo";
@@ -39,6 +40,9 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // CMS-only: content can be changed (and full exam content read) by admins only.
+  const gate = await ensureCmsAdmin();
+  if (!gate.ok) return gate.response;
   try {
     const { id } = await params;
     if (!isValidObjectId(id)) {
@@ -75,6 +79,9 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // CMS-only: content can be changed (and full exam content read) by admins only.
+  const gate = await ensureCmsAdmin();
+  if (!gate.ok) return gate.response;
   try {
     const { id } = await params;
     if (!isValidObjectId(id)) {

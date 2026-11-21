@@ -530,11 +530,8 @@ const WritingExamView = ({
                           placeholder="Type your response here..."
                           value={text}
                           onChange={(e) => {
-                            if (!freeMock && !user) {
-                              setPremiumPlanModalState();
-                            } else if (!shouldShowPractice) {
-                              setPremiumPlanModalState();
-                            }
+                            // Access is checked on Submit. Opening the pricing modal
+                            // here toggled it on every keystroke.
                             setTryToSubmit(false);
                             const wordCount = e.target.value
                               .trim()

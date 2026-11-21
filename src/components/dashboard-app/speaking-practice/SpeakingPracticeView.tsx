@@ -8,6 +8,7 @@ import ListeningAnswerList from "./components/ListeningAnswers";
 import { TPassage } from "@/models/listenExam.model";
 import { useEffect } from "react";
 import useStore from "@/store";
+import { useAuthModalStore } from "@/store/useAuthModal.store";
 
 import { cn } from "@/lib/utils";
 import { useRouter } from "nextjs-toploader/app";
@@ -124,6 +125,7 @@ const SpeakingPracticeView = ({
   const setPremiumPlanModalState = useStore(
     (state) => state.setPremiumPlanModalState,
   );
+  const openLoginModal = useAuthModalStore((state) => state.setShowLoginModal);
   const completedRef = useRef(false);
   const retakesRef = useRef(0);
   const scoringRetryRef = useRef(0);
@@ -261,7 +263,11 @@ const SpeakingPracticeView = ({
   const startRecording = async () => {
     try {
       if (!user) {
-        setPremiumPlanModalState();
+        // Guests need a (free) account to record and be scored, not a paid plan.
+        openLoginModal(
+          true,
+          "Create a free account to record your answer and get your AI score.",
+        );
         return;
       }
       if (!shouldShowPractice) {

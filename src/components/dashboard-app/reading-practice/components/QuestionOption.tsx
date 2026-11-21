@@ -30,7 +30,10 @@ const QuestionOption = ({
     <label
       htmlFor={inputId}
       className={cn(
-        "cursor-pointer min-h-[36px] pb-[10px] pl-[4px] flex items-center text-[14px] text-[#212E42] rounded-[8px] leading-[20px]",
+        // `relative` keeps the sr-only radio inside this label. Without it the
+        // radio is positioned against a far-off ancestor, and focusing it on
+        // click scrolls the whole page ("the page jumps").
+        "relative cursor-pointer min-h-[36px] pb-[10px] pl-[4px] flex items-center text-[14px] text-[#212E42] rounded-[8px] leading-[20px]",
         isSelected ? "bg-[#F2F6FF]" : "",
         showResults && isCorrect ? "border-green-400 bg-white" : "",
         isWrongSelection ? "border-red-400 bg-white" : "",

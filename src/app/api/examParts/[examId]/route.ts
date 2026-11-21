@@ -1,3 +1,4 @@
+import { ensureCmsAdmin } from "@/lib/cms/ensure-admin";
 import { PracticeRepository } from "@/repositories/practice.repo";
 import { NextRequest, NextResponse } from "next/server";
 import documentsClient from "@/lib/appDocumentsClient";
@@ -7,6 +8,9 @@ import { ExamPartsRepository } from "@/repositories/examParts.repo";
 import { ExamPartSchemaDto } from "@/models/examParts.model";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ examId: string }> }) {
+  // CMS-only: content can be changed (and full exam content read) by admins only.
+  const gate = await ensureCmsAdmin();
+  if (!gate.ok) return gate.response;
   const { examId } = await params;
   const examPartRepo = new ExamPartsRepository(documentsClient);
   const practice = await examPartRepo.findById(examId);
@@ -14,6 +18,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ exam
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ examId: string }> }) {
+  // CMS-only: content can be changed (and full exam content read) by admins only.
+  const gate = await ensureCmsAdmin();
+  if (!gate.ok) return gate.response;
   const { examId } = await params;
   const examPartRepo = new ExamPartsRepository(documentsClient);
   await examPartRepo.deletePractice(examId);
@@ -21,6 +28,9 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ e
 }
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ examId: string }> }) {
+  // CMS-only: content can be changed (and full exam content read) by admins only.
+  const gate = await ensureCmsAdmin();
+  if (!gate.ok) return gate.response;
   const { examId } = await params;
   const body = await req.json();
   const practiceParser = ExamPartSchemaDto.omit({ id: true }).safeParse({...body, partId: parseInt(body.partId)});

@@ -1,3 +1,5 @@
+import { toPracticeListItem } from "@/lib/practicePublic";
+import { ensureCmsAdmin } from "@/lib/cms/ensure-admin";
 import { PracticeRepository } from "@/repositories/practice.repo";
 import { NextRequest, NextResponse } from "next/server";
 import documentsClient from "@/lib/appDocumentsClient";
@@ -13,6 +15,11 @@ export async function GET(
   if (!practice) {
     return NextResponse.json({ item: null }, { status: 404 });
   }
+  // Free prompts are public anyway; the full content of paid prompts
+  // (passages, questions, answer keys) is for the CMS only.
+  if (!practice.isFree && !(await ensureCmsAdmin()).ok) {
+    return NextResponse.json({ item: toPracticeListItem(practice) }, { status: 200 });
+  }
   return NextResponse.json({ item: practice }, { status: 200 });
 }
 
@@ -20,6 +27,9 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ practiceId: string }> }
 ) {
+  // CMS-only: content can be changed (and full exam content read) by admins only.
+  const gate = await ensureCmsAdmin();
+  if (!gate.ok) return gate.response;
   const { practiceId } = await params;
   const practiceRepo = new PracticeRepository(documentsClient);
   await practiceRepo.deletePractice(practiceId);
@@ -30,6 +40,9 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ practiceId: string }> }
 ) {
+  // CMS-only: content can be changed (and full exam content read) by admins only.
+  const gate = await ensureCmsAdmin();
+  if (!gate.ok) return gate.response;
   const { practiceId } = await params;
   const body = await req.json();
   const practiceParser = PracticeDtoSchema.omit({ id: true }).safeParse(body);

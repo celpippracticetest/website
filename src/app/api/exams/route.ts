@@ -1,3 +1,4 @@
+import { ensureCmsAdmin } from "@/lib/cms/ensure-admin";
 import documentsClient from "@/lib/appDocumentsClient";
 import { NextRequest, NextResponse } from "next/server";
 import { ExamRepository } from "@/repositories/exams.repo";
@@ -22,6 +23,9 @@ export const GET = async function (req: NextRequest) {
 };
 
 export const DELETE = async function (req: NextRequest) {
+  // CMS-only: content can be changed (and full exam content read) by admins only.
+  const gate = await ensureCmsAdmin();
+  if (!gate.ok) return gate.response;
   try {
     const body = await req.json();
     if (!body._id || typeof body._id !== "string") {
@@ -71,6 +75,9 @@ export const DELETE = async function (req: NextRequest) {
 };
 
 export const POST = async function (req: NextRequest) {
+  // CMS-only: content can be changed (and full exam content read) by admins only.
+  const gate = await ensureCmsAdmin();
+  if (!gate.ok) return gate.response;
   try {
     const body = await req.json();
     // Basic validation
@@ -134,6 +141,9 @@ export const POST = async function (req: NextRequest) {
 };
 
 export const PUT = async function (req: NextRequest) {
+  // CMS-only: content can be changed (and full exam content read) by admins only.
+  const gate = await ensureCmsAdmin();
+  if (!gate.ok) return gate.response;
   try {
     const body = await req.json();
 

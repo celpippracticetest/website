@@ -10,6 +10,7 @@ import { PracticeRepository } from "@/repositories/practice.repo";
 import { TaskRepository } from "@/repositories/tasks.repo";
 import { getHybridCurrentUser } from "@/lib/auth/web-session-server";
 import { hasPaidPracticeAccess } from "@/lib/subscriptionAccess";
+import { toPracticeListItem } from "@/lib/practicePublic";
 import { ObjectId } from "bson";
 import { redirect, RedirectType } from "next/navigation";
 import SkillGuidePage from "@/components/skill-landing/SkillGuidePage";
@@ -199,7 +200,7 @@ const DashboardApp = async ({
       <div className="w-full">
         <ListeningPractice
           showHeader={true}
-          allPractices={practices.items}
+          allPractices={practices.items.map(toPracticeListItem)}
           selectedPractice={selectedPractice}
           task={task}
           previousAnswer={answers}
