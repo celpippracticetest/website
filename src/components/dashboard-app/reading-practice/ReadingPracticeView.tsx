@@ -325,19 +325,21 @@ const ReadingPracticeView = ({
   );
   const isLastPractice = practiceIndex >= allPractices.length - 1;
 
+  // Guests can submit too: results are worked out in the browser. Only
+  // signed-in users' answers are saved (the answers API needs a login).
   const handleSubmitAndSeeResult = async () => {
-    if (!user) return;
     setPage("answer");
   };
 
   const handleSubmitAndNext = async () => {
-    if (!user) return;
-    await submitObjectivePracticeAnswers({
-      practiceId: practice.id,
-      answers: selectedAnswers,
-      skill: "Reading",
-      timeRemaining: time,
-    });
+    if (user) {
+      await submitObjectivePracticeAnswers({
+        practiceId: practice.id,
+        answers: selectedAnswers,
+        skill: "Reading",
+        timeRemaining: time,
+      });
+    }
 
     if (practiceIndex < allPractices.length - 1) {
       setPage("question");
@@ -396,7 +398,7 @@ const ReadingPracticeView = ({
                   onSubmitAndNext={handleSubmitAndNext}
                   onSubmitAndSeeResult={handleSubmitAndSeeResult}
                   showSubmitAndNext={!isLastPractice}
-                  disabled={!user || Object.keys(selectedAnswers).length === 0}
+                  disabled={Object.keys(selectedAnswers).length === 0}
                 />
                 <div className="flex items-center gap-2 justify-end ml-[5px] pl-[32px] pb-[10px] screen1280:!pb-[0]">
                   {shouldShowPractice && page === "question" && (

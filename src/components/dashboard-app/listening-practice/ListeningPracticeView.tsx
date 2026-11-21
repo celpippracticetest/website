@@ -304,12 +304,15 @@ const ListeningPracticeView = ({
   };
 
   const handleSubmitAndNext = async () => {
-    await submitObjectivePracticeAnswers({
-      practiceId: practice.id,
-      answers: selectedAnswers,
-      skill: "Listening",
-      timeRemaining: time,
-    });
+    // Only signed-in users' answers are saved (the answers API needs a login).
+    if (user) {
+      await submitObjectivePracticeAnswers({
+        practiceId: practice.id,
+        answers: selectedAnswers,
+        skill: "Listening",
+        timeRemaining: time,
+      });
+    }
 
     if (practiceIndex < allPractices.length - 1) {
       setPage("instructions");
@@ -402,9 +405,7 @@ const ListeningPracticeView = ({
                     onSubmitAndNext={handleSubmitAndNext}
                     onSubmitAndSeeResult={handleSubmitAndSeeResult}
                     showSubmitAndNext={!isLastPractice}
-                    disabled={
-                      !user || Object.keys(selectedAnswers).length === 0
-                    }
+                    disabled={Object.keys(selectedAnswers).length === 0}
                   />
                 )}
                 {page === "question" && (
