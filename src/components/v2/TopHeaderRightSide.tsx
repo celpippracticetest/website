@@ -9,8 +9,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 const TopHeaderRightSide = () => {
-  const setPremiumPlanModalState = useStore(
-    (state) => state.setPremiumPlanModalState,
+  const openPremiumPlanModal = useStore(
+    (state) => state.openPremiumPlanModal,
   );
   const { user, isLoaded, isSignedIn } = useHybridWebUser();
   const hasActivePlan = hasPaidPracticeAccess(user?.publicMetadata?.plan);
@@ -31,7 +31,7 @@ const TopHeaderRightSide = () => {
           {showPricing && (
             <button
               type="button"
-              onClick={() => setPremiumPlanModalState()}
+              onClick={() => openPremiumPlanModal()}
               aria-label="Open pricing"
               className={cn(
                 "group/pricing relative z-[1] flex items-center gap-[6px] h-10 px-3 screen744:!px-4",

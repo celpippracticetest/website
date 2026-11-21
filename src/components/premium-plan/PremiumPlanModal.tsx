@@ -5,12 +5,12 @@ import { PremiumPaywallOverlay } from "@/components/premium-plan/PremiumPaywallO
 
 const PremiumPlanModal = () => {
   const isOpen = useStore((state) => state.isPremiumPlanModalOpen);
-  const toggle = useStore((state) => state.setPremiumPlanModalState);
+  const close = useStore((state) => state.closePremiumPlanModal);
 
   return (
     <PremiumPaywallOverlay
       open={isOpen}
-      onClose={toggle}
+      onClose={close}
       triggerSource="premium_plan_modal"
     />
   );

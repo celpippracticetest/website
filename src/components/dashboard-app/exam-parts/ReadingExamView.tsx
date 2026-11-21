@@ -86,8 +86,8 @@ const ReadingExamView = ({
   ]);
   const restoredRef = useRef(false);
   const [sessionHydrated, setSessionHydrated] = useState(false);
-  const setPremiumPlanModalState = useStore(
-    (state) => state.setPremiumPlanModalState,
+  const openPremiumPlanModal = useStore(
+    (state) => state.openPremiumPlanModal,
   );
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
@@ -526,7 +526,7 @@ const ReadingExamView = ({
                               if (shouldShowPractice) {
                                 handleAnswerSelect(questionId, answerId);
                               } else {
-                                setPremiumPlanModalState();
+                                openPremiumPlanModal();
                               }
                             }}
                             selectedAnswers={selectedAnswers}
@@ -608,7 +608,7 @@ const ReadingExamView = ({
                                                             choice.id,
                                                           );
                                                         } else {
-                                                          setPremiumPlanModalState();
+                                                          openPremiumPlanModal();
                                                         }
                                                       }}
                                                     >
@@ -704,7 +704,7 @@ const ReadingExamView = ({
                                     answerId,
                                   );
                                 } else {
-                                  setPremiumPlanModalState();
+                                  openPremiumPlanModal();
                                 }
                               }}
                               selectedAnswers={selectedAnswers}

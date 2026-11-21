@@ -3,8 +3,8 @@ import { useHybridWebUser } from "@/hooks/useHybridWebUser";
 import { LockOpen } from "lucide-react";
 
 export default function ChangePlan() {
-  const setPremiumPlanModalState = useStore(
-    (state) => state.setPremiumPlanModalState
+  const openPremiumPlanModal = useStore(
+    (state) => state.openPremiumPlanModal
   );
   const { user } = useHybridWebUser();
   return (
@@ -26,7 +26,7 @@ export default function ChangePlan() {
         (user && user.publicMetadata.plan === "free" && (
           <button
             onClick={() => {
-              setPremiumPlanModalState();
+              openPremiumPlanModal();
             }}
             className="inline-flex items-center justify-center whitespace-nowrap text-[14px] ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 main-btn transition-all rounded-xl h-10 px-4 py-2 font-semibold bg-[#3ebbf3] hover:bg-[#3ebbf3]/70 border-gray-400 text-white hover:text-white cursor-pointer"
           >

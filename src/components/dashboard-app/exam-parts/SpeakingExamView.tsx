@@ -88,8 +88,8 @@ const SpeakingExamView = ({
 
   const [errorAccessingMicrophone, setErrorAccessingMicrophone] =
     useState(false);
-  const setPremiumPlanModalState = useStore(
-    (state) => state.setPremiumPlanModalState,
+  const openPremiumPlanModal = useStore(
+    (state) => state.openPremiumPlanModal,
   );
 
   useEffect(() => {
@@ -104,7 +104,7 @@ const SpeakingExamView = ({
   const startRecording = async () => {
     try {
       if (!user && !freeMock) {
-        setPremiumPlanModalState();
+        openPremiumPlanModal();
         return;
       }
 

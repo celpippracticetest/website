@@ -122,8 +122,8 @@ const SpeakingPracticeView = ({
   const [freeAttempts, setFreeAttempts] = useState<number | null>(3);
   const [errorAccessingMicrophone, setErrorAccessingMicrophone] =
     useState(false);
-  const setPremiumPlanModalState = useStore(
-    (state) => state.setPremiumPlanModalState,
+  const openPremiumPlanModal = useStore(
+    (state) => state.openPremiumPlanModal,
   );
   const openLoginModal = useAuthModalStore((state) => state.setShowLoginModal);
   const completedRef = useRef(false);
@@ -271,7 +271,7 @@ const SpeakingPracticeView = ({
         return;
       }
       if (!shouldShowPractice) {
-        setPremiumPlanModalState();
+        openPremiumPlanModal();
         return;
       }
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
