@@ -291,7 +291,8 @@ const SpeakingPracticeView = ({
 
       mediaRecorderRef.current.onstop = () => {
         setProgressBar(0);
-        setRecordingTime(90);
+        // Reset to this task's limit (was a flat 90s, so retries of 60s tasks got 90s).
+        setRecordingTime(recordingTimePerTask[practice.taskId.toString()] ?? 60);
         const blob = new Blob(audioChunks.current, { type: "audio/m4a" });
         const url = URL.createObjectURL(blob);
         setAudioURL(url);

@@ -51,8 +51,8 @@ const SpeakingExamView = ({
   const [passageIndex, setPassageIndex] = useState(0);
 
   const preparationSeconds = partId == 17 || partId == 18 ? 60 : 30;
-  const recordingSeconds =
-    partId === 13 || partId === 18 || partId === 19 ? 90 : 60;
+  // Speaking parts 13-20 = Tasks 1-8. Only Task 1 (13) and Task 7 (19) get 90s; Task 6 (18) is 60s.
+  const recordingSeconds = partId === 13 || partId === 19 ? 90 : 60;
   const [time, setTime] = useState(preparationSeconds);
   const [recordingTime, setRecordingTime] = useState(recordingSeconds);
 
