@@ -26,6 +26,7 @@ import {
 } from "@/lib/accountSharingMiddleware";
 import { refreshSupabaseSessionFromRequest } from "@/lib/supabase/middleware-session";
 import { NOINDEX_X_ROBOTS_TAG } from "@/lib/searchIndexing";
+import { isGoneBlogPath } from "@/lib/blog/retiredBlogSlugs";
 
 const isAdminRoute = (req: NextRequest) => req.nextUrl.pathname.startsWith("/cms");
 
@@ -66,7 +67,21 @@ const NOINDEX_PATHS = new Set([
 const REFERRAL_CREATE_COOLDOWN_COOKIE = "referralCodeCreateCooldown";
 const REFERRAL_CREATE_COOLDOWN_SECONDS = 60;
 
+const GONE_BLOG_HTML = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Article removed | CELPIP Practice Test</title></head><body style="font-family:system-ui,sans-serif;max-width:560px;margin:80px auto;padding:0 16px;color:#212E42;text-align:center"><h1 style="font-size:24px">This article has been removed</h1><p style="color:#76808F">It is no longer available.</p><p><a href="/blog" style="color:#4A7DFF">Browse the blog</a> &middot; <a href="/practice-overview" style="color:#4A7DFF">Practice tests</a></p></body></html>`;
+
 export default async function middleware(req: NextRequest) {
+  // Deleted blog posts: 410 Gone so search engines drop them for good.
+  if (isGoneBlogPath(req.nextUrl.pathname)) {
+    return new NextResponse(GONE_BLOG_HTML, {
+      status: 410,
+      headers: {
+        "Content-Type": "text/html; charset=utf-8",
+        "X-Robots-Tag": "noindex",
+        "Cache-Control": "public, max-age=3600",
+      },
+    });
+  }
+
   let setReferralCreateCooldown = false;
   let clearPendingReferralCookie = false;
 

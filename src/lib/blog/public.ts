@@ -2,6 +2,11 @@ import { cache } from "react";
 import documentsClient from "@/lib/appDocumentsClient";
 import { TBlogSchemaDto } from "@/models/blog.model";
 import { BlogRepository } from "@/repositories/blog.repo";
+import {
+  GONE_BLOG_SLUGS,
+  RETIRED_BLOG_REDIRECTS,
+  resolveRetiredBlogPath,
+} from "@/lib/blog/retiredBlogSlugs";
 
 /** Typo / retired CMS slugs → permanent redirect targets. */
 const LEGACY_BLOG_SLUG_REDIRECTS: Record<string, string> = {
@@ -12,14 +17,21 @@ const LEGACY_BLOG_SLUG_REDIRECTS: Record<string, string> = {
   "celpip-vs-ielts-format-fees-scoring": "/blog/celpip-vs-ieltes",
 };
 
-const NON_INDEXABLE_LEGACY_BLOG_SLUGS = new Set(Object.keys(LEGACY_BLOG_SLUG_REDIRECTS));
+const NON_INDEXABLE_LEGACY_BLOG_SLUGS = new Set([
+  ...Object.keys(LEGACY_BLOG_SLUG_REDIRECTS),
+  ...Object.keys(RETIRED_BLOG_REDIRECTS),
+  ...GONE_BLOG_SLUGS,
+]);
 
 export function isIndexablePublishedBlogSlug(slug: string): boolean {
   return !NON_INDEXABLE_LEGACY_BLOG_SLUGS.has(slug.trim().toLowerCase());
 }
 
 export function getLegacyBlogSlugRedirect(slug: string): string | null {
-  return LEGACY_BLOG_SLUG_REDIRECTS[slug.trim().toLowerCase()] ?? null;
+  const key = slug.trim().toLowerCase();
+  const target = LEGACY_BLOG_SLUG_REDIRECTS[key] ?? RETIRED_BLOG_REDIRECTS[key] ?? null;
+  // Follow one hop so a legacy slug lands on the final page.
+  return target ? resolveRetiredBlogPath(target) : null;
 }
 
 export async function getPublishedBlogPosts(

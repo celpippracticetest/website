@@ -1,5 +1,9 @@
 import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
+import {
+  RETIRED_BLOG_REDIRECTS,
+  resolveRetiredBlogPath,
+} from "./src/lib/blog/retiredBlogSlugs";
 
 const withBundleAnalyzer = require("@next/bundle-analyzer")({
   enabled: process.env.ANALYZE === "true",
@@ -202,7 +206,14 @@ const nextConfig: NextConfig = {
       ["/wiki/celpip-writing-task-2-template", "/blog/celpip-writing-task-2-template"],
       ["/wiki/mastering-hardest-celpip-questions", "/blog/hardest-celpip-questions"],
       ["/wiki/celpip-practice-test", "/"],
-    ].map(([source, destination]) => ({ source, destination, permanent: true }));
+      // Retired blog posts (SEO sheet "Blog-Redirections", Nov 2026).
+      ...Object.entries(RETIRED_BLOG_REDIRECTS).map(([slug, to]) => [`/blog/${slug}`, to]),
+    ].map(([source, destination]) => ({
+      source,
+      // Point older redirects straight at the final page (no 301 chains).
+      destination: resolveRetiredBlogPath(destination),
+      permanent: true,
+    }));
     return fixes;
   },
 
