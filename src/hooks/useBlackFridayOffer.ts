@@ -24,7 +24,30 @@ function fetchEligibility(key: string): Promise<boolean> {
   return pending;
 }
 
+/**
+ * `?bf_preview=1` shows the sale design to anyone (kept for the browser
+ * session; `?bf_preview=0` clears it). Display only: checkout still checks
+ * the real IP country and purchase history, so it never grants the discount.
+ */
+function readDesignPreview(): boolean {
+  try {
+    const q = new URLSearchParams(window.location.search).get("bf_preview");
+    if (q === "1") sessionStorage.setItem("bf26_preview", "1");
+    if (q === "0") sessionStorage.removeItem("bf26_preview");
+    return sessionStorage.getItem("bf26_preview") === "1";
+  } catch {
+    return false;
+  }
+}
+
 export function useBlackFridayOffer(): { eligible: boolean } {
+  const [designPreview, setDesignPreview] = useState(false);
+  useEffect(() => setDesignPreview(readDesignPreview()), []);
+  const real = useRealBlackFridayOffer();
+  return { eligible: real.eligible || (designPreview && isBlackFridayActive()) };
+}
+
+function useRealBlackFridayOffer(): { eligible: boolean } {
   const { user, isLoaded } = useHybridWebUser();
   const userKey = isLoaded ? user?.id ?? "guest" : null;
   const [result, setResult] = useState<{ key: string; eligible: boolean } | null>(

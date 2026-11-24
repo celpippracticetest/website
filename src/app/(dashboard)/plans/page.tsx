@@ -24,6 +24,7 @@ import {
   isBlackFridayEligible,
 } from "@/lib/blackFridayServer";
 import { BlackFridayPlansSection } from "@/components/black-friday/BlackFridayPlansSection";
+import { isBlackFridayActive } from "@/lib/blackFriday";
 
 const getIconComponent = (iconType?: string) => {
   switch (iconType) {
@@ -38,7 +39,11 @@ const getIconComponent = (iconType?: string) => {
   }
 };
 
-const Plans = async () => {
+const Plans = async ({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) => {
   const hybridUser = await getHybridCurrentUser();
   const user = hybridUser?.user ?? null;
   const db = await documentsClient.db();
@@ -60,7 +65,10 @@ const Plans = async () => {
   const currentPlanTitle = prevCheckout?.lineItems?.[0]?.description || "";
 
   // Black Friday 2026 (TEMPORARY, revert Mon 2026-11-30).
+  // `?bf_preview=1` = design preview only; checkout still re-checks eligibility.
+  const bfPreview = (await searchParams)?.bf_preview === "1";
   if (
+    (bfPreview && isBlackFridayActive()) ||
     await isBlackFridayEligible({
       country: countryFromRequestHeaders(await headers()) ?? country,
       userId: user?.id ?? null,
