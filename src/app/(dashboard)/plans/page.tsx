@@ -18,6 +18,12 @@ import SvgPopularPlan from "@/components/icons/PopularPlan";
 import SvgFreePlan from "@/components/icons/FreePlan";
 
 import React from "react";
+// Black Friday 2026 (TEMPORARY, revert Mon 2026-11-30)
+import {
+  countryFromRequestHeaders,
+  isBlackFridayEligible,
+} from "@/lib/blackFridayServer";
+import { BlackFridayPlansSection } from "@/components/black-friday/BlackFridayPlansSection";
 
 const getIconComponent = (iconType?: string) => {
   switch (iconType) {
@@ -52,6 +58,17 @@ const Plans = async () => {
   ]);
 
   const currentPlanTitle = prevCheckout?.lineItems?.[0]?.description || "";
+
+  // Black Friday 2026 (TEMPORARY, revert Mon 2026-11-30).
+  if (
+    await isBlackFridayEligible({
+      country: countryFromRequestHeaders(await headers()) ?? country,
+      userId: user?.id ?? null,
+      metadata: (user?.publicMetadata ?? null) as { hasEverPurchased?: unknown } | null,
+    })
+  ) {
+    return <BlackFridayPlansSection />;
+  }
 
   return (
     <>

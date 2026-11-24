@@ -13,8 +13,12 @@ import type { SerializedPlan } from "@/types/pricing";
 import { trackKpi } from "@/lib/analytics";
 import { usePlanDiscountPercent } from "@/hooks/usePlanDiscountAb";
 import { PlanDiscountExposure } from "@/components/analytics/PlanDiscountExposure";
+// Black Friday 2026 (TEMPORARY, revert Mon 2026-11-30)
+import { useBlackFridayOffer } from "@/hooks/useBlackFridayOffer";
+import { BLACK_FRIDAY_PERCENT } from "@/lib/blackFriday";
+import { BlackFridayPricingHero } from "@/components/black-friday/BlackFridayPricingHero";
 
-function toSerializedPlans(plans: unknown[]): SerializedPlan[] {
+export function toSerializedPlans(plans: unknown[]): SerializedPlan[] {
   return plans.map((raw) => {
     const plan = raw as Record<string, unknown>;
     return {
@@ -62,7 +66,9 @@ export function PremiumPaywallOverlay({
   triggerSource = "premium_plan_modal",
 }: PremiumPaywallOverlayProps) {
   const { plans, isLoading } = usePlans();
-  const discountPercent = usePlanDiscountPercent();
+  const abDiscountPercent = usePlanDiscountPercent();
+  const { eligible: blackFriday } = useBlackFridayOffer();
+  const discountPercent = blackFriday ? BLACK_FRIDAY_PERCENT : abDiscountPercent;
   const serializedPlans = useMemo(() => toSerializedPlans(plans), [plans]);
 
   useEffect(() => {
@@ -110,10 +116,14 @@ export function PremiumPaywallOverlay({
             <div className="custom-scrollbar flex-1 overflow-y-auto px-6 py-10 screen744:px-10">
               <div className="mx-auto flex w-full max-w-[1060px] flex-col items-center">
                 <PlanDiscountExposure surface={triggerSource} />
-                <PricingBrandHeader
-                  titleTag="h2"
-                  discountPercent={discountPercent}
-                />
+                {blackFriday ? (
+                  <BlackFridayPricingHero titleTag="h2" />
+                ) : (
+                  <PricingBrandHeader
+                    titleTag="h2"
+                    discountPercent={discountPercent}
+                  />
+                )}
 
                 {isLoading ? (
                   <p className="mt-10 text-sm text-[#5b6575]">Loading plans…</p>
@@ -127,6 +137,7 @@ export function PremiumPaywallOverlay({
                     featuredPlan="Monthly"
                     showPerWeek
                     discountPercent={discountPercent}
+                    blackFriday={blackFriday}
                   />
                 )}
 

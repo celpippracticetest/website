@@ -8,6 +8,10 @@ import { PricingBrandPlansSection } from "@/components/pages/pricing/brand/Prici
 import { PricingBrandFaqSection } from "@/components/pages/pricing/brand/PricingBrandFaqSection";
 import { applySitewideDiscount } from "@/lib/sitewidePlanDiscount";
 import type { SerializedPlan } from "@/types/pricing";
+// Black Friday 2026 (TEMPORARY, revert Mon 2026-11-30)
+import { useBlackFridayOffer } from "@/hooks/useBlackFridayOffer";
+import { BLACK_FRIDAY_PERCENT } from "@/lib/blackFriday";
+import { BlackFridayPricingHero } from "@/components/black-friday/BlackFridayPricingHero";
 
 function parsePrice(raw?: string): number {
   if (!raw) return 0;
@@ -26,8 +30,10 @@ export default function PricingPageClient({
   plans,
   pricingAbLayout,
   pricingAbParticipatesInExperiment,
-  planDiscountPercent = 0,
+  planDiscountPercent: abDiscountPercent = 0,
 }: PricingPageClientProps) {
+  const { eligible: blackFriday } = useBlackFridayOffer();
+  const planDiscountPercent = blackFriday ? BLACK_FRIDAY_PERCENT : abDiscountPercent;
   const pricingCheckoutFields = useMemo(() => {
     if (!pricingAbParticipatesInExperiment) return undefined;
     return { pricing_ab_layout: pricingAbLayout };
@@ -68,13 +74,18 @@ export default function PricingPageClient({
   return (
     <div className="flex min-h-[calc(100vh-64px)] flex-col items-center bg-[#eef2f8] px-6 pb-[72px] pt-14 box-border">
       <div className="flex w-full max-w-[1060px] flex-col items-center">
-        <PricingBrandHeader discountPercent={planDiscountPercent} />
+        {blackFriday ? (
+          <BlackFridayPricingHero titleTag="h1" />
+        ) : (
+          <PricingBrandHeader discountPercent={planDiscountPercent} />
+        )}
         <PricingBrandPlansSection
           plans={plans}
           pricingCheckoutFields={pricingCheckoutFields}
           featuredPlan="Monthly"
           showPerWeek
           discountPercent={planDiscountPercent}
+          blackFriday={blackFriday}
         />
         <div className="mt-16 w-full">
           <PricingBrandFaqSection />

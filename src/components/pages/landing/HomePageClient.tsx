@@ -1,6 +1,7 @@
 "use client";
 
 import { ErrorBoundary } from "react-error-boundary";
+import { BlackFridayHomeBar } from "@/components/black-friday/BlackFridayHomeBar";
 import dynamic from "next/dynamic";
 import Practice from "./Practice";
 import SkillsSection from "./SkillsSection";
@@ -45,7 +46,9 @@ export default function HomePageClient({
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       {/* Handoff focus ring for every link and button: 3px #759CFF, 2px offset */}
       <div className="bg-[#F4F7FF] [-webkit-tap-highlight-color:transparent] [&_section]:scroll-mt-[96px] [&_:is(a,button):focus-visible]:outline-3 [&_:is(a,button):focus-visible]:outline-solid [&_:is(a,button):focus-visible]:outline-[#759CFF] [&_:is(a,button):focus-visible]:outline-offset-2">
-        <main>
+        {/* Black Friday 2026 (TEMPORARY, revert Mon 2026-11-30) */}
+        <BlackFridayHomeBar />
+        <main className="pt-[var(--bf26-bar-h,0px)]">
           <Hero />
           <SkillsSection />
           <UserResponseReview />

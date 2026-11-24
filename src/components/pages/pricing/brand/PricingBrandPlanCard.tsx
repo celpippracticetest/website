@@ -21,6 +21,10 @@ type PricingBrandPlanCardProps = {
   perWeekEquivalent?: string;
   saveLabel?: string | null;
   saleLabel?: string | null;
+  /** Black Friday 2026 (temporary): "You save C$10.00" under the price. */
+  savingsLabel?: string | null;
+  /** Black Friday 2026 (temporary): red sale chip + "Get 50% Off" button. */
+  blackFriday?: boolean;
   plan?: SerializedPlan | null;
   pricingCheckoutFields?: Record<string, string>;
   discountPercent?: number;
@@ -38,6 +42,8 @@ export function PricingBrandPlanCard({
   perWeekEquivalent = "",
   saveLabel,
   saleLabel,
+  savingsLabel,
+  blackFriday = false,
   plan,
   pricingCheckoutFields,
   discountPercent = 0,
@@ -106,11 +112,18 @@ export function PricingBrandPlanCard({
           {name}
         </span>
         {saleLabel ? (
-          <span className="rounded-full bg-[#fff1e8] px-[9px] py-[3px] text-[11px] font-bold text-[#e07a45]">
+          <span
+            className={cn(
+              "rounded-full px-[9px] py-[3px] text-[11px] font-bold",
+              blackFriday
+                ? "bg-[#c2432f] px-3 py-1 text-[12px] text-white"
+                : "bg-[#fff1e8] text-[#e07a45]",
+            )}
+          >
             {saleLabel}
           </span>
         ) : null}
-        {saveLabel ? (
+        {saveLabel && !blackFriday ? (
           <span className="rounded-full bg-[#e9f9ef] px-[9px] py-[3px] text-[11px] font-bold text-[#2e9e5b]">
             {saveLabel}
           </span>
@@ -135,6 +148,12 @@ export function PricingBrandPlanCard({
         {perWeekEquivalent}
       </div>
 
+      {blackFriday && savingsLabel ? (
+        <div className="mt-1 text-sm font-semibold text-[#0b7d64]">
+          {savingsLabel}
+        </div>
+      ) : null}
+
       <button
         type="button"
         disabled={!canCheckout || !isLoaded}
@@ -149,7 +168,7 @@ export function PricingBrandPlanCard({
             : "bg-[#5b8df7]",
         )}
       >
-        Get Premium
+        {blackFriday ? "Get 50% Off" : "Get Premium"}
       </button>
 
       <PricingBrandFeatureList items={features} />

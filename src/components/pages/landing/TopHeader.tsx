@@ -201,7 +201,7 @@ const TopHeader = () => {
 
   return (
     <>
-      <header className="fixed top-0 inset-x-0 z-[50] flex justify-center pointer-events-none [&_:is(a,button):focus-visible]:outline-3 [&_:is(a,button):focus-visible]:outline-solid [&_:is(a,button):focus-visible]:outline-[#759CFF] [&_:is(a,button):focus-visible]:outline-offset-2">
+      <header className="fixed top-[var(--bf26-bar-h,0px)] inset-x-0 z-[50] flex justify-center pointer-events-none [&_:is(a,button):focus-visible]:outline-3 [&_:is(a,button):focus-visible]:outline-solid [&_:is(a,button):focus-visible]:outline-[#759CFF] [&_:is(a,button):focus-visible]:outline-offset-2">
         <div
           className={cn(
             "pointer-events-auto w-full screen744:!mx-[24px] screen1280:!mx-0 max-w-[1156px] h-[68px] screen744:!h-[72px] screen1280:!h-[80px] pl-[14px] pr-[6px] min-[380px]:pl-[18px] min-[380px]:pr-[10px] screen744:!pl-[28px] screen744:!pr-[16px] screen1280:!px-[40px] flex items-center justify-between gap-[8px] border border-t-0 border-[#E3EBFF] rounded-b-[24px] screen744:!rounded-b-[28px] screen1280:!rounded-b-[32px] backdrop-blur-[8px] bg-[linear-gradient(90deg,rgba(255,255,255,0.8)_0%,rgba(255,255,255,0.45)_100%)] screen1280:!bg-[linear-gradient(90deg,rgba(255,255,255,0.75)_0%,rgba(255,255,255,0.35)_100%)]",

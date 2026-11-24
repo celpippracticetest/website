@@ -19,7 +19,15 @@ import {
   safeStripeProductId,
 } from "@/lib/checkoutCancelUrl";
 import { resolveCampaignPromoFromRequest } from "@/lib/campaignPromo";
-import { resolveCheckoutDiscount } from "@/lib/sitewidePlanCoupon";
+import {
+  resolveCheckoutDiscount,
+  type CheckoutDiscount,
+} from "@/lib/sitewidePlanCoupon";
+import {
+  countryFromRequestHeaders,
+  isBlackFridayEligible,
+  resolveBlackFridayCouponId,
+} from "@/lib/blackFridayServer";
 import { SITEWIDE_PLAN_DISCOUNT_PERCENT } from "@/lib/sitewidePlanDiscount";
 import {
   FINAL_OFFER_CHALLENGE_SOURCE,
@@ -779,13 +787,39 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
       ? planDiscountRaw
       : "a";
     const planDiscountMeta = { plan_discount_ab: planDiscountVariant };
-    const checkoutDiscount = await resolveCheckoutDiscount({
-      promotionCode,
-      unitAmountCents,
-      alternateCouponId: configuredFinalOfferCoupon,
-      alternateCouponSource: "onboarding_final_offer",
-      applySitewide: planDiscountVariant === "b",
-    });
+    // Black Friday 2026 (TEMPORARY, revert Mon 2026-11-30): CA/US/AU IP +
+    // never paid → 50% off the first payment of a plan. It is the largest
+    // offer, so it replaces the A/B 30% and any referral/campaign code.
+    let blackFridayCouponId: string | null = null;
+    if (
+      mode === "subscription" &&
+      (await isBlackFridayEligible({
+        country: countryFromRequestHeaders(req.headers),
+        userId: user.id,
+        metadata: userMetadata,
+      }))
+    ) {
+      try {
+        blackFridayCouponId = await resolveBlackFridayCouponId();
+      } catch (error) {
+        // Never block a purchase on the sale coupon; fall back to normal pricing.
+        console.error("[black-friday] coupon unavailable", error);
+      }
+    }
+    const blackFridayApplied = blackFridayCouponId !== null;
+    const checkoutDiscount: CheckoutDiscount = blackFridayCouponId
+      ? {
+          kind: "coupon",
+          couponId: blackFridayCouponId,
+          source: "black_friday_2026",
+        }
+      : await resolveCheckoutDiscount({
+          promotionCode,
+          unitAmountCents,
+          alternateCouponId: configuredFinalOfferCoupon,
+          alternateCouponSource: "onboarding_final_offer",
+          applySitewide: planDiscountVariant === "b",
+        });
     const sitewideDiscountApplied = checkoutDiscount.kind === "sitewide";
     const gaClientId = `uid.${String(user.id).replace(/[^A-Za-z0-9._-]/g, "").slice(0, 64)}`;
 
@@ -881,6 +915,7 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
         ...pricingAbMeta,
         ...homeAbMeta,
         ...planDiscountMeta,
+        ...(blackFridayApplied ? { black_friday_2026: "50_first_payment" } : {}),
         ...(referralDiscountApplied && {
           referral_discount_applied:
             userMetadata?.referralDiscount || "referral",
@@ -921,6 +956,7 @@ async function signedCheckoutResponse(req: NextRequest): Promise<NextResponse> {
             ...pricingAbMeta,
             ...homeAbMeta,
             ...planDiscountMeta,
+        ...(blackFridayApplied ? { black_friday_2026: "50_first_payment" } : {}),
             ...(referralDiscountApplied && {
               referral_discount_applied:
                 userMetadata?.referralDiscount || "referral",

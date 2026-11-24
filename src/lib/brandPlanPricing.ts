@@ -20,6 +20,8 @@ export type PlanPriceDisplay = {
   saveLabel: string | null;
   /** e.g. "30% OFF" */
   saleLabel: string | null;
+  /** e.g. "You save C$10.00" (list minus sale price); null without a discount. */
+  savingsLabel: string | null;
 };
 
 /** List prices before the sitewide discount. Matches Pricing.dc.html. */
@@ -105,6 +107,10 @@ export function getPlanPriceDisplay(
       perWeekEquivalent,
       saveLabel,
       saleLabel: listAmount > 0 ? saleLabel : null,
+      savingsLabel:
+        discountPercent > 0 && listCents > amountCents
+          ? `You save ${formatLocal((listCents - amountCents) / 100)}`
+          : null,
     };
   }
 
@@ -131,6 +137,10 @@ export function getPlanPriceDisplay(
     perWeekEquivalent,
     saveLabel,
     saleLabel,
+    savingsLabel:
+      discountPercent > 0 && listCents > amountCents
+        ? `You save ${formatCadFromCents(listCents - amountCents)}`
+        : null,
   };
 }
 

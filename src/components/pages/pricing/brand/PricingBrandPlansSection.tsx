@@ -29,6 +29,8 @@ type PricingBrandPlansSectionProps = {
   featuredPlan?: FeaturedPlanName;
   showPerWeek?: boolean;
   discountPercent?: number;
+  /** Black Friday 2026 (temporary): sale styling on the cards. */
+  blackFriday?: boolean;
 };
 
 function findSectionPlan(
@@ -44,6 +46,7 @@ export function PricingBrandPlansSection({
   featuredPlan = "Monthly",
   showPerWeek = true,
   discountPercent = 0,
+  blackFriday = false,
 }: PricingBrandPlansSectionProps) {
   const grouped = useMemo(() => groupPlansByDuration(plans), [plans]);
 
@@ -99,6 +102,8 @@ export function PricingBrandPlansSection({
               perWeekEquivalent={display.perWeekEquivalent}
               saveLabel={display.saveLabel}
               saleLabel={display.saleLabel}
+              savingsLabel={display.savingsLabel}
+              blackFriday={blackFriday}
               plan={plan}
               pricingCheckoutFields={pricingCheckoutFields}
               discountPercent={discountPercent}
@@ -111,11 +116,14 @@ export function PricingBrandPlansSection({
         })}
       </div>
 
-      <div className="mt-7 flex items-center gap-2 text-[13px] text-[#5b6575]">
+      <div className="mt-7 flex max-w-[720px] items-start justify-center gap-2 text-center text-[13px] text-[#5b6575]">
         <span className="font-bold text-[#2e9e5b]" aria-hidden>
           ✓
         </span>
         48-hour money-back guarantee · Cancel anytime
+        {blackFriday
+          ? " · 50% off your first payment, renews at the regular price · Sale ends November 29"
+          : null}
       </div>
     </section>
   );
