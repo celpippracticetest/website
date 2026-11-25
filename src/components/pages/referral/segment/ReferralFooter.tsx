@@ -46,7 +46,7 @@ const ReferralFooter = () => {
 
           <div className="flex mt-[56px] screen744:!mt-[72px] justify-center px-[16px] text-center">
             <span className="text-text3 font-normal text-[11px] screen744:!text-[14px] ">
-              © 2025 CELPIPPRACTICETEST.com — Not affiliated with Paragon
+              © {new Date().getFullYear()} CELPIPPracticeTest.com, operated by Studio 49 Labs Inc. — Not affiliated with Paragon
               Testing Enterprises. All rights reserved{" "}
             </span>
           </div>

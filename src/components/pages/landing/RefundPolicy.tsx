@@ -46,7 +46,7 @@ const RefundPolicy = () => {
   const data = [
     {
       title: "Overview",
-      description: `This Refund Policy explains when refunds may be granted and how refund requests are handled for CELPIPPRACTICETEST.com.
+      description: `CELPIPPracticeTest.com is operated by Studio 49 Labs Inc. (“we,” “us,” or “our”). This Refund Policy explains when refunds may be granted and how refund requests are handled.
 The Services are digital, non-tangible services delivered electronically and accessed immediately upon payment. Submitting a refund request does not guarantee approval.`,
     },
     {
@@ -110,7 +110,7 @@ Initiating a chargeback, payment dispute, or bank claim does not override this p
           Refund Policy
         </h1>
         <span className="mt-[16px] font-normal text-[16px] text-text3">
-          Last Updated: Jan 08, 2026
+          Last Updated: Nov 25, 2026
         </span>
         {data?.map((element, index) => (
           <div key={index} className="mt-[40px]">

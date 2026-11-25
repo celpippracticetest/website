@@ -45,7 +45,7 @@ const TermsOfService = () => {
   const data = [
     {
       title: "Introduction",
-      description: `Welcome to CELPIPPRACTICETEST.com (“we,” “us,” or “our”). These Terms of Service (“Terms”) govern your access to and use of our website at https://celpippracticetest.com (the “Site”) and all related digital services (collectively, the “Services”).
+      description: `CELPIPPracticeTest.com is operated by Studio 49 Labs Inc. (“we,” “us,” or “our”). These Terms of Service (“Terms”) govern your access to and use of our website at https://celpippracticetest.com (the “Site”) and all related digital services (collectively, the “Services”).
 By accessing, registering for, subscribing to, or using the Services, you agree to be bound by these Terms. If you do not agree, you must discontinue use of the Site and Services immediately.`,
     },
     {
@@ -150,7 +150,7 @@ Service delivery occurs immediately upon successful payment, at which point acce
           Terms of Service
         </h1>
         <span className="mt-[16px] font-normal text-[16px] text-text3">
-          Last Updated: Jan 08, 2026
+          Last Updated: Nov 25, 2026
         </span>
         {data?.map((element, index) => (
           <div key={index} className="mt-[40px]">
@@ -199,7 +199,7 @@ Service delivery occurs immediately upon successful payment, at which point acce
         ))}
         <div className="h-[1px] bg-outline mt-[61px]"></div>
         <p className="font-normal text-[16px] text-text3 mt-[20px]">
-          © 2026 CELPIPPRACTICETEST.com. All rights reserved.
+          © {new Date().getFullYear()} CELPIPPracticeTest.com, operated by Studio 49 Labs Inc. All rights reserved.
           CELPIPPRACTICETEST.com is not affiliated with, endorsed by, or
           sponsored by any official testing organization.
         </p>

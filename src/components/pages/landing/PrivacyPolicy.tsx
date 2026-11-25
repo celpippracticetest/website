@@ -45,7 +45,7 @@ const PrivacyPolicy = () => {
   const data = [
     {
       title: "Introduction",
-      description: `Welcome to CELPIPPRACTICETEST.com ("we," "our," or "us"). We respect your privacy and are committed to protecting it. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit https://celpippracticetest.com (the "Site") or use our services (collectively, the "Services").`,
+      description: `CELPIPPracticeTest.com is operated by Studio 49 Labs Inc. ("we," "our," or "us"). We respect your privacy and are committed to protecting it. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit https://celpippracticetest.com (the "Site") or use our services (collectively, the "Services").`,
     },
     {
       title: "1. Information We Collect",
@@ -152,7 +152,7 @@ const PrivacyPolicy = () => {
       <div className="flex flex-col max-w-[1156px] mx-auto justify-center mt-[120px] px-[16px] mb-[116px]">
         <h1 className="text-primary1 font-bold text-[28px]">Privacy Policy</h1>
         <span className="mt-[16px] font-normal text-[16px] text-text3">
-          Last Updated: Apr 17, 2025
+          Last Updated: Nov 25, 2026
         </span>
         {data?.map((element, index) => (
           <div key={index} className="mt-[40px]">
@@ -202,7 +202,7 @@ const PrivacyPolicy = () => {
         ))}
         <div className="h-[1px] bg-outline mt-[61px]"></div>
         <span className="font-normal text-[16px] text-text3 mt-[20px]">
-          © 2025 CELPIPPRACTICETEST.com. All rights reserved.
+          © {new Date().getFullYear()} CELPIPPracticeTest.com, operated by Studio 49 Labs Inc. All rights reserved.
           CELPIPPRACTICETEST.com is not affiliated with, endorsed by, or
           sponsored by any official testing organization.
         </span>

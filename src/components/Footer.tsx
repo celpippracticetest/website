@@ -60,8 +60,7 @@ const Footer = () => {
           {/* Copyright line - moved below the disclaimer */}
           <div className="text-center">
             <p className="text-gray-200 font-medium">
-              © {new Date().getFullYear()} CELPIPPRACTICETEST.com. All rights
-              reserved.
+              © {new Date().getFullYear()} CELPIPPracticeTest.com, operated by Studio 49 Labs Inc. All rights reserved.
             </p>
           </div>
         </div>

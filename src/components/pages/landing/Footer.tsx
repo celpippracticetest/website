@@ -128,7 +128,7 @@ const Footer = (_props: { isSignedIn?: boolean }) => {
             Paragon Testing Enterprises or the official CELPIP test.
           </p>
           <div className="flex flex-col-reverse gap-[12px] screen1280:!flex-row screen1280:!items-center screen1280:!justify-between">
-            <span>© {new Date().getFullYear()} CELPIPPracticeTest.com. All rights reserved.</span>
+            <span>© {new Date().getFullYear()} CELPIPPracticeTest.com, operated by Studio 49 Labs Inc. All rights reserved.</span>
             <div className="flex flex-wrap gap-x-[18px] gap-y-[6px] screen1280:!gap-[24px]">
               {legalLinks.map((link) => (
                 <Link

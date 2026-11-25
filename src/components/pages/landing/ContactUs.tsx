@@ -167,8 +167,7 @@ const ContactUs = () => {
 
         <div className="h-[1px] bg-outline mt-[61px]" />
         <p className="font-normal text-[16px] text-text3 mt-[20px]">
-          © {new Date().getFullYear()} CELPIPPRACTICETEST.com. All rights
-          reserved. CELPIPPRACTICETEST.com is not affiliated with, endorsed by,
+          © {new Date().getFullYear()} CELPIPPracticeTest.com, operated by Studio 49 Labs Inc. All rights reserved. CELPIPPracticeTest.com is not affiliated with, endorsed by,
           or sponsored by any official testing organization.
         </p>
       </main>
