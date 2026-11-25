@@ -19,6 +19,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { useSelectedTask } from "@/store/useSelectedTask.store";
 import { useSelectedExam } from "@/store/useSelectedExam.store";
 import ExtraDiscountModal from "@/components/modal/ExtraDiscountModal";
+// Black Friday 2026 (TEMPORARY, revert Mon 2026-11-30)
+import { useBlackFridayOffer } from "@/hooks/useBlackFridayOffer";
 import { useExtraDiscountStore } from "@/store/useExtraDiscount.store";
 import { useAuthModalStore } from "@/store/useAuthModal.store";
 import { useCreateDiscountCoupon } from "@/hooks/useCreateDiscountCoupon";
@@ -206,6 +208,8 @@ const LayoutClient = ({
   const showExtraDiscount = useExtraDiscountStore(
     (state) => state.showExtraDiscount,
   );
+  // Black Friday 2026: hide the "Extra 10%" offer from users who see the 50% sale.
+  const { eligible: blackFriday } = useBlackFridayOffer();
   const visibleHorizontalCoupon = useExtraDiscountStore(
     (state) => state.visibleHorizontalCoupon,
   );
@@ -646,7 +650,7 @@ const LayoutClient = ({
           {showUpgradeModal && (
             <UpgradeModal setShowModal={setShowUpgradeModal} />
           )}
-          {!surveyVisible && showExtraDiscount && <ExtraDiscountModal />}
+          {!surveyVisible && showExtraDiscount && !blackFriday && <ExtraDiscountModal />}
         </>
       ) : noUser ? (
         showLoginModal && <LoginModal />
@@ -780,7 +784,7 @@ const LayoutClient = ({
           </div>
         </div>
       </motion.div>
-      {user && visibleHorizontalCoupon && (
+      {user && visibleHorizontalCoupon && !blackFriday && (
         <div className="flex items-center flex-wrap justify-between screen744:!justify-center px-[8px] screen1280:!px-[16px] py-[14px] gap-[5px] screen1280:!gap-[32px] bg-[#37465C]  h-auto min-h-[64px] ">
           <div className="flex flex-col screen744:!flex-row gap-[2px] items-center justify-center text-white h-auto text-[12px]   screen744:!text-[20px] font-bold">
             Extra 10% Discount
