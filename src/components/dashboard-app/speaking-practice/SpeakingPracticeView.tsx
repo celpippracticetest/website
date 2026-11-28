@@ -58,6 +58,12 @@ interface SpeakingPracticeViewProps {
   onNextPractice: () => void;
 }
 
+/** m:ss for the header timer. */
+function formatClock(seconds: number): string {
+  const s = Math.max(0, Math.floor(seconds));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}
+
 const SpeakingPracticeView = ({
   practice,
   task,
@@ -233,6 +239,8 @@ const SpeakingPracticeView = ({
   }, [user, answers]);
 
   const fetchUsersAnswer = async () => {
+    // Guests' scores aren't saved, so there is no history to load.
+    if (!user) return;
     try {
       const url = new URL("/api/answers/speaking", window.location.origin);
       url.searchParams.append("practiceId", practice.id);
@@ -262,14 +270,7 @@ const SpeakingPracticeView = ({
 
   const startRecording = async () => {
     try {
-      if (!user) {
-        // Guests need a (free) account to record and be scored, not a paid plan.
-        openLoginModal(
-          true,
-          "Create a free account to record your answer and get your AI score.",
-        );
-        return;
-      }
+      // Guests may record free prompts (the API gives them a daily allowance).
       if (!shouldShowPractice) {
         openPremiumPlanModal();
         return;
@@ -327,6 +328,21 @@ const SpeakingPracticeView = ({
             clearInterval(progressInterval);
             setProgressBar(100);
             if (!response.ok) {
+              // Guest allowance used up (or a non-free prompt): offer a free account.
+              if (response.status === 401 || response.status === 429) {
+                void response
+                  .json()
+                  .catch(() => ({}))
+                  .then((body: { requiresSignIn?: boolean; message?: string }) => {
+                    if (body?.requiresSignIn) {
+                      openLoginModal(
+                        true,
+                        body.message ||
+                          "Create a free account to record your answer and get your AI score.",
+                      );
+                    }
+                  });
+              }
               trackKpi.aiScoringFailed({
                 module: "speaking",
                 errorType: `http_${response.status}`,
@@ -367,13 +383,14 @@ const SpeakingPracticeView = ({
               );
             }
 
-            setAnswers((prev) => upsertPracticeAnswer(prev, data));
+            if (user) setAnswers((prev) => upsertPracticeAnswer(prev, data));
             await fetchUsersAnswer();
             setIsSubmit(false);
             onAnswerButtonClick(practice, data);
           })
           .catch((error) => {
             console.error("Error uploading audio:", error);
+            setIsSubmit(false);
           })
           .finally(() => {
             setTimeout(() => setProgressBar(0), 1000);
@@ -453,15 +470,15 @@ const SpeakingPracticeView = ({
           </div>
           {
             <div className="flex items-center gap-2 justify-end pb-[10px] ">
-              {shouldShowPractice && user && page === "question" && (
+              {shouldShowPractice && page === "question" && (
                 <div className="flex justify-center items-center lg:flex-row flex-col">
                   <div className="text-[14px] font-bold gap-2 text-center text-[#EE4266] flex items-center">
                     <p>
                       {time > 0
-                        ? `${Math.floor(time / 60)}:${
-                            time % 60 < 10 ? `0${time % 60}` : time % 60
-                          }`
-                        : "Time's Up!"}
+                        ? `Prep ${formatClock(time)}`
+                        : isRecording && recordingTime > 0
+                          ? `Recording ${formatClock(recordingTime)}`
+                          : "Time's Up!"}
                     </p>
                   </div>
                 </div>

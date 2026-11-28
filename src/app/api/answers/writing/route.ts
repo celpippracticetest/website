@@ -1,3 +1,4 @@
+import { createAnswerUnlessGuest, guestScoringBlockedResponse } from "@/lib/guestAiScoring";
 import { PracticeRepository } from "@/repositories/practice.repo";
 import { NextRequest, NextResponse } from "next/server";
 import documentsClient from "@/lib/appDocumentsClient";
@@ -23,15 +24,21 @@ export const POST = async function (req: NextRequest) {
     getAuthenticatedRequestContext(req),
   ]);
   const answersParser = WritingAnswerRequestSchema.safeParse(body);
-  const user = authContext?.user;
+  const user = authContext?.user ?? null;
+  // Guests: free practices only, with a small daily allowance (results not saved).
   if (!user) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    const blocked = await guestScoringBlockedResponse(
+      req,
+      answersParser.success ? answersParser.data.practiceId ?? "" : "",
+    );
+    if (blocked) return blocked;
   }
 
   if (answersParser.success) {
     const answerBody = answersParser.data;
     const answerRepo = new WritingAndSpeakingAnswerRepository(documentsClient);
     if (
+      user &&
       !hasPaidPracticeAccess(
         user.publicMetadata.plan as string | undefined,
         user.publicMetadata.purchaseDate as string | undefined
@@ -310,7 +317,7 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
         },
       };
 
-      const answer = await answerRepo.createAnswer({
+      const answer = await createAnswerUnlessGuest(answerRepo, {
         text: answerBody.text,
         userId: user?.id,
         practiceId: answerBody.practiceId,
@@ -357,7 +364,7 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
       }
     }
 
-    const answer = await answerRepo.createAnswer({
+    const answer = await createAnswerUnlessGuest(answerRepo, {
       text: answerBody.text,
       userId: user?.id,
       practiceId: answerBody.practiceId,

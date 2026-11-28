@@ -35,6 +35,12 @@ interface SpeakingExamViewProps {
   examNumber?: number;
 }
 
+/** m:ss for the header timer. */
+function formatClock(seconds: number): string {
+  const s = Math.max(0, Math.floor(seconds));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}
+
 const SpeakingExamView = ({
   practice,
   partId,
@@ -419,10 +425,10 @@ const SpeakingExamView = ({
                     <div className="text-[14px] font-bold gap-2 text-center text-[#EE4266] flex items-center">
                       <p>
                         {time > 0
-                          ? `${Math.floor(time / 60)}:${
-                              time % 60 < 10 ? `0${time % 60}` : time % 60
-                            }`
-                          : "Time's Up!"}
+                          ? `Prep ${formatClock(time)}`
+                          : isRecording && recordingTime > 0
+                            ? `Recording ${formatClock(recordingTime)}`
+                            : "Time's Up!"}
                       </p>
                     </div>
                   </div>

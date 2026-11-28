@@ -208,6 +208,8 @@ const WritingPracticeView = ({
   }, [user, answers]);
 
   const fetchUsersAnswer = async () => {
+    // Guests' scores aren't saved, so there is no history to load.
+    if (!user) return;
     try {
       const url = new URL("/api/answers/writing", window.location.origin);
       url.searchParams.append("practiceId", practice.id);
@@ -268,6 +270,17 @@ const WritingPracticeView = ({
       clearInterval(progressInterval); // Stop progress increment
 
       if (!response.ok) {
+        // Guest allowance used up (or a non-free prompt): offer a free account.
+        if (response.status === 401 || response.status === 429) {
+          const body = await response.json().catch(() => ({}));
+          if (body?.requiresSignIn) {
+            openLoginModal(
+              true,
+              body.message ||
+                "Create a free account to get your AI score. We'll keep what you've written.",
+            );
+          }
+        }
         trackKpi.aiScoringFailed({
           module: "writing",
           errorType: `http_${response.status}`,
@@ -320,6 +333,8 @@ const WritingPracticeView = ({
         retryCount: (scoringRetryRef.current += 1),
       });
       console.error("Error submitting answer:", error);
+      // Allow another try (otherwise the button stays stuck after a failure).
+      setIsSubmit(false);
     } finally {
       setProgressBar(100); // Ensure progress bar reaches 100
       setTimeout(() => setProgressBar(0), 1000); // Reset progress bar after a short delay
@@ -655,13 +670,6 @@ const WritingPracticeView = ({
                             disabled={progressBar > 0}
                             className="cursor-pointer flex h-[40px] items-center justify-center text-white text-[14px] font-normal  rounded-[24px] bg-[#4A7DFF] w-full"
                             onClick={() => {
-                              if (!user) {
-                                openLoginModal(
-                                  true,
-                                  "Create a free account to submit your answer and get your AI score. We'll keep what you've written.",
-                                );
-                                return;
-                              }
                               if (!shouldShowPractice) {
                                 openPremiumPlanModal();
                                 return;
