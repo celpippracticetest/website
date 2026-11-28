@@ -668,9 +668,9 @@ export default async function middleware(req: NextRequest) {
     "POST:/api/practices/answers",
     "GET:/api/practices/answers",
     "POST:/api/answers",
-    "POST:/api/answers/writing",
+    // POST /api/answers/{writing,speaking} check access themselves: signed in,
+    // or a guest on a free practice within the daily allowance (guestAiScoring).
     "GET:/api/answers/writing",
-    "POST:/api/answers/speaking",
     "POST:/api/checkout_session",
     "POST:/api/paypal/create-subscription",
   ];

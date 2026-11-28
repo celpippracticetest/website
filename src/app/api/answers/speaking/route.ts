@@ -1,3 +1,4 @@
+import { createAnswerUnlessGuest, guestScoringBlockedResponse } from "@/lib/guestAiScoring";
 import { NextRequest, NextResponse } from "next/server";
 import documentsClient from "@/lib/appDocumentsClient";
 import { createClient } from "@deepgram/sdk";
@@ -201,9 +202,16 @@ export const POST = async function (req: Request) {
       getAuthenticatedRequestContext(req),
       req.formData(),
     ]);
-    const user = authContext?.user;
+    const user = authContext?.user ?? null;
+    // Guests: free practices only, with a small daily allowance (results not saved).
+    // Checked before the upload/transcription so blocked guests cost nothing.
     if (!user) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+      const pid = formData.get("practiceId");
+      const blocked = await guestScoringBlockedResponse(
+        req,
+        typeof pid === "string" ? pid : "",
+      );
+      if (blocked) return blocked;
     }
     const audioFile = formData.get("audio");
     if (!(audioFile instanceof File)) {
@@ -549,9 +557,9 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
       
       const storedFallback = toStoredEvaluation(parsedResult as EvaluationInput);
       const answerRepo = new WritingAndSpeakingAnswerRepository(documentsClient);
-      const answer = await answerRepo.createAnswer({
+      const answer = await createAnswerUnlessGuest(answerRepo, {
         audioUrl: location,
-        userId: user.id,
+        userId: user?.id,
         practiceId,
         attemptId: `practice_${practiceId}_${Date.now()}`,
         overalScore: storedFallback.overall,
@@ -607,9 +615,9 @@ Scale: 12=Perfect | 10-11=Excellent | 8-9=Good | 6-7=Adequate | 4-5=Weak | 1-3=P
     const stored = toStoredEvaluation(evaluation);
 
     const answerRepo = new WritingAndSpeakingAnswerRepository(documentsClient);
-    const answer = await answerRepo.createAnswer({
+    const answer = await createAnswerUnlessGuest(answerRepo, {
       audioUrl: location,
-      userId: user.id,
+      userId: user?.id,
       practiceId,
       attemptId: `practice_${practiceId}_${Date.now()}`,
       overalScore: stored.overall,
